@@ -37,7 +37,7 @@ def check_password():
     return False
 
 # --- 4. SIDEBAR MENU ---
-st.sidebar.title("🏗️ DEEWARY.COM")
+st.sidebar.title("🏗️ DEEWARY.COM REAL ESTATE AND CONSTRUTION COMPANY ")
 menu = st.sidebar.radio("Navigation", [
     "📊 Dashboard", 
     "💰 Income History", 
