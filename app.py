@@ -86,7 +86,7 @@ if menu == "📊 Dashboard":
             with st.expander(f"New {st.session_state.show_form} Entry", expanded=True):
                 with st.form("entry_form"):
                     d_date = st.date_input("Date", datetime.now())
-                    d_cat = st.text_input("Name/Category")
+                    d_cat = st.text_input("name")
                     d_amt = st.number_input("Amount", min_value=0.0)
                     d_det = st.text_area("Details")
                     
