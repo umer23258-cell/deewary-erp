@@ -12,15 +12,6 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# Custom CSS for Professional Look
-st.markdown("""
-    <style>
-    .main { background-color: #0f1113; color: white; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }
-    .stMetric { background-color: #1e2124; padding: 15px; border-radius: 10px; border: 1px solid #2c2f33; }
-    </style>
-    """, unsafe_allow_html=True)
-
 # --- 3. FUNCTIONS ---
 @st.cache_data(ttl=60)
 def fetch_data():
@@ -45,9 +36,8 @@ def check_password():
                 st.error("Ghalat Password!")
     return False
 
-# --- 4. UI LAYOUT & SIDEBAR ---
+# --- 4. SIDEBAR MENU ---
 st.sidebar.title("🏗️ DEEWARY.COM")
-# Yahan maine "Income History" ka option add kar diya hai
 menu = st.sidebar.radio("Navigation", [
     "📊 Dashboard", 
     "💰 Income History", 
@@ -86,7 +76,7 @@ if menu == "📊 Dashboard":
             with st.expander(f"New {st.session_state.show_form} Entry", expanded=True):
                 with st.form("entry_form"):
                     d_date = st.date_input("Date", datetime.now())
-                    d_cat = st.text_input("name")
+                    d_name = st.text_input("Name / Description") # Input field
                     d_amt = st.number_input("Amount", min_value=0.0)
                     d_det = st.text_area("Details")
                     
@@ -98,24 +88,32 @@ if menu == "📊 Dashboard":
                         d_meth = col_c.selectbox("Method", ["Cash", "Online"])
 
                     if st.form_submit_button("Save to Cloud"):
+                        # --- CRITICAL FIX: Matching Database Column Name ---
                         new_data = {
-                            "date": str(d_date), "type": st.session_state.show_form,
-                            "category": d_cat, "amount": d_amt, "detail": d_det,
-                            "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth
+                            "date": str(d_date), 
+                            "type": st.session_state.show_form,
+                            "name": d_name,        # <--- Pehle yahan 'category' tha
+                            "amount": d_amt, 
+                            "detail": d_det,
+                            "occupation": d_occ, 
+                            "received_by": d_rec, 
+                            "pay_method": d_meth
                         }
-                        supabase.table('transactions').insert(new_data).execute()
-                        st.cache_data.clear()
-                        st.success("Data Saved!")
-                        del st.session_state.show_form
-                        st.rerun()
+                        try:
+                            supabase.table('transactions').insert(new_data).execute()
+                            st.cache_data.clear()
+                            st.success("Data Saved!")
+                            del st.session_state.show_form
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Database Error: {e}")
         else:
             st.warning("Sidebar mein password dalein.")
 
-# --- 6. ALL HISTORY PAGES ---
+# --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
-        # Filter Logic for all types
         if menu == "💰 Income History":
             filtered_df = df[df['type'] == 'Income']
         elif menu == "👷 Labor History":
@@ -123,16 +121,15 @@ else:
         elif menu == "🏗️ Material History":
             filtered_df = df[df['type'] == 'Material']
         else:
-            filtered_df = df.copy() # All Reports
+            filtered_df = df.copy()
 
-        # Search Bar
         search = st.text_input("🔍 Search in this view...")
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False, na=False)).any(axis=1)
             filtered_df = filtered_df[mask]
 
         st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"📊 **Total for {menu}: PKR {filtered_df['amount'].sum():,.2f}**")
+        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
 
         # Excel Download
         buffer = io.BytesIO()
@@ -148,5 +145,3 @@ else:
                 st.cache_data.clear()
                 st.success("Deleted!")
                 st.rerun()
-    else:
-        st.info("No data found.")
