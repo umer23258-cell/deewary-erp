@@ -50,7 +50,7 @@ df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    st.title("Enterprise Dashboard")
+    st.title(" 💼 Financial Intelligence Suite")
     
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
