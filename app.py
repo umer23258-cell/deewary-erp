@@ -2,96 +2,82 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 from datetime import datetime
+import base64
 
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Deewary Smart ERP", page_icon="🏗️", layout="wide")
+# --- 1. CONNECTION (Aapka Purana Style) ---
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+supabase = create_client(url, key)
 
-# Database Connection
-@st.cache_resource
-def init_connection():
-    try:
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
-        return create_client(url, key)
-    except Exception as e:
-        st.error(f"Connection Error: Check your Secrets! {e}")
-        return None
+st.title("🏗️ Deewary.com - Office Manager")
 
-supabase = init_connection()
+# --- 2. DATA FETCHING (History ke liye) ---
+def fetch_data():
+    res = supabase.table("deewary_records").select("*").order("date", desc=True).execute()
+    return pd.DataFrame(res.data)
 
-# --- STYLING ---
-st.markdown("""
-    <style>
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .stButton>button { width: 100%; border-radius: 5px; background-color: #007bff; color: white; }
-    </style>
-    """, unsafe_allow_html=True)
+df = fetch_data()
 
-# --- HEADER ---
-st.title("🏗️ Deewary.com - Smart ERP")
-st.write(f"Logged in as Admin | {datetime.now().strftime('%A, %d %B %Y')}")
+# --- 3. ADD NEW ENTRY (Aapka Purana Form) ---
+with st.expander("➕ Add New Income/Expense", expanded=False):
+    with st.form("entry_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            date = st.date_input("Date", datetime.now())
+            type_entry = st.selectbox("Type", ["Income", "Expense"])
+        with col2:
+            category = st.text_input("Category (e.g. Salary, Advance)")
+            amount = st.number_input("Amount", min_value=0.0)
+        
+        details = st.text_area("Details")
+        if st.form_submit_button("Save Record"):
+            data = {"date": str(date), "type": type_entry, "category": category, "amount": amount, "details": details}
+            supabase.table("deewary_records").insert(data).execute()
+            st.success("Data Saved!")
+            st.rerun()
+
 st.divider()
 
-# --- APP LOGIC ---
-if supabase:
-    # 1. Fetch Data
-    try:
-        res = supabase.table("deewary_records").select("*").order("date", desc=True).execute()
-        df = pd.DataFrame(res.data)
-    except Exception as e:
-        st.error(f"Database Table Not Found! Please run SQL code in Supabase. Error: {e}")
-        df = pd.DataFrame()
+# --- 4. HISTORY, EDIT & DELETE SECTION ---
+st.subheader("📜 Transaction History & Management")
 
-    # 2. Dashboard Metrics
-    if not df.empty:
-        total_in = df[df['type'] == 'Income']['amount'].sum()
-        total_ex = df[df['type'] == 'Expense']['amount'].sum()
+if not df.empty:
+    # --- PDF PRINT FUNCTION ---
+    def create_download_link(df):
+        csv = df.to_csv(index=False)
+        b64 = base64.b64encode(csv.encode()).decode()
+        href = f'<a href="data:file/csv;base64,{b64}" download="deewary_report.csv" style="text-decoration:none;"><button style="background-color:#4CAF50; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">📥 Download Report (CSV/Excel)</button></a>'
+        return href
+
+    st.markdown(create_download_link(df), unsafe_allow_html=True)
+    st.write("")
+
+    # Display Records with Edit/Delete
+    for index, row in df.iterrows():
+        # Aik line mein record dikhayein
+        c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 1, 1])
+        c1.text(row['date'])
+        c2.text(row['type'])
+        c3.text(f"{row['amount']:,}")
         
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total Income", f"{total_in:,.0f} PKR")
-        m2.metric("Total Expense", f"{total_ex:,.0f} PKR", delta_color="inverse")
-        m3.metric("Net Balance", f"{total_in - total_ex:,.0f} PKR")
-    
-    st.divider()
-
-    # 3. Tabs
-    tab_add, tab_history = st.tabs(["➕ Add Transaction", "📜 History & Management"])
-
-    with tab_add:
-        with st.form("main_form", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            with c1:
-                d = st.date_input("Transaction Date")
-                t = st.selectbox("Type", ["Income", "Expense"])
-            with c2:
-                cat = st.selectbox("Category", ["Advance", "Material", "Labor", "Salary", "Rent", "Utility", "Misc"])
-                amt = st.number_input("Amount (PKR)", min_value=0.0)
+        # DELETE BUTTON
+        if c4.button("🗑️", key=f"del_{row['id']}"):
+            supabase.table("deewary_records").delete().eq("id", row['id']).execute()
+            st.warning("Deleted!")
+            st.rerun()
             
-            det = st.text_area("Details / Remarks")
-            if st.form_submit_button("🚀 Sync to Deewary Cloud"):
-                if amt > 0:
-                    new_row = {"date": str(d), "type": t, "category": cat, "amount": amt, "details": det}
-                    try:
-                        supabase.table("deewary_records").insert(new_row).execute()
-                        st.success("Successfully Saved!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Save Failed: {e}")
-                else:
-                    st.warning("Please enter an amount.")
+        # EDIT BUTTON (Simple layout)
+        if c5.button("📝", key=f"edit_{row['id']}"):
+            st.info(f"Editing ID: {row['id']} - Niche form mein change karein")
+            # Edit ka form yahan dikha sakte hain (Simple rakhne ke liye delete zaroori tha)
 
-    with tab_history:
-        if not df.empty:
-            for index, row in df.iterrows():
-                with st.expander(f"📅 {row['date']} | {row['category']} | {row['amount']:,.0f} PKR"):
-                    col_a, col_b = st.columns([4, 1])
-                    col_a.write(f"**Remarks:** {row['details']}")
-                    if col_b.button("🗑️ Delete", key=f"del_{row['id']}"):
-                        supabase.table("deewary_records").delete().eq("id", row['id']).execute()
-                        st.toast("Record Removed!")
-                        st.rerun()
-        else:
-            st.info("No records found in the cloud database.")
-
+    st.table(df[["date", "type", "category", "amount", "details"]]) # Full Table view
 else:
-    st.warning("Waiting for database connection...")
+    st.info("No history found.")
+
+# --- 5. TOTALS ---
+if not df.empty:
+    st.divider()
+    total_in = df[df['type'] == 'Income']['amount'].sum()
+    total_ex = df[df['type'] == 'Expense']['amount'].sum()
+    st.write(f"### Total Income: {total_in:,} | Total Expense: {total_ex:,}")
