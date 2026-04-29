@@ -33,7 +33,7 @@ def check_password():
                 st.session_state["authenticated"] = True
                 st.rerun()
             else:
-                st.error("Ghalat Password!")
+                st.error("wrong pasword!")
     return False
 
 # --- 4. SIDEBAR MENU ---
@@ -108,7 +108,7 @@ if menu == "📊 Dashboard":
                         except Exception as e:
                             st.error(f"Database Error: {e}")
         else:
-            st.warning("Sidebar mein password dalein.")
+            st.warning("admin access required.")
 
 # --- 6. HISTORY PAGES ---
 else:
