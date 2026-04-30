@@ -40,7 +40,6 @@ def check_password():
 
 # --- 4. SIDEBAR MENU & PROJECT INFO ---
 with st.sidebar:
-    # 1. Sabse upar Title aur Menu
     st.title("🏗️ DEEWARY.COM ERP")
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
@@ -52,11 +51,9 @@ with st.sidebar:
     
     st.divider()
 
-    # 2. Phir Project Image
     image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-    st.image(image_url, use_container_width=True, caption="Site View: Yousaf Colony")
+    st.image(image_url, use_container_width=True, caption="Site: Yousaf Colony")
     
-    # 3. Project Details Card
     st.markdown(f"""
         <div style="
             background-color: #f8f9fa; 
@@ -65,35 +62,15 @@ with st.sidebar:
             border-left: 5px solid #FF4B4B;
             color: #1E1E1E;
         ">
-            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Project Location</h4>
-            <p style="margin: 5px 0; font-size: 13px;"><b>Area:</b> Yousaf Colony</p>
+            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Project Details</h4>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Location:</b> Yousaf Colony</p>
             <p style="margin: 5px 0; font-size: 13px;"><b>Size:</b> 5 Marla</p>
             <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
         </div>
     """, unsafe_allow_html=True)
     
     st.divider()
-
-    # 4. WhatsApp Quick Link in Sidebar
-    whatsapp_url = "https://wa.me/923115190118"
-    st.markdown(f"""
-        <a href="{whatsapp_url}" target="_blank" style="text-decoration: none;">
-            <div style="
-                background-color: #25D366;
-                color: white;
-                padding: 10px;
-                border-radius: 5px;
-                text-align: center;
-                font-weight: bold;
-            ">
-                💬 Contact on WhatsApp
-            </div>
-        </a>
-    """, unsafe_allow_html=True)
     
-    st.divider()
-    
-    # 5. Admin Access
     is_auth = check_password()
     if is_auth:
         st.success("🔓 Admin Active")
@@ -191,7 +168,7 @@ if menu == "📊 Dashboard":
         else:
             st.warning("Admin unlock required via sidebar.")
 
-    # --- SOFTWARE INFO SECTION ---
+    # --- SOFTWARE INFO & SYSTEM SUPPORT ---
     st.write("##")
     st.divider()
     info_col1, info_col2 = st.columns([2, 1])
@@ -202,28 +179,44 @@ if menu == "📊 Dashboard":
         Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
         manage karne ke liye banaya gaya hai. 
         
-        **Important Information:**
-        *   **Automation:** Har entry cloud database (Supabase) mein save hoti hai.
-        *   **Security:** Records delete ya edit karne ke liye 'Admin Unlock' lazmi hai.
-        *   **Reporting:** History tab se Excel reports download ki ja sakti hain.
+        **System Features:**
+        *   **Cloud Sync:** Supabase database ke sath connected.
+        *   **Security:** Admin protected record management.
+        *   **Excel Export:** Reports download karne ki sahulat.
         """)
 
     with info_col2:
         st.subheader("🛠️ System Support")
+        whatsapp_url = "https://wa.me/923115190118"
+        
         st.markdown(f"""
-        **Developer:** umer sherin 
+        **Developer:** umer sherin  
         **Status:** Operational ✅  
-        **Contact:** [Chat on WhatsApp]({whatsapp_url})  
         **Last Update:** April 2026  
         
         ---
-        **Shortcuts:**
-        - `R` reload page
-        - `Admin Pass:` admin786
-        """)
+        **Need Help?**  
+        <a href="{whatsapp_url}" target="_blank" style="text-decoration: none;">
+            <div style="
+                background-color: #25D366;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                text-align: center;
+                font-weight: bold;
+                display: inline-block;
+                width: 100%;
+            ">
+                💬 Chat on WhatsApp
+            </div>
+        </a>
+        
+        ---
+        `R` reload | Pass: `admin786`
+        """, unsafe_allow_html=True)
 
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal | Time: {datetime.now().strftime('%H:%M')}")
+    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal")
 
 # --- 6. HISTORY PAGES ---
 else:
@@ -257,7 +250,7 @@ else:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']
                     st.session_state.edit_id = target_id
-                    st.success("ID Loaded!")
+                    st.success("ID Loaded! Dashboard check karein.")
                     st.rerun()
                 else:
                     st.error("ID nahi mili.")
