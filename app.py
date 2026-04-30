@@ -48,6 +48,7 @@ with st.sidebar:
     ])
     
     st.divider()
+    # Sidebar image (Project Photo)
     image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
     st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
     
@@ -72,14 +73,20 @@ df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # --- UPDATED STYLISH HEADING ---
+    # --- LOGO SECTION ---
+    col_l1, col_l2, col_l3 = st.columns([1, 0.8, 1])
+    with col_l2:
+        new_logo = "https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg"
+        st.image(new_logo, use_container_width=True)
+
+    # --- STYLISH HEADING ---
     st.markdown("""
-        <div style="text-align: center; padding: 10px; margin-bottom: 20px;">
+        <div style="text-align: center; margin-top: -10px; margin-bottom: 30px;">
             <h1 style="font-family: 'Arial Black', Gadget, sans-serif; font-size: 55px; letter-spacing: 12px; color: #FF4B4B; text-transform: uppercase; margin-bottom: 0px;">
                 DEEWARY.COM
             </h1>
-            <hr style="width: 40%; margin: auto; border: 2px solid #FF4B4B; border-radius: 5px;">
-            <p style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 18px; color: #555; letter-spacing: 3px; margin-top: 10px;">
+            <hr style="width: 35%; margin: auto; border: 2px solid #FF4B4B; border-radius: 5px;">
+            <p style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 18px; color: #555; letter-spacing: 4px; margin-top: 10px; font-weight: bold;">
                 REAL ESTATE & CONSTRUCTION MANAGEMENT
             </p>
         </div>
