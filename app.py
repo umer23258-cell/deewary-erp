@@ -5,7 +5,6 @@ from datetime import datetime
 import io
 
 # --- 1. SUPABASE SETUP ---
-# Ensure these are set in your .streamlit/secrets.toml
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
@@ -27,7 +26,6 @@ def check_password():
         st.session_state["authenticated"] = False
     if st.session_state["authenticated"]:
         return True
-    
     with st.sidebar.expander("🔐 Admin Access"):
         pwd = st.text_input("Admin Password", type="password")
         if st.button("Unlock"):
@@ -68,9 +66,8 @@ if menu == "📊 Dashboard":
 
     st.divider()
     
-    # Edit Mode Check
+    # --- FORMS & EDIT LOGIC ---
     is_editing = "edit_id" in st.session_state
-    
     if not is_editing:
         st.subheader("Quick Actions")
         c1, c2, c3 = st.columns(3)
@@ -82,30 +79,21 @@ if menu == "📊 Dashboard":
 
     if "show_form" in st.session_state:
         if check_password():
-            # Setup form defaults for Add vs Edit
             defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
-            
             if is_editing and not df.empty:
-                edit_row = df[df['id'] == st.session_state.edit_id]
-                if not edit_row.empty:
-                    row = edit_row.iloc[0]
-                    defaults = {
-                        "date": datetime.strptime(str(row['date']), '%Y-%m-%d'),
-                        "name": str(row['name']),
-                        "amount": float(row['amount']),
-                        "detail": str(row['detail']),
-                        "occ": str(row.get('occupation', "")),
-                        "rec": str(row.get('received_by', "")),
-                        "meth": str(row.get('pay_method', "Cash"))
-                    }
+                row = df[df['id'] == st.session_state.edit_id].iloc[0]
+                defaults = {
+                    "date": datetime.strptime(str(row['date']), '%Y-%m-%d'),
+                    "name": str(row['name']), "amount": float(row['amount']), "detail": str(row['detail']),
+                    "occ": str(row.get('occupation', "")), "rec": str(row.get('received_by', "")), "meth": str(row.get('pay_method', "Cash"))
+                }
 
-            with st.expander(f"{'Edit' if is_editing else 'New'} {st.session_state.show_form} Entry", expanded=True):
+            with st.expander(f"{'Edit' if is_editing else 'New'} {st.session_state.show_form}", expanded=True):
                 with st.form("entry_form"):
                     d_date = st.date_input("Date", defaults["date"])
                     d_name = st.text_input("Name / Description", defaults["name"])
                     d_amt = st.number_input("Amount", min_value=0.0, value=defaults["amount"])
                     d_det = st.text_area("Details", defaults["detail"])
-                    
                     d_occ, d_rec, d_meth = "", "", ""
                     if st.session_state.show_form == "Labor":
                         col_a, col_b, col_c = st.columns(3)
@@ -114,76 +102,75 @@ if menu == "📊 Dashboard":
                         d_meth = col_c.selectbox("Method", ["Cash", "Online"], index=0 if defaults["meth"] == "Cash" else 1)
 
                     if st.form_submit_button("Update Record" if is_editing else "Save to Cloud"):
-                        payload = {
-                            "date": str(d_date), "type": st.session_state.show_form,
-                            "name": d_name, "amount": d_amt, "detail": d_det,
-                            "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth
-                        }
+                        payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
                         try:
-                            if is_editing:
-                                supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
-                            else:
-                                supabase.table('transactions').insert(payload).execute()
-                            
+                            if is_editing: supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
+                            else: supabase.table('transactions').insert(payload).execute()
                             st.cache_data.clear()
                             for k in ["show_form", "edit_id"]: 
                                 if k in st.session_state: del st.session_state[k]
-                            st.success("Transaction Synced Successfully!")
+                            st.success("Synced Successfully!")
                             st.rerun()
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-            
+                        except Exception as e: st.error(f"Error: {e}")
             if st.button("❌ Close Form"):
                 for k in ["show_form", "edit_id"]: 
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
-        else:
-            st.warning("Admin authentication required.")
 
-    # --- SOFTWARE INFO SECTION ---
+    # --- 7. PROJECT SPOTLIGHT (Using your provided link) ---
+    st.write("##")
+    st.divider()
+    st.subheader("🏠 Current Project Spotlight")
+    
+    st.image("https://i.ibb.co/6Jbx8yjD/Whats-App-Image-2026-04-30-at-12-11-01-PM.jpg", 
+             width=450, caption="Project: Yousaf Colony Renovation")
+
+    st.markdown("""
+    ### **Yousaf Colony - Full Renovation**
+    We are transforming this property into a modern living space.
+    
+    *   **📍 Location:** Yousaf Colony
+    *   **📏 Size:** 5 Marla Plot
+    *   **🏗️ Structure:** 2.5 Story House
+    *   **🛠️ Work Type:** Complete Interior & Exterior Renovation
+    
+    ---
+    """)
+    st.write("🏗️ **Construction Progress:**")
+    st.progress(70)
+    st.caption("Current Phase: Finishing, Paint, and Electrical work.")
+
+    # --- 8. ABOUT ERP (Simple English) ---
     st.write("##")
     st.divider()
     info_col1, info_col2 = st.columns([2, 1])
-    
     with info_col1:
-        st.subheader(" Deewary.com ERP System")
-        st.info("""
-        Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
-        manage karne ke liye banaya gaya hai. 
+        st.subheader("🌟 About Deewary.com ERP")
+        st.markdown("""
+        **Simple. Powerful. Organized.**  
+        Everything you save is instantly backed up on our cloud server. 
         
-        **important information:**
-        *   **Automation:** Har entry cloud database (Supabase) mein save hoti hai.
-        *   **Security:** Records delete ya edit karne ke liye 'Admin Unlock' lazmi hai.
-        *   **Reporting:** History tab se Excel reports download ki ja sakti hain.
+        *   **✅ Cloud Backup:** Securely stored in Supabase.
+        *   **✅ Data Safety:** Admin access required for edits.
+        *   **✅ Instant Reports:** Export history to Excel anytime.
         """)
-
     with info_col2:
-        st.subheader("🛠️ System Support")
-        st.markdown(f"""
-        **Developer:** umer sherin 
-        **Status:** Operational ✅  
-        **Last Update:** April 2026  
-        
-        ---
-        **Shortcuts:**
-        - `R` reload page
-        - `Admin Pass:` -----
-        """)
+        st.subheader("⚙️ System Info")
+        st.markdown(f"**Status:** Operational 🚀\n\n**Version:** 2.0.2\n\n**Dev:** IT Team")
 
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal | Time: {datetime.now().strftime('%H:%M')}")
+    st.caption(f"© {datetime.now().year} Deewary.com | Precision in Every Project.")
 
 # --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
-        # Filter Logic
         if "Income" in menu: filtered_df = df[df['type'] == 'Income']
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
 
-        search = st.text_input("🔍 Search data...")
+        search = st.text_input("🔍 Search records...")
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             filtered_df = filtered_df[mask]
@@ -191,32 +178,25 @@ else:
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
 
-        # Excel Download
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
+        st.download_button("📥 Download Excel Report", buffer.getvalue(), f"{menu}.xlsx")
         
-        # Manage Records (Edit/Delete)
         st.divider()
         st.subheader("🛠️ Manage Records")
         if check_password():
             c_id, c_ed, c_de = st.columns([1, 1, 1])
             target_id = c_id.number_input("Enter ID", step=1, value=0)
-            
             if c_ed.button("✏️ Edit"):
                 if target_id in filtered_df['id'].values:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']
                     st.session_state.edit_id = target_id
-                    st.success("ID Loaded! Ab 'Dashboard' par jayen.")
-                else:
-                    st.error("ID is view mein nahi mili.")
-
+                    st.success("Loaded! Go to Dashboard.")
+                else: st.error("ID not found.")
             if c_de.button("🗑️ Delete"):
                 if target_id != 0:
                     supabase.table('transactions').delete().eq('id', target_id).execute()
                     st.cache_data.clear()
-                    st.success("Record Deleted!")
+                    st.success("Deleted!")
                     st.rerun()
-    else:
-        st.warning("Database khali hai.")
