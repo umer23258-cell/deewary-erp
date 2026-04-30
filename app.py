@@ -56,7 +56,7 @@ with st.sidebar:
     image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
     st.image(image_url, use_container_width=True, caption="Site View: Yousaf Colony")
     
-    # 3. Phir Project Details Card
+    # 3. Project Details Card
     st.markdown(f"""
         <div style="
             background-color: #f8f9fa; 
@@ -73,8 +73,27 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.divider()
+
+    # 4. WhatsApp Quick Link in Sidebar
+    whatsapp_url = "https://wa.me/923115190118"
+    st.markdown(f"""
+        <a href="{whatsapp_url}" target="_blank" style="text-decoration: none;">
+            <div style="
+                background-color: #25D366;
+                color: white;
+                padding: 10px;
+                border-radius: 5px;
+                text-align: center;
+                font-weight: bold;
+            ">
+                💬 Contact on WhatsApp
+            </div>
+        </a>
+    """, unsafe_allow_html=True)
     
-    # 4. Admin Access
+    st.divider()
+    
+    # 5. Admin Access
     is_auth = check_password()
     if is_auth:
         st.success("🔓 Admin Active")
@@ -172,7 +191,7 @@ if menu == "📊 Dashboard":
         else:
             st.warning("Admin unlock required via sidebar.")
 
-    # --- 🟢 RESTORED SOFTWARE INFO SECTION ---
+    # --- SOFTWARE INFO SECTION ---
     st.write("##")
     st.divider()
     info_col1, info_col2 = st.columns([2, 1])
@@ -194,6 +213,7 @@ if menu == "📊 Dashboard":
         st.markdown(f"""
         **Developer:** umer sherin 
         **Status:** Operational ✅  
+        **Contact:** [Chat on WhatsApp]({whatsapp_url})  
         **Last Update:** April 2026  
         
         ---
@@ -222,12 +242,10 @@ else:
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
 
-        # Excel Download
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
         
-        # Manage Records
         st.divider()
         st.subheader("🛠️ Manage Records")
         if is_auth:
@@ -239,7 +257,7 @@ else:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']
                     st.session_state.edit_id = target_id
-                    st.success("ID Loaded! Dashboard par jayen.")
+                    st.success("ID Loaded!")
                     st.rerun()
                 else:
                     st.error("ID nahi mili.")
@@ -251,4 +269,4 @@ else:
                     st.success("Deleted!")
                     st.rerun()
     else:
-        st.warning("Database is empty.")
+        st.warning("No data found.")
