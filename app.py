@@ -36,68 +36,44 @@ def check_password():
                 st.error("Wrong password!")
     return False
 
-# --- 4. PROJECT LIST MANAGEMENT ---
-# Hum session state use kar rahe hain taake projects list dynamically barhti rahe
-if "projects" not in st.session_state:
-    st.session_state.projects = ["Yousaf Colony"]
-
-# --- 5. SIDEBAR ---
+# --- 4. SIDEBAR MENU & PROJECT INFO ---
 with st.sidebar:
     st.title("🏗️ DEEWARY.COM ERP")
-    
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
         "💰 Income History", 
         "👷 Labor History", 
         "🏗️ Material History",
-        "📁 Projects Manager",
-        "🔍 All Reports"
+        "🔍 Search & All Reports"
     ])
     
     st.divider()
+    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
+    st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
     
-    # Project Selection
-    selected_project = st.selectbox("Select Active Project:", st.session_state.projects)
+    st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 5px solid #FF4B4B; color: #1E1E1E;">
+            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Current Project</h4>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Location:</b> Yousaf Colony</p>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Size:</b> 5 Marla</p>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.divider()
     is_auth = check_password()
-
-# Data Fetching
-df_raw = fetch_data()
-
-# Filtering data for the selected project
-if not df_raw.empty and 'project' in df_raw.columns:
-    df = df_raw[df_raw['project'] == selected_project]
-else:
-    df = df_raw.copy() if df_raw.empty else pd.DataFrame()
-
-# --- 6. PROJECTS MANAGER (NEW PROJECT CREATION) ---
-if menu == "📁 Projects Manager":
-    st.title("Manage Your Projects")
-    
     if is_auth:
-        st.subheader("Add a New Site/Project")
-        new_p_name = st.text_input("Enter Project Name (e.g. Gulberg Phase 2)")
-        if st.button("🚀 Create Project & Start Fresh"):
-            if new_p_name and new_p_name not in st.session_state.projects:
-                st.session_state.projects.append(new_p_name)
-                st.success(f"Project '{new_p_name}' created! Select it from the sidebar to start.")
-                st.rerun()
-            else:
-                st.warning("Please enter a unique project name.")
-        
-        st.divider()
-        st.write("### Current Active Projects:")
-        for p in st.session_state.projects:
-            st.write(f"- {p}")
-    else:
-        st.warning("Please unlock Admin Access to manage projects.")
+        st.success("🔓 Admin Active")
+        if st.button("Logout"):
+            st.session_state["authenticated"] = False
+            st.rerun()
 
-# --- 7. DASHBOARD PAGE ---
-elif menu == "📊 Dashboard":
-    st.title(f"Dashboard: {selected_project}")
+df = fetch_data()
+
+# --- 5. DASHBOARD PAGE ---
+if menu == "📊 Dashboard":
+    st.title("Capital Flow Analytics")
     
-    # Dashboard Metrics (Automatic Zero for new projects)
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
@@ -106,74 +82,160 @@ elif menu == "📊 Dashboard":
         inc, exp, bal = 0, 0, 0
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Project Income", f"PKR {inc:,.0f}")
-    col2.metric("Project Expenses", f"PKR {exp:,.0f}")
+    col1.metric("Total Income", f"PKR {inc:,.0f}")
+    col2.metric("Total Expenses", f"PKR {exp:,.0f}")
     col3.metric("Net Balance", f"PKR {bal:,.0f}")
 
     st.divider()
     
-    # Entry Forms
     is_editing = "edit_id" in st.session_state
     if not is_editing:
-        st.subheader("Quick Entry")
+        st.subheader("Quick Actions")
         c1, c2, c3 = st.columns(3)
-        if c1.button("➕ Income"): st.session_state.show_form = "Income"
-        if c2.button("👷 Labor"): st.session_state.show_form = "Labor"
-        if c3.button("🏗️ Material"): st.session_state.show_form = "Material"
+        if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
+        if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
+        if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
+    else:
+        st.warning(f"⚠️ Editing Mode Active (ID: {st.session_state.edit_id})")
 
     if "show_form" in st.session_state:
         if is_auth:
-            with st.expander(f"New {st.session_state.show_form} for {selected_project}", expanded=True):
-                with st.form("main_form"):
-                    d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Title")
-                    d_amt = st.number_input("Amount", min_value=0.0)
-                    d_det = st.text_area("Notes")
-                    
-                    # Labor specific fields
+            defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
+            if is_editing and not df.empty:
+                edit_row = df[df['id'] == st.session_state.edit_id]
+                if not edit_row.empty:
+                    row = edit_row.iloc[0]
+                    defaults = {
+                        "date": datetime.strptime(str(row['date']), '%Y-%m-%d'),
+                        "name": str(row['name']), "amount": float(row['amount']),
+                        "detail": str(row['detail']), "occ": str(row.get('occupation', "")),
+                        "rec": str(row.get('received_by', "")), "meth": str(row.get('pay_method', "Cash"))
+                    }
+
+            with st.expander(f"{'Edit' if is_editing else 'New'} {st.session_state.show_form} Entry", expanded=True):
+                with st.form("entry_form"):
+                    d_date = st.date_input("Date", defaults["date"])
+                    d_name = st.text_input("Name / Description", defaults["name"])
+                    d_amt = st.number_input("Amount", min_value=0.0, value=defaults["amount"])
+                    d_det = st.text_area("Details", defaults["detail"])
                     d_occ, d_rec, d_meth = "", "", ""
                     if st.session_state.show_form == "Labor":
-                        ca, cb, cc = st.columns(3)
-                        d_occ = ca.text_input("Occupation")
-                        d_rec = cb.text_input("Received By")
-                        d_meth = cc.selectbox("Method", ["Cash", "Online"])
+                        col_a, col_b, col_c = st.columns(3)
+                        d_occ = col_a.text_input("Occupation", defaults["occ"])
+                        d_rec = col_b.text_input("Received By", defaults["rec"])
+                        d_meth = col_c.selectbox("Method", ["Cash", "Online"], index=0 if defaults["meth"] == "Cash" else 1)
 
-                    if st.form_submit_button("Save to Project"):
-                        payload = {
-                            "date": str(d_date), "type": st.session_state.show_form, 
-                            "project": selected_project, "name": d_name, "amount": d_amt, 
-                            "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth
-                        }
-                        supabase.table('transactions').insert(payload).execute()
-                        st.cache_data.clear()
-                        st.session_state.pop("show_form")
-                        st.success("Saved!")
-                        st.rerun()
-            if st.button("Cancel"):
-                st.session_state.pop("show_form")
+                    if st.form_submit_button("Update Record" if is_editing else "Save to Cloud"):
+                        payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
+                        try:
+                            if is_editing: supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
+                            else: supabase.table('transactions').insert(payload).execute()
+                            st.cache_data.clear()
+                            [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
+                            st.success("Transaction Synced!")
+                            st.rerun()
+                        except Exception as e: st.error(f"Error: {e}")
+            if st.button("❌ Close Form"):
+                [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
                 st.rerun()
+        else: st.warning("Admin unlock required via sidebar.")
 
-    # Support & About (Niche ka wahi professional layout)
+    # --- 🟢 ABOUT DEEWARY.COM ---
     st.write("##")
     st.divider()
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        st.subheader("🏡 Deewary.com ERP")
-        st.write("Managing multiple construction sites with precision and transparency.")
-    with col_b:
+    st.subheader("🏢 About Deewary.com")
+    about_col1, about_col2 = st.columns([1.5, 1])
+    
+    with about_col1:
+        st.markdown("""
+        **Deewary.com** aik premium Real Estate aur Construction firm hai jo modern architecture aur quality construction mein maharat rakhti hai. Hamara maqsad logon ko unke khuwabon ka ghar tameer kar ke dena hai.
+        
+        **Services:**
+        *   **Premium Construction:** Islamabad/Pindi mein A+ quality gharon ki tameer.
+        *   **Real Estate Portfolio:** Plots aur houses ki investment advice.
+        *   **Digital Transparency:** ERP system ke zariye clients ka aitmad.
+        """)
+
+    with about_col2:
+        st.markdown("""
+        <div style="background-color: #1E1E1E; padding: 20px; border-radius: 15px; color: white; border: 1px solid #4B4B4B;">
+            <h4 style="margin-top: 0; color: #FF4B4B;">🚀 Our Vision</h4>
+            <p style="font-size: 14px;">"Technology ke zariye construction industry mein imandari aur safafiyat laana."</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- 🟢 SYSTEM SUPPORT & STABLE WHATSAPP BUTTON ---
+    st.divider()
+    supp_col1, supp_col2 = st.columns([2, 1])
+    
+    with supp_col1:
+        st.subheader("🖥️ ERP System Info")
+        st.info("Yeh portal internal records aur financial tracking ke liye design kiya gaya hai.")
+    
+    with supp_col2:
+        st.subheader("🛠️ System Support")
         whatsapp_url = "https://wa.me/923115190118"
-        st.markdown(f'<a href="{whatsapp_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:black; padding:10px; border-radius:10px; text-align:center; font-weight:bold;">💬 WhatsApp Support</div></a>', unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <style>
+            .wa-btn {{
+                background-color: #25D366;
+                color: #000000 !important;
+                padding: 15px 20px;
+                border-radius: 12px;
+                text-align: center;
+                font-weight: 800;
+                font-size: 18px;
+                display: block;
+                text-decoration: none !important;
+                border: 2px solid #128C7E;
+                box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+                transition: 0.3s;
+            }}
+            .wa-btn:hover {{
+                background-color: #128C7E !important;
+                color: #ffffff !important;
+                transform: translateY(-2px);
+            }}
+        </style>
+        <a href="{whatsapp_url}" target="_blank" class="wa-btn">
+            💬 WhatsApp Support
+        </a>
+        <p style="font-size: 12px; text-align: center; margin-top: 10px; color: #666;">
+            Developer: umer sherin | Status: Active ✅
+        </p>
+        """, unsafe_allow_html=True)
 
-# --- 8. HISTORY PAGES ---
+    st.divider()
+    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
+
+# --- 6. HISTORY PAGES ---
 else:
-    st.title(f"{menu} - {selected_project}")
+    st.title(menu)
     if not df.empty:
-        if "Income" in menu: f_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: f_df = df[df['type'] == 'Material']
-        else: f_df = df.copy()
-
-        st.dataframe(f_df, use_container_width=True)
-        st.info(f"💰 Project Total: PKR {f_df['amount'].sum():,.2f}")
-    else:
-        st.warning(f"No transactions yet for {selected_project}.")
+        if "Income" in menu: filtered_df = df[df['type'] == 'Income']
+        elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
+        elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
+        else: filtered_df = df.copy()
+        search = st.text_input("🔍 Search data...")
+        if search:
+            mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
+            filtered_df = filtered_df[mask]
+        st.dataframe(filtered_df, use_container_width=True)
+        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
+        buffer = io.BytesIO(); filtered_df.to_excel(buffer, index=False, engine='openpyxl')
+        st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
+        st.divider(); st.subheader("🛠️ Manage Records")
+        if is_auth:
+            c_id, c_ed, c_de = st.columns([1, 1, 1]); target_id = c_id.number_input("Enter ID", step=1, value=0)
+            if c_ed.button("✏️ Edit"):
+                if target_id in filtered_df['id'].values:
+                    row = filtered_df[filtered_df['id'] == target_id].iloc[0]
+                    st.session_state.show_form = row['type']; st.session_state.edit_id = target_id
+                    st.success("ID Loaded!"); st.rerun()
+                else: st.error("ID nahi mili.")
+            if c_de.button("🗑️ Delete"):
+                if target_id != 0:
+                    supabase.table('transactions').delete().eq('id', target_id).execute()
+                    st.cache_data.clear(); st.success("Deleted!"); st.rerun()
+    else: st.warning("No records found.")
