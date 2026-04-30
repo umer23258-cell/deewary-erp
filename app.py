@@ -72,9 +72,18 @@ df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # --- YAHAN HEADING KO CHOTA KIYA HAI ---
-    st.markdown("<h2 style='text-align: center; color: #FF4B4B; margin-bottom: 0px;'>DEEWARY.COM</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray; font-size: 14px;'>Real Estate & Construction ERP</p>", unsafe_allow_html=True)
+    # --- UPDATED STYLISH HEADING ---
+    st.markdown("""
+        <div style="text-align: center; padding: 10px; margin-bottom: 20px;">
+            <h1 style="font-family: 'Arial Black', Gadget, sans-serif; font-size: 55px; letter-spacing: 12px; color: #FF4B4B; text-transform: uppercase; margin-bottom: 0px;">
+                DEEWARY.COM
+            </h1>
+            <hr style="width: 40%; margin: auto; border: 2px solid #FF4B4B; border-radius: 5px;">
+            <p style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 18px; color: #555; letter-spacing: 3px; margin-top: 10px;">
+                REAL ESTATE & CONSTRUCTION MANAGEMENT
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.title("Capital Flow Analytics")
     
