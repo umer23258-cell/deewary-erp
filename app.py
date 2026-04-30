@@ -72,21 +72,24 @@ df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # --- HEADER SECTION (Logo & Small Elegant Styling) ---
+    # --- HEADER SECTION (Logo & CEO Details) ---
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
     
     with h_col1:
-        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=120)
+        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
 
     with h_col2:
         st.markdown("""
             <div style="text-align: center; margin-top: 5px;">
-                <h2 style="font-family: 'Arial Black', sans-serif; font-size: 32px; letter-spacing: 5px; color: #FF4B4B; text-transform: uppercase; margin-bottom: 0px;">
+                <h2 style="font-family: 'Arial Black', sans-serif; font-size: 28px; letter-spacing: 4px; color: #FF4B4B; text-transform: uppercase; margin-bottom: 0px;">
                     DEEWARY.COM
                 </h2>
-                <hr style="width: 15%; margin: 5px auto; border: 1px solid #FF4B4B; border-radius: 5px;">
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #666; letter-spacing: 2px; margin-top: 0px; font-weight: 500;">
+                <hr style="width: 12%; margin: 4px auto; border: 1px solid #FF4B4B; border-radius: 5px;">
+                <p style="font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #555; letter-spacing: 2px; margin-bottom: 2px; font-weight: 600;">
                     REAL ESTATE & CONSTRUCTION MANAGEMENT
+                </p>
+                <p style="font-family: 'Segoe UI', sans-serif; font-size: 13px; color: #1E1E1E; font-weight: 700; margin-top: 0px;">
+                    C.E.O: SARDAR SAMI ULLAH
                 </p>
             </div>
         """, unsafe_allow_html=True)
