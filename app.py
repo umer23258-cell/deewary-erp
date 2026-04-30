@@ -5,7 +5,6 @@ from datetime import datetime
 import io
 
 # --- 1. SUPABASE SETUP ---
-# Ensure these are set in your .streamlit/secrets.toml
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
@@ -41,27 +40,7 @@ def check_password():
 
 # --- 4. SIDEBAR MENU & PROJECT INFO ---
 with st.sidebar:
-    # Project Image from your link
-    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-    st.image(image_url, use_container_width=True)
-    
-    # Professional Project Card
-    st.markdown(f"""
-        <div style="
-            background-color: #f8f9fa; 
-            padding: 15px; 
-            border-radius: 10px; 
-            border-left: 5px solid #FF4B4B;
-            color: #1E1E1E;
-            margin-bottom: 20px;
-        ">
-            <h4 style="margin: 0; color: #FF4B4B;">📍 Yousaf Colony</h4>
-            <p style="margin: 5px 0; font-size: 14px;"><b>📐 Size:</b> 5 Marla</p>
-            <p style="margin: 5px 0; font-size: 14px;"><b>🏗️ Structure:</b> 2.5 Story</p>
-            <p style="margin: 0; font-size: 12px; color: #666;">Project Status: Active</p>
-        </div>
-    """, unsafe_allow_html=True)
-
+    # 1. Sabse upar Title aur Menu
     st.title("🏗️ DEEWARY.COM ERP")
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
@@ -72,11 +51,32 @@ with st.sidebar:
     ])
     
     st.divider()
+
+    # 2. Phir Project Image
+    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
+    st.image(image_url, use_container_width=True, caption="Site View")
     
-    # Check Admin Access in Sidebar
+    # 3. Phir Project Details
+    st.markdown(f"""
+        <div style="
+            background-color: #f8f9fa; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border-left: 5px solid #FF4B4B;
+            color: #1E1E1E;
+        ">
+            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Yousaf Colony</h4>
+            <p style="margin: 5px 0; font-size: 13px;"><b>📐 Size:</b> 5 Marla</p>
+            <p style="margin: 5px 0; font-size: 13px;"><b>🏗️ Structure:</b> 2.5 Story</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # 4. Admin Access check at the bottom
     is_auth = check_password()
     if is_auth:
-        st.success("🔓 Admin Access Active")
+        st.success("🔓 Admin Active")
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
@@ -101,7 +101,6 @@ if menu == "📊 Dashboard":
 
     st.divider()
     
-    # Edit Mode Check
     is_editing = "edit_id" in st.session_state
     
     if not is_editing:
@@ -111,11 +110,10 @@ if menu == "📊 Dashboard":
         if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
         if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
     else:
-        st.warning(f"⚠️ Editing Mode Active (Record ID: {st.session_state.edit_id})")
+        st.warning(f"⚠️ Editing Mode Active (ID: {st.session_state.edit_id})")
 
     if "show_form" in st.session_state:
         if is_auth:
-            # Setup form defaults for Add vs Edit
             defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
             
             if is_editing and not df.empty:
@@ -161,7 +159,7 @@ if menu == "📊 Dashboard":
                             st.cache_data.clear()
                             for k in ["show_form", "edit_id"]: 
                                 if k in st.session_state: del st.session_state[k]
-                            st.success("Transaction Synced Successfully!")
+                            st.success("Transaction Synced!")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error: {e}")
@@ -171,28 +169,9 @@ if menu == "📊 Dashboard":
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
         else:
-            st.warning("Admin authentication required via sidebar.")
+            st.warning("Admin unlock lazmi hai form access karne ke liye.")
 
-    # --- SOFTWARE INFO SECTION ---
     st.write("##")
-    st.divider()
-    info_col1, info_col2 = st.columns([2, 1])
-    
-    with info_col1:
-        st.subheader("🏡 Deewary.com ERP System")
-        st.info("""
-        Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
-        manage karne ke liye banaya gaya hai. 
-        """)
-
-    with info_col2:
-        st.subheader("🛠️ System Support")
-        st.markdown(f"""
-        **Status:** Operational ✅  
-        **Project:** Yousaf Colony  
-        **Last Update:** April 2026  
-        """)
-
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal")
 
@@ -221,25 +200,23 @@ else:
         st.subheader("🛠️ Manage Records")
         if is_auth:
             c_id, c_ed, c_de = st.columns([1, 1, 1])
-            target_id = c_id.number_input("Enter ID to Edit/Delete", step=1, value=0)
+            target_id = c_id.number_input("Enter ID", step=1, value=0)
             
             if c_ed.button("✏️ Edit"):
                 if target_id in filtered_df['id'].values:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']
                     st.session_state.edit_id = target_id
-                    st.success("ID Loaded! Ab 'Dashboard' par jayen.")
+                    st.success("ID Loaded! Dashboard check karein.")
                     st.rerun()
                 else:
-                    st.error("ID is view mein nahi mili.")
+                    st.error("ID nahi mili.")
 
             if c_de.button("🗑️ Delete"):
                 if target_id != 0:
                     supabase.table('transactions').delete().eq('id', target_id).execute()
                     st.cache_data.clear()
-                    st.success("Record Deleted!")
+                    st.success("Deleted!")
                     st.rerun()
-        else:
-            st.warning("Admin unlock lazmi hai records manage karne ke liye.")
     else:
-        st.warning("Database khali hai.")
+        st.warning("No data found.")
