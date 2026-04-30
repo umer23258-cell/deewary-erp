@@ -12,38 +12,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- 3. SHORT PROFESSIONAL HEADER ---
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap');
-    
-    .main-header {
-        text-align: center;
-        padding: 10px;
-        margin-bottom: 20px;
-    }
-    .main-header h1 {
-        font-family: 'Montserrat', sans-serif !important;
-        color: #1E3A8A !important;
-        font-size: 32px !important;
-        margin: 0;
-        letter-spacing: 1px;
-    }
-    .main-header p {
-        color: #64748B !important;
-        font-size: 14px !important;
-        margin: 0;
-        text-transform: uppercase;
-        font-weight: 600;
-    }
-    </style>
-    <div class="main-header">
-        <h1>DEEWARY.COM</h1>
-        <p>Real Estate & Construction</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# --- 4. FUNCTIONS ---
+# --- 3. FUNCTIONS ---
 @st.cache_data(ttl=60)
 def fetch_data():
     try:
@@ -67,9 +36,9 @@ def check_password():
                 st.error("Wrong password!")
     return False
 
-# --- 5. SIDEBAR MENU & PROJECT INFO ---
+# --- 4. SIDEBAR MENU & PROJECT INFO ---
 with st.sidebar:
-    st.title("🏗️ ERP PANEL")
+    st.title("🏗️ DEEWARY.COM ERP")
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
         "💰 Income History", 
@@ -83,8 +52,8 @@ with st.sidebar:
     st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
     
     st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 5px solid #1E3A8A; color: #1E1E1E;">
-            <h4 style="margin: 0; color: #1E3A8A; font-size: 16px;">📍 Current Project</h4>
+        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 5px solid #FF4B4B; color: #1E1E1E;">
+            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Current Project</h4>
             <p style="margin: 5px 0; font-size: 13px;"><b>Location:</b> Yousaf Colony</p>
             <p style="margin: 5px 0; font-size: 13px;"><b>Size:</b> 5 Marla</p>
             <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
@@ -101,8 +70,12 @@ with st.sidebar:
 
 df = fetch_data()
 
-# --- 6. DASHBOARD PAGE ---
+# --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
+    # --- YAHAN HEADING KO CHOTA KIYA HAI ---
+    st.markdown("<h2 style='text-align: center; color: #FF4B4B; margin-bottom: 0px;'>DEEWARY.COM</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray; font-size: 14px;'>Real Estate & Construction ERP</p>", unsafe_allow_html=True)
+    
     st.title("Capital Flow Analytics")
     
     if not df.empty:
@@ -171,21 +144,65 @@ if menu == "📊 Dashboard":
                 st.rerun()
         else: st.warning("Admin unlock required via sidebar.")
 
-    # --- FOOTER & SUPPORT ---
+    # --- ABOUT SECTION ---
     st.write("##")
     st.divider()
+    st.subheader("🏢 About Deewary.com")
+    about_col1, about_col2 = st.columns([1.5, 1])
+    
+    with about_col1:
+        st.markdown("""
+        **Deewary.com** aik premium Real Estate aur Construction firm hai jo modern architecture aur quality construction mein maharat rakhti hai.
+        
+        **Services:**
+        *   **Premium Construction:** Islamabad/Pindi mein A+ quality gharon ki tameer.
+        *   **Real Estate Portfolio:** Plots aur houses ki investment advice.
+        *   **Digital Transparency:** ERP system ke zariye clients ka aitmad.
+        """)
+
+    with about_col2:
+        st.markdown("""
+        <div style="background-color: #1E1E1E; padding: 20px; border-radius: 15px; color: white; border: 1px solid #4B4B4B;">
+            <h4 style="margin-top: 0; color: #FF4B4B;">🚀 Our Vision</h4>
+            <p style="font-size: 14px;">"Technology ke zariye construction industry mein imandari aur safafiyat laana."</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- SYSTEM SUPPORT ---
+    st.divider()
     supp_col1, supp_col2 = st.columns([2, 1])
+    
+    with supp_col1:
+        st.subheader("🖥️ ERP System Info")
+        st.info("Yeh portal internal records aur financial tracking ke liye design kiya gaya hai.")
+    
     with supp_col2:
+        st.subheader("🛠️ System Support")
         whatsapp_url = "https://wa.me/923115190118"
+        
         st.markdown(f"""
-        <a href="{whatsapp_url}" target="_blank" style="text-decoration:none;">
-            <div style="background-color: #25D366; color: black; padding: 12px; border-radius: 10px; text-align: center; font-weight: 800; border: 2px solid #128C7E;">
-                💬 WhatsApp Support
-            </div>
+        <style>
+            .wa-btn {{
+                background-color: #25D366;
+                color: #000000 !important;
+                padding: 10px 15px;
+                border-radius: 10px;
+                text-align: center;
+                font-weight: 700;
+                display: block;
+                text-decoration: none !important;
+                border: 2px solid #128C7E;
+            }}
+        </style>
+        <a href="{whatsapp_url}" target="_blank" class="wa-btn">
+            💬 WhatsApp Support
         </a>
         """, unsafe_allow_html=True)
 
-# --- 7. HISTORY PAGES ---
+    st.divider()
+    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
+
+# --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
@@ -198,8 +215,10 @@ else:
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             filtered_df = filtered_df[mask]
+        
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
+        
         buffer = io.BytesIO(); filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
         
@@ -210,12 +229,10 @@ else:
                 if target_id in filtered_df['id'].values:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']; st.session_state.edit_id = target_id
-                    st.rerun()
+                    st.success("ID Loaded!"); st.rerun()
+                else: st.error("ID nahi mili.")
             if c_de.button("🗑️ Delete"):
                 if target_id != 0:
                     supabase.table('transactions').delete().eq('id', target_id).execute()
                     st.cache_data.clear(); st.success("Deleted!"); st.rerun()
     else: st.warning("No records found.")
-
-st.divider()
-st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
