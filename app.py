@@ -66,7 +66,7 @@ if menu == "📊 Dashboard":
 
     st.divider()
     
-    # --- FORMS ---
+    # --- QUICK ACTIONS & FORMS ---
     if "show_form" in st.session_state:
         if check_password():
             is_editing = "edit_id" in st.session_state
@@ -93,7 +93,7 @@ if menu == "📊 Dashboard":
                         d_rec = col_b.text_input("Received By", defaults["rec"])
                         d_meth = col_c.selectbox("Method", ["Cash", "Online"], index=0 if defaults["meth"] == "Cash" else 1)
 
-                    if st.form_submit_button("Update" if is_editing else "Save"):
+                    if st.form_submit_button("Update Record" if is_editing else "Save to Cloud"):
                         payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
                         try:
                             if is_editing: supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
@@ -101,7 +101,7 @@ if menu == "📊 Dashboard":
                             st.cache_data.clear()
                             for k in ["show_form", "edit_id"]: 
                                 if k in st.session_state: del st.session_state[k]
-                            st.success("Synced!")
+                            st.success("Successfully Synced!")
                             st.rerun()
                         except Exception as e: st.error(f"Error: {e}")
             if st.button("❌ Close Form"):
@@ -115,21 +115,17 @@ if menu == "📊 Dashboard":
         if qa2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"; st.rerun()
         if qa3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"; st.rerun()
 
-    # --- 7. PROJECT SLIDER ---
+    # --- 7. PROJECT SPOTLIGHT (Slider with all your images) ---
     st.write("##")
     st.divider()
     st.subheader("🏠 Project Gallery: Yousaf Colony")
 
-    # Yahan apne mazeed 4-5 links daltay jayen comma laga kar
     project_images = [
         "https://i.ibb.co/6Jbx8yjD/Whats-App-Image-2026-04-30-at-12-11-01-PM.jpg",
-        "https://i.ibb.co/6R0yR8Xz/1JK5M0FR.jpg"
-        "https://i.ibb.co/ZRgY9wLC/Whats-App-Image-2026-04-30-at-12-25-05-PM.jpg"
-        "https://i.ibb.co/35yGYt3H/Whats-App-Image-2026-04-30-at-12-25-04-PM.jpg"
+        "https://i.ibb.co/6R0yR8Xz/1JK5M0FR.jpg",
+        "https://i.ibb.co/ZRgY9wLC/Whats-App-Image-2026-04-30-at-12-25-05-PM.jpg",
+        "https://i.ibb.co/35yGYt3H/Whats-App-Image-2026-04-30-at-12-25-04-PM.jpg",
         "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-        # "LINK_3",
-        # "LINK_4",
-        # "LINK_5"
     ]
 
     if 'img_idx' not in st.session_state:
@@ -140,6 +136,7 @@ if menu == "📊 Dashboard":
     with col_img:
         st.image(project_images[st.session_state.img_idx], width=350, caption=f"View {st.session_state.img_idx + 1} of {len(project_images)}")
         
+        # Slider Buttons
         btn1, btn2 = st.columns(2)
         if btn1.button("⬅️ Previous"):
             st.session_state.img_idx = (st.session_state.img_idx - 1) % len(project_images)
@@ -149,11 +146,41 @@ if menu == "📊 Dashboard":
             st.rerun()
 
     with col_txt:
-        st.markdown(f"### **Yousaf Colony Renovation**\n*   **📍 Location:** Yousaf Colony\n*   **🏗️ Status:** Finishing Phase")
+        st.markdown(f"""
+        ### **Yousaf Colony Renovation**
+        We are transforming this property into a modern residence.
+        
+        *   **📍 Location:** Yousaf Colony
+        *   **📏 Size:** 5 Marla
+        *   **🏗️ Structure:** 2.5 Story House
+        *   **🛠️ Work Type:** Complete Interior & Exterior Renovation
+        
+        ---
+        """)
+        st.write("🏗️ **Renovation Progress:**")
         st.progress(70)
+        st.caption("Current Phase: Paint, Woodwork, and Finishing touches.")
+
+    # --- 8. ABOUT ERP (Full Detail Restored) ---
+    st.write("##")
+    st.divider()
+    info_col1, info_col2 = st.columns([2, 1])
+    with info_col1:
+        st.subheader("🌟 About Deewary.com ERP")
+        st.markdown("""
+        **Simple. Powerful. Organized.**  
+        This system helps track every rupee spent on construction projects with precision.
+        
+        *   **✅ Cloud Backup:** Everything is saved on our secure cloud server.
+        *   **✅ Data Safety:** Only admins can edit or delete records.
+        *   **✅ One-Click Reports:** Download full history in Excel instantly.
+        """)
+    with info_col2:
+        st.subheader("⚙️ System Info")
+        st.markdown(f"**Status:** Working Smoothly 🚀\n\n**Version:** 2.0.4\n\n**Dev:** IT Team")
 
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | V2.0.3")
+    st.caption(f"© {datetime.now().year} Deewary.com | Precision in Every Project.")
 
 # --- 6. HISTORY PAGES ---
 else:
@@ -164,30 +191,33 @@ else:
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
 
-        search = st.text_input("🔍 Search...")
+        search = st.text_input("🔍 Search data...")
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             filtered_df = filtered_df[mask]
 
         st.dataframe(filtered_df, use_container_width=True)
-        
+        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
+
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Export Excel", buffer.getvalue(), f"{menu}.xlsx")
+        st.download_button("📥 Download Excel Report", buffer.getvalue(), f"{menu}.xlsx")
         
+        st.divider()
+        st.subheader("🛠️ Manage Records")
         if check_password():
-            st.divider()
-            st.subheader("🛠️ Admin Controls")
-            c_id = st.number_input("Record ID", step=1, value=0)
-            c_ed, c_de = st.columns(2)
+            c_id, c_ed, c_de = st.columns([1, 1, 1])
+            target_id = c_id.number_input("Enter ID", step=1, value=0)
             if c_ed.button("✏️ Edit"):
-                if c_id in filtered_df['id'].values:
-                    row = filtered_df[filtered_df['id'] == c_id].iloc[0]
+                if target_id in filtered_df['id'].values:
+                    row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']
-                    st.session_state.edit_id = c_id
-                    st.success("Go to Dashboard.")
+                    st.session_state.edit_id = target_id
+                    st.success("Loaded! Go to Dashboard.")
+                else: st.error("ID not found.")
             if c_de.button("🗑️ Delete"):
-                if c_id != 0:
-                    supabase.table('transactions').delete().eq('id', c_id).execute()
+                if target_id != 0:
+                    supabase.table('transactions').delete().eq('id', target_id).execute()
                     st.cache_data.clear()
+                    st.success("Deleted!")
                     st.rerun()
