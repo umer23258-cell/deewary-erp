@@ -146,17 +146,17 @@ if menu == "📊 Dashboard":
     info_col1, info_col2 = st.columns([2, 1])
     
     with info_col1:
-        st.subheader("🚀 Deewary.com ERP System")
-        st.info("""
-        Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
-        manage karne ke liye banaya gaya hai. 
+       st.subheader("🌟 About Deewary.com ERP")
+        st.markdown("""
+        **Simple. Powerful. Organized.**  
+        This system helps you track every rupee spent on your construction projects. No more messy registers or lost records.
         
-        **Zaroori Malomat:**
-        *   **Automation:** Har entry cloud database (Supabase) mein save hoti hai.
-        *   **Security:** Records delete ya edit karne ke liye 'Admin Unlock' lazmi hai.
-        *   **Reporting:** History tab se Excel reports download ki ja sakti hain.
+        **Why use this?**
+        *   **✅ Automatic Backup:** Everything you save is instantly backed up on our cloud server.
+        *   **✅ Data Safety:** Only authorized admins can edit or delete records, keeping your data safe.
+        *   **✅ One-Click Reports:** Get your full history in an Excel sheet with just one button click.
         """)
-
+        st.success("💡 *Quick Tip: Always check the ID number from the History page before trying to edit or delete a record!*")
     with info_col2:
         st.subheader("🛠️ System Support")
         st.markdown(f"""
