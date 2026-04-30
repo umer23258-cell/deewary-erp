@@ -54,9 +54,9 @@ with st.sidebar:
 
     # 2. Phir Project Image
     image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-    st.image(image_url, use_container_width=True, caption="Site View")
+    st.image(image_url, use_container_width=True, caption="Site View: Yousaf Colony")
     
-    # 3. Phir Project Details
+    # 3. Phir Project Details Card
     st.markdown(f"""
         <div style="
             background-color: #f8f9fa; 
@@ -65,15 +65,16 @@ with st.sidebar:
             border-left: 5px solid #FF4B4B;
             color: #1E1E1E;
         ">
-            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Yousaf Colony</h4>
-            <p style="margin: 5px 0; font-size: 13px;"><b>📐 Size:</b> 5 Marla</p>
-            <p style="margin: 5px 0; font-size: 13px;"><b>🏗️ Structure:</b> 2.5 Story</p>
+            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Project Location</h4>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Area:</b> Yousaf Colony</p>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Size:</b> 5 Marla</p>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
         </div>
     """, unsafe_allow_html=True)
     
     st.divider()
     
-    # 4. Admin Access check at the bottom
+    # 4. Admin Access
     is_auth = check_password()
     if is_auth:
         st.success("🔓 Admin Active")
@@ -169,11 +170,40 @@ if menu == "📊 Dashboard":
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
         else:
-            st.warning("Admin unlock lazmi hai form access karne ke liye.")
+            st.warning("Admin unlock required via sidebar.")
 
+    # --- 🟢 RESTORED SOFTWARE INFO SECTION ---
     st.write("##")
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal")
+    info_col1, info_col2 = st.columns([2, 1])
+    
+    with info_col1:
+        st.subheader("🏡 Deewary.com ERP System")
+        st.info("""
+        Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
+        manage karne ke liye banaya gaya hai. 
+        
+        **Important Information:**
+        *   **Automation:** Har entry cloud database (Supabase) mein save hoti hai.
+        *   **Security:** Records delete ya edit karne ke liye 'Admin Unlock' lazmi hai.
+        *   **Reporting:** History tab se Excel reports download ki ja sakti hain.
+        """)
+
+    with info_col2:
+        st.subheader("🛠️ System Support")
+        st.markdown(f"""
+        **Developer:** umer sherin 
+        **Status:** Operational ✅  
+        **Last Update:** April 2026  
+        
+        ---
+        **Shortcuts:**
+        - `R` reload page
+        - `Admin Pass:` admin786
+        """)
+
+    st.divider()
+    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal | Time: {datetime.now().strftime('%H:%M')}")
 
 # --- 6. HISTORY PAGES ---
 else:
@@ -192,10 +222,12 @@ else:
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
 
+        # Excel Download
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
         
+        # Manage Records
         st.divider()
         st.subheader("🛠️ Manage Records")
         if is_auth:
@@ -207,7 +239,7 @@ else:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']
                     st.session_state.edit_id = target_id
-                    st.success("ID Loaded! Dashboard check karein.")
+                    st.success("ID Loaded! Dashboard par jayen.")
                     st.rerun()
                 else:
                     st.error("ID nahi mili.")
@@ -219,4 +251,4 @@ else:
                     st.success("Deleted!")
                     st.rerun()
     else:
-        st.warning("No data found.")
+        st.warning("Database is empty.")
