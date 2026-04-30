@@ -80,15 +80,15 @@ if menu == "📊 Dashboard":
 
     with h_col2:
         st.markdown("""
-            <div style="text-align: center; margin-top: 5px;">
-                <h2 style="font-family: 'Arial Black', sans-serif; font-size: 28px; letter-spacing: 4px; color: #FF4B4B; text-transform: uppercase; margin-bottom: 0px;">
+            <div style="text-align: center; margin-top: 5px; background-color: #1E1E1E; padding: 15px; border-radius: 15px; border: 1px solid #333;">
+                <h2 style="font-family: 'Arial Black', sans-serif; font-size: 28px; letter-spacing: 4px; color: #FF4B4B; text-transform: uppercase; margin: 0;">
                     DEEWARY.COM
                 </h2>
-                <hr style="width: 12%; margin: 4px auto; border: 1px solid #FF4B4B; border-radius: 5px;">
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #555; letter-spacing: 2px; margin-bottom: 2px; font-weight: 600;">
+                <hr style="width: 15%; margin: 8px auto; border: 1px solid #FF4B4B;">
+                <p style="font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #FFFFFF; letter-spacing: 2px; margin-bottom: 5px; font-weight: 500;">
                     REAL ESTATE & CONSTRUCTION MANAGEMENT
                 </p>
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 13px; color: #1E1E1E; font-weight: 700; margin-top: 0px;">
+                <p style="font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #FF4B4B; font-weight: 700; margin: 0;">
                     C.E.O: SARDAR SAMI ULLAH
                 </p>
             </div>
