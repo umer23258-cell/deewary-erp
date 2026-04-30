@@ -25,10 +25,11 @@ def fetch_data():
 def check_password():
     if "authenticated" not in st.session_state:
         st.session_state["authenticated"] = False
+    
     if st.session_state["authenticated"]:
         return True
     
-    with st.sidebar.expander("🔐 Admin Access"):
+    with st.sidebar.expander("🔐 Admin Access", expanded=True):
         pwd = st.text_input("Admin Password", type="password")
         if st.button("Unlock"):
             if pwd == st.secrets.get("ADMIN_PASSWORD", "admin786"):
@@ -38,15 +39,47 @@ def check_password():
                 st.error("Wrong password!")
     return False
 
-# --- 4. SIDEBAR MENU ---
-st.sidebar.title("🏗️ DEEWARY.COM ERP")
-menu = st.sidebar.radio("Navigation", [
-    "📊 Dashboard", 
-    "💰 Income History", 
-    "👷 Labor History", 
-    "🏗️ Material History",
-    "🔍 Search & All Reports"
-])
+# --- 4. SIDEBAR MENU & PROJECT INFO ---
+with st.sidebar:
+    # Project Image from your link
+    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
+    st.image(image_url, use_container_width=True)
+    
+    # Professional Project Card
+    st.markdown(f"""
+        <div style="
+            background-color: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 10px; 
+            border-left: 5px solid #FF4B4B;
+            color: #1E1E1E;
+            margin-bottom: 20px;
+        ">
+            <h4 style="margin: 0; color: #FF4B4B;">📍 Yousaf Colony</h4>
+            <p style="margin: 5px 0; font-size: 14px;"><b>📐 Size:</b> 5 Marla</p>
+            <p style="margin: 5px 0; font-size: 14px;"><b>🏗️ Structure:</b> 2.5 Story</p>
+            <p style="margin: 0; font-size: 12px; color: #666;">Project Status: Active</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.title("🏗️ DEEWARY.COM ERP")
+    menu = st.radio("Navigation", [
+        "📊 Dashboard", 
+        "💰 Income History", 
+        "👷 Labor History", 
+        "🏗️ Material History",
+        "🔍 Search & All Reports"
+    ])
+    
+    st.divider()
+    
+    # Check Admin Access in Sidebar
+    is_auth = check_password()
+    if is_auth:
+        st.success("🔓 Admin Access Active")
+        if st.button("Logout"):
+            st.session_state["authenticated"] = False
+            st.rerun()
 
 df = fetch_data()
 
@@ -81,7 +114,7 @@ if menu == "📊 Dashboard":
         st.warning(f"⚠️ Editing Mode Active (Record ID: {st.session_state.edit_id})")
 
     if "show_form" in st.session_state:
-        if check_password():
+        if is_auth:
             # Setup form defaults for Add vs Edit
             defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
             
@@ -138,7 +171,7 @@ if menu == "📊 Dashboard":
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
         else:
-            st.warning("Admin authentication required.")
+            st.warning("Admin authentication required via sidebar.")
 
     # --- SOFTWARE INFO SECTION ---
     st.write("##")
@@ -146,38 +179,27 @@ if menu == "📊 Dashboard":
     info_col1, info_col2 = st.columns([2, 1])
     
     with info_col1:
-        st.subheader(" Deewary.com ERP System")
+        st.subheader("🏡 Deewary.com ERP System")
         st.info("""
         Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
         manage karne ke liye banaya gaya hai. 
-        
-        **important information:**
-        *   **Automation:** Har entry cloud database (Supabase) mein save hoti hai.
-        *   **Security:** Records delete ya edit karne ke liye 'Admin Unlock' lazmi hai.
-        *   **Reporting:** History tab se Excel reports download ki ja sakti hain.
         """)
 
     with info_col2:
         st.subheader("🛠️ System Support")
         st.markdown(f"""
-        **Developer:** umer sherin 
         **Status:** Operational ✅  
+        **Project:** Yousaf Colony  
         **Last Update:** April 2026  
-        
-        ---
-        **Shortcuts:**
-        - `R` reload page
-        - `Admin Pass:` -----
         """)
 
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal | Time: {datetime.now().strftime('%H:%M')}")
+    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal")
 
 # --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
-        # Filter Logic
         if "Income" in menu: filtered_df = df[df['type'] == 'Income']
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
@@ -191,17 +213,15 @@ else:
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
 
-        # Excel Download
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
         
-        # Manage Records (Edit/Delete)
         st.divider()
         st.subheader("🛠️ Manage Records")
-        if check_password():
+        if is_auth:
             c_id, c_ed, c_de = st.columns([1, 1, 1])
-            target_id = c_id.number_input("Enter ID", step=1, value=0)
+            target_id = c_id.number_input("Enter ID to Edit/Delete", step=1, value=0)
             
             if c_ed.button("✏️ Edit"):
                 if target_id in filtered_df['id'].values:
@@ -209,6 +229,7 @@ else:
                     st.session_state.show_form = row['type']
                     st.session_state.edit_id = target_id
                     st.success("ID Loaded! Ab 'Dashboard' par jayen.")
+                    st.rerun()
                 else:
                     st.error("ID is view mein nahi mili.")
 
@@ -218,5 +239,7 @@ else:
                     st.cache_data.clear()
                     st.success("Record Deleted!")
                     st.rerun()
+        else:
+            st.warning("Admin unlock lazmi hai records manage karne ke liye.")
     else:
         st.warning("Database khali hai.")
