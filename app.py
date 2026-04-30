@@ -36,46 +36,68 @@ def check_password():
                 st.error("Wrong password!")
     return False
 
-# --- 4. SIDEBAR MENU & MULTI-PROJECT SWITCHER ---
+# --- 4. PROJECT LIST MANAGEMENT ---
+# Hum session state use kar rahe hain taake projects list dynamically barhti rahe
+if "projects" not in st.session_state:
+    st.session_state.projects = ["Yousaf Colony"]
+
+# --- 5. SIDEBAR ---
 with st.sidebar:
     st.title("🏗️ DEEWARY.COM ERP")
-    
-    # --- PROJECT SELECTOR ---
-    st.subheader("📁 Select Project")
-    project_list = ["Yousaf Colony (5 Marla)", "Gulberg Site (10 Marla)", "Pindi Gheb Project"]
-    selected_project = st.selectbox("Current Active Site:", project_list)
-    
-    st.divider()
     
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
         "💰 Income History", 
         "👷 Labor History", 
         "🏗️ Material History",
+        "📁 Projects Manager",
         "🔍 All Reports"
     ])
     
     st.divider()
     
-    # Dynamic Site Image (Aap different projects ke liye different URLs bhi laga sakte hain)
-    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-    st.image(image_url, use_container_width=True, caption=f"Active: {selected_project}")
+    # Project Selection
+    selected_project = st.selectbox("Select Active Project:", st.session_state.projects)
     
     st.divider()
     is_auth = check_password()
 
+# Data Fetching
 df_raw = fetch_data()
 
-# --- FILTER DATA BY PROJECT ---
+# Filtering data for the selected project
 if not df_raw.empty and 'project' in df_raw.columns:
     df = df_raw[df_raw['project'] == selected_project]
 else:
-    df = df_raw.copy()
+    df = df_raw.copy() if df_raw.empty else pd.DataFrame()
 
-# --- 5. DASHBOARD PAGE ---
-if menu == "📊 Dashboard":
-    st.title(f"Analytics: {selected_project}")
+# --- 6. PROJECTS MANAGER (NEW PROJECT CREATION) ---
+if menu == "📁 Projects Manager":
+    st.title("Manage Your Projects")
     
+    if is_auth:
+        st.subheader("Add a New Site/Project")
+        new_p_name = st.text_input("Enter Project Name (e.g. Gulberg Phase 2)")
+        if st.button("🚀 Create Project & Start Fresh"):
+            if new_p_name and new_p_name not in st.session_state.projects:
+                st.session_state.projects.append(new_p_name)
+                st.success(f"Project '{new_p_name}' created! Select it from the sidebar to start.")
+                st.rerun()
+            else:
+                st.warning("Please enter a unique project name.")
+        
+        st.divider()
+        st.write("### Current Active Projects:")
+        for p in st.session_state.projects:
+            st.write(f"- {p}")
+    else:
+        st.warning("Please unlock Admin Access to manage projects.")
+
+# --- 7. DASHBOARD PAGE ---
+elif menu == "📊 Dashboard":
+    st.title(f"Dashboard: {selected_project}")
+    
+    # Dashboard Metrics (Automatic Zero for new projects)
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
@@ -90,104 +112,68 @@ if menu == "📊 Dashboard":
 
     st.divider()
     
+    # Entry Forms
     is_editing = "edit_id" in st.session_state
     if not is_editing:
-        st.subheader("Add New Entry")
+        st.subheader("Quick Entry")
         c1, c2, c3 = st.columns(3)
-        if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
-        if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
-        if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
-    else:
-        st.warning(f"⚠️ Editing Mode Active (ID: {st.session_state.edit_id})")
+        if c1.button("➕ Income"): st.session_state.show_form = "Income"
+        if c2.button("👷 Labor"): st.session_state.show_form = "Labor"
+        if c3.button("🏗️ Material"): st.session_state.show_form = "Material"
 
     if "show_form" in st.session_state:
         if is_auth:
-            defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
-            if is_editing and not df.empty:
-                edit_row = df[df['id'] == st.session_state.edit_id]
-                if not edit_row.empty:
-                    row = edit_row.iloc[0]
-                    defaults = {"date": datetime.strptime(str(row['date']), '%Y-%m-%d'), "name": str(row['name']), "amount": float(row['amount']), "detail": str(row['detail']), "occ": str(row.get('occupation', "")), "rec": str(row.get('received_by', "")), "meth": str(row.get('pay_method', "Cash"))}
-
-            with st.expander(f"Record for {selected_project}", expanded=True):
-                with st.form("entry_form"):
-                    st.write(f"**Project:** {selected_project} | **Category:** {st.session_state.show_form}")
-                    d_date = st.date_input("Date", defaults["date"])
-                    d_name = st.text_input("Title", defaults["name"])
-                    d_amt = st.number_input("Amount", min_value=0.0, value=defaults["amount"])
-                    d_det = st.text_area("Details", defaults["detail"])
+            with st.expander(f"New {st.session_state.show_form} for {selected_project}", expanded=True):
+                with st.form("main_form"):
+                    d_date = st.date_input("Date", datetime.now())
+                    d_name = st.text_input("Title")
+                    d_amt = st.number_input("Amount", min_value=0.0)
+                    d_det = st.text_area("Notes")
                     
+                    # Labor specific fields
                     d_occ, d_rec, d_meth = "", "", ""
                     if st.session_state.show_form == "Labor":
-                        col_a, col_b, col_c = st.columns(3)
-                        d_occ = col_a.text_input("Occupation", defaults["occ"])
-                        d_rec = col_b.text_input("Received By", defaults["rec"])
-                        d_meth = col_c.selectbox("Method", ["Cash", "Online"], index=0 if defaults["meth"] == "Cash" else 1)
+                        ca, cb, cc = st.columns(3)
+                        d_occ = ca.text_input("Occupation")
+                        d_rec = cb.text_input("Received By")
+                        d_meth = cc.selectbox("Method", ["Cash", "Online"])
 
-                    if st.form_submit_button("Save Record"):
+                    if st.form_submit_button("Save to Project"):
                         payload = {
-                            "date": str(d_date), "type": st.session_state.show_form, "project": selected_project,
-                            "name": d_name, "amount": d_amt, "detail": d_det,
-                            "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth
+                            "date": str(d_date), "type": st.session_state.show_form, 
+                            "project": selected_project, "name": d_name, "amount": d_amt, 
+                            "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth
                         }
-                        try:
-                            if is_editing: supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
-                            else: supabase.table('transactions').insert(payload).execute()
-                            st.cache_data.clear()
-                            [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
-                            st.success("Data Synced Successfully!")
-                            st.rerun()
-                        except Exception as e: st.error(f"Error: {e}")
-            if st.button("❌ Cancel"):
-                [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
+                        supabase.table('transactions').insert(payload).execute()
+                        st.cache_data.clear()
+                        st.session_state.pop("show_form")
+                        st.success("Saved!")
+                        st.rerun()
+            if st.button("Cancel"):
+                st.session_state.pop("show_form")
                 st.rerun()
-        else: st.warning("Please unlock Admin Access from the sidebar.")
 
-    # --- ABOUT & SUPPORT SECTIONS ---
+    # Support & About (Niche ka wahi professional layout)
     st.write("##")
     st.divider()
-    about_col1, about_col2 = st.columns([2, 1])
-    with about_col1:
-        st.subheader("🏢 About Deewary.com")
-        st.markdown("Deewary.com is a leading Real Estate & Construction firm specializing in premium home development and transparent project management.")
-    with about_col2:
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        st.subheader("🏡 Deewary.com ERP")
+        st.write("Managing multiple construction sites with precision and transparency.")
+    with col_b:
         whatsapp_url = "https://wa.me/923115190118"
-        st.markdown(f"""
-        <style>
-            .wa-btn {{ background-color: #25D366; color: black !important; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; display: block; text-decoration: none; border: 1px solid #128C7E; }}
-            .wa-btn:hover {{ background-color: #128C7E !important; color: white !important; transform: scale(1.02); transition: 0.2s; }}
-        </style>
-        <a href="{whatsapp_url}" target="_blank" class="wa-btn">💬 WhatsApp Support</a>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<a href="{whatsapp_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:black; padding:10px; border-radius:10px; text-align:center; font-weight:bold;">💬 WhatsApp Support</div></a>', unsafe_allow_html=True)
 
-# --- 6. HISTORY PAGES ---
+# --- 8. HISTORY PAGES ---
 else:
-    st.title(f"{menu} ({selected_project})")
+    st.title(f"{menu} - {selected_project}")
     if not df.empty:
-        if "Income" in menu: filtered_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
-        else: filtered_df = df.copy()
-        
-        st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"💰 **Selected Category Total: PKR {filtered_df['amount'].sum():,.2f}**")
-        
-        # Excel Download
-        buffer = io.BytesIO(); filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Export Project Data", buffer.getvalue(), f"{selected_project}_Report.xlsx")
-        
-        st.divider()
-        if is_auth:
-            c_id, c_ed, c_de = st.columns([1, 1, 1])
-            target_id = c_id.number_input("Record ID", step=1, value=0)
-            if c_ed.button("✏️ Edit"):
-                if target_id in filtered_df['id'].values:
-                    row = filtered_df[filtered_df['id'] == target_id].iloc[0]
-                    st.session_state.show_form = row['type']; st.session_state.edit_id = target_id
-                    st.rerun()
-            if c_de.button("🗑️ Delete"):
-                if target_id != 0:
-                    supabase.table('transactions').delete().eq('id', target_id).execute()
-                    st.cache_data.clear(); st.rerun()
+        if "Income" in menu: f_df = df[df['type'] == 'Income']
+        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
+        elif "Material" in menu: f_df = df[df['type'] == 'Material']
+        else: f_df = df.copy()
+
+        st.dataframe(f_df, use_container_width=True)
+        st.info(f"💰 Project Total: PKR {f_df['amount'].sum():,.2f}")
     else:
-        st.warning(f"No records found for {selected_project}.")
+        st.warning(f"No transactions yet for {selected_project}.")
