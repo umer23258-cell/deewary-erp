@@ -5,6 +5,7 @@ from datetime import datetime
 import io
 
 # --- 1. SUPABASE SETUP ---
+# Ensure these are set in your .streamlit/secrets.toml
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
@@ -47,49 +48,33 @@ menu = st.sidebar.radio("Navigation", [
     "🔍 Search & All Reports"
 ])
 
-# Sidebar Info Box
-st.sidebar.divider()
-st.sidebar.markdown(f"""
-    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 5px solid #FF4B4B; color: #333;">
-        <p style="margin: 0; font-size: 13px;"><b>Active Site:</b> Yousaf Colony</p>
-        <p style="margin: 0; font-size: 13px;"><b>Project:</b> 5 Marla (2.5 Story)</p>
-    </div>
-""", unsafe_allow_html=True)
-
 df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # --- CUSTOM CSS FOR PROFESSIONAL LOOK ---
-    st.markdown("""
-        <style>
-        [data-testid="stMetricValue"] { font-size: 26px !important; font-weight: 700; color: #1E1E1E; }
-        [data-testid="stMetricLabel"] { font-size: 14px !important; color: #666; }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # --- HEADER SECTION (Logo Left, Title Mid) ---
+    # --- HEADER SECTION (Logo Left, Text Mid) ---
     h_col1, h_col2, h_col3 = st.columns([1.2, 4, 1.2])
     
     with h_col1:
-        # Aapka Logo
-        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=150)
+        # Logo side par aur thora bara
+        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=160)
 
     with h_col2:
+        # Title mid mein aur stylish line ke saath
         st.markdown("""
             <div style="text-align: center; margin-top: 10px;">
-                <h1 style="font-family: 'Arial Black', sans-serif; font-size: 40px; letter-spacing: 7px; color: #FF4B4B; text-transform: uppercase; margin-bottom: 0px;">
+                <h1 style="font-family: 'Arial Black', sans-serif; font-size: 42px; letter-spacing: 8px; color: #FF4B4B; text-transform: uppercase; margin-bottom: 0px;">
                     DEEWARY.COM
                 </h1>
                 <hr style="width: 30%; margin: auto; border: 1.5px solid #FF4B4B; border-radius: 5px;">
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #555; letter-spacing: 3px; margin-top: 5px; font-weight: 500;">
+                <p style="font-family: 'Segoe UI', sans-serif; font-size: 15px; color: #555; letter-spacing: 3px; margin-top: 5px; font-weight: 500;">
                     REAL ESTATE & CONSTRUCTION MANAGEMENT
                 </p>
             </div>
         """, unsafe_allow_html=True)
 
-    st.write("##")
-    st.markdown("<h4 style='text-align: center; color: #444; font-size: 18px;'>Capital Flow Analytics</h4>", unsafe_allow_html=True)
+    st.write("##") # Thori space ke liye
+    st.title("Capital Flow Analytics")
     
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
@@ -119,6 +104,7 @@ if menu == "📊 Dashboard":
 
     if "show_form" in st.session_state:
         if check_password():
+            # Setup form defaults for Add vs Edit
             defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
             
             if is_editing and not df.empty:
@@ -176,27 +162,43 @@ if menu == "📊 Dashboard":
         else:
             st.warning("Admin authentication required.")
 
-    # --- INFO SECTION ---
+    # --- SOFTWARE INFO SECTION ---
     st.write("##")
     st.divider()
     info_col1, info_col2 = st.columns([2, 1])
     
     with info_col1:
-        st.subheader("🏢 About Deewary.com ERP")
-        st.info("A specialized portal for real estate management and construction cost tracking.")
+        st.subheader(" Deewary.com ERP System")
+        st.info("""
+        Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
+        manage karne ke liye banaya gaya hai. 
+        
+        **important information:**
+        *   **Automation:** Har entry cloud database (Supabase) mein save hoti hai.
+        *   **Security:** Records delete ya edit karne ke liye 'Admin Unlock' lazmi hai.
+        *   **Reporting:** History tab se Excel reports download ki ja sakti hain.
+        """)
 
     with info_col2:
-        st.subheader("🛠️ Support")
-        whatsapp_url = "https://wa.me/923115190118"
-        st.markdown(f'<a href="{whatsapp_url}" style="color: #25D366; text-decoration: none; font-weight: bold;">💬 WhatsApp Support</a>', unsafe_allow_html=True)
+        st.subheader("🛠️ System Support")
+        st.markdown(f"""
+        **Developer:** umer sherin 
+        **Status:** Operational ✅  
+        **Last Update:** April 2026  
+        
+        ---
+        **Shortcuts:**
+        - `R` reload page
+        """)
 
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal")
+    st.caption(f"© {datetime.now().year} Deewary.com | Project Management Portal | Time: {datetime.now().strftime('%H:%M')}")
 
 # --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
+        # Filter Logic
         if "Income" in menu: filtered_df = df[df['type'] == 'Income']
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
@@ -208,12 +210,14 @@ else:
             filtered_df = filtered_df[mask]
 
         st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.0f}**")
+        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
 
+        # Excel Download
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
         
+        # Manage Records (Edit/Delete)
         st.divider()
         st.subheader("🛠️ Manage Records")
         if check_password():
@@ -225,10 +229,10 @@ else:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']
                     st.session_state.edit_id = target_id
-                    st.success("ID Loaded! Dashboard check karein.")
+                    st.success("ID Loaded! Ab 'Dashboard' par jayen.")
                     st.rerun()
                 else:
-                    st.error("ID nahi mili.")
+                    st.error("ID is view mein nahi mili.")
 
             if c_de.button("🗑️ Delete"):
                 if target_id != 0:
