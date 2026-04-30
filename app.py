@@ -145,7 +145,7 @@ if menu == "📊 Dashboard":
     st.divider()
     info_col1, info_col2 = st.columns([2, 1])
     
-    with info_col1:
+   
        st.subheader("🌟 About Deewary.com ERP")
         st.markdown("""
         **Simple. Powerful. Organized.**  
