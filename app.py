@@ -66,20 +66,12 @@ if menu == "📊 Dashboard":
 
     st.divider()
     
-    # --- FORMS & EDIT LOGIC ---
-    is_editing = "edit_id" in st.session_state
-    if not is_editing:
-        st.subheader("Quick Actions")
-        c1, c2, c3 = st.columns(3)
-        if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
-        if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
-        if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
-    else:
-        st.warning(f"⚠️ Editing Mode Active (Record ID: {st.session_state.edit_id})")
-
+    # --- FORMS ---
     if "show_form" in st.session_state:
         if check_password():
+            is_editing = "edit_id" in st.session_state
             defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
+            
             if is_editing and not df.empty:
                 row = df[df['id'] == st.session_state.edit_id].iloc[0]
                 defaults = {
@@ -101,7 +93,7 @@ if menu == "📊 Dashboard":
                         d_rec = col_b.text_input("Received By", defaults["rec"])
                         d_meth = col_c.selectbox("Method", ["Cash", "Online"], index=0 if defaults["meth"] == "Cash" else 1)
 
-                    if st.form_submit_button("Update Record" if is_editing else "Save to Cloud"):
+                    if st.form_submit_button("Update" if is_editing else "Save"):
                         payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
                         try:
                             if is_editing: supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
@@ -109,57 +101,59 @@ if menu == "📊 Dashboard":
                             st.cache_data.clear()
                             for k in ["show_form", "edit_id"]: 
                                 if k in st.session_state: del st.session_state[k]
-                            st.success("Synced Successfully!")
+                            st.success("Synced!")
                             st.rerun()
                         except Exception as e: st.error(f"Error: {e}")
             if st.button("❌ Close Form"):
                 for k in ["show_form", "edit_id"]: 
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
+    else:
+        st.subheader("Quick Actions")
+        qa1, qa2, qa3 = st.columns(3)
+        if qa1.button("➕ Add Income"): st.session_state.show_form = "Income"; st.rerun()
+        if qa2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"; st.rerun()
+        if qa3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"; st.rerun()
 
-    # --- 7. PROJECT SPOTLIGHT (Using your provided link) ---
+    # --- 7. PROJECT SLIDER ---
     st.write("##")
     st.divider()
-    st.subheader("🏠 Current Project Spotlight")
-    
-    st.image("https://i.ibb.co/6Jbx8yjD/Whats-App-Image-2026-04-30-at-12-11-01-PM.jpg", 
-             width=450, caption="Project: Yousaf Colony Renovation")
+    st.subheader("🏠 Project Gallery: Yousaf Colony")
 
-    st.markdown("""
-    ### **Yousaf Colony - Full Renovation**
-    We are transforming this property into a modern living space.
-    
-    *   **📍 Location:** Yousaf Colony
-    *   **📏 Size:** 5 Marla Plot
-    *   **🏗️ Structure:** 2.5 Story House
-    *   **🛠️ Work Type:** Complete Interior & Exterior Renovation
-    
-    ---
-    """)
-    st.write("🏗️ **Construction Progress:**")
-    st.progress(70)
-    st.caption("Current Phase: Finishing, Paint, and Electrical work.")
+    # Yahan apne mazeed 4-5 links daltay jayen comma laga kar
+    project_images = [
+        "https://i.ibb.co/6Jbx8yjD/Whats-App-Image-2026-04-30-at-12-11-01-PM.jpg",
+        "https://i.ibb.co/6R0yR8Xz/1JK5M0FR.jpg"
+        "https://i.ibb.co/ZRgY9wLC/Whats-App-Image-2026-04-30-at-12-25-05-PM.jpg"
+        "https://i.ibb.co/35yGYt3H/Whats-App-Image-2026-04-30-at-12-25-04-PM.jpg"
+        "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
+        # "LINK_3",
+        # "LINK_4",
+        # "LINK_5"
+    ]
 
-    # --- 8. ABOUT ERP (Simple English) ---
-    st.write("##")
-    st.divider()
-    info_col1, info_col2 = st.columns([2, 1])
-    with info_col1:
-        st.subheader("🌟 About Deewary.com ERP")
-        st.markdown("""
-        **Simple. Powerful. Organized.**  
-        Everything you save is instantly backed up on our cloud server. 
+    if 'img_idx' not in st.session_state:
+        st.session_state.img_idx = 0
+
+    col_img, col_txt = st.columns([1, 1])
+
+    with col_img:
+        st.image(project_images[st.session_state.img_idx], width=350, caption=f"View {st.session_state.img_idx + 1} of {len(project_images)}")
         
-        *   **✅ Cloud Backup:** Securely stored in Supabase.
-        *   **✅ Data Safety:** Admin access required for edits.
-        *   **✅ Instant Reports:** Export history to Excel anytime.
-        """)
-    with info_col2:
-        st.subheader("⚙️ System Info")
-        st.markdown(f"**Status:** Operational 🚀\n\n**Version:** 2.0.2\n\n**Dev:** IT Team")
+        btn1, btn2 = st.columns(2)
+        if btn1.button("⬅️ Previous"):
+            st.session_state.img_idx = (st.session_state.img_idx - 1) % len(project_images)
+            st.rerun()
+        if btn2.button("Next ➡️"):
+            st.session_state.img_idx = (st.session_state.img_idx + 1) % len(project_images)
+            st.rerun()
+
+    with col_txt:
+        st.markdown(f"### **Yousaf Colony Renovation**\n*   **📍 Location:** Yousaf Colony\n*   **🏗️ Status:** Finishing Phase")
+        st.progress(70)
 
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Precision in Every Project.")
+    st.caption(f"© {datetime.now().year} Deewary.com | V2.0.3")
 
 # --- 6. HISTORY PAGES ---
 else:
@@ -170,33 +164,30 @@ else:
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
 
-        search = st.text_input("🔍 Search records...")
+        search = st.text_input("🔍 Search...")
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             filtered_df = filtered_df[mask]
 
         st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
-
+        
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Download Excel Report", buffer.getvalue(), f"{menu}.xlsx")
+        st.download_button("📥 Export Excel", buffer.getvalue(), f"{menu}.xlsx")
         
-        st.divider()
-        st.subheader("🛠️ Manage Records")
         if check_password():
-            c_id, c_ed, c_de = st.columns([1, 1, 1])
-            target_id = c_id.number_input("Enter ID", step=1, value=0)
+            st.divider()
+            st.subheader("🛠️ Admin Controls")
+            c_id = st.number_input("Record ID", step=1, value=0)
+            c_ed, c_de = st.columns(2)
             if c_ed.button("✏️ Edit"):
-                if target_id in filtered_df['id'].values:
-                    row = filtered_df[filtered_df['id'] == target_id].iloc[0]
+                if c_id in filtered_df['id'].values:
+                    row = filtered_df[filtered_df['id'] == c_id].iloc[0]
                     st.session_state.show_form = row['type']
-                    st.session_state.edit_id = target_id
-                    st.success("Loaded! Go to Dashboard.")
-                else: st.error("ID not found.")
+                    st.session_state.edit_id = c_id
+                    st.success("Go to Dashboard.")
             if c_de.button("🗑️ Delete"):
-                if target_id != 0:
-                    supabase.table('transactions').delete().eq('id', target_id).execute()
+                if c_id != 0:
+                    supabase.table('transactions').delete().eq('id', c_id).execute()
                     st.cache_data.clear()
-                    st.success("Deleted!")
                     st.rerun()
