@@ -36,43 +36,45 @@ def check_password():
                 st.error("Wrong password!")
     return False
 
-# --- 4. SIDEBAR MENU & PROJECT INFO ---
+# --- 4. SIDEBAR MENU & MULTI-PROJECT SWITCHER ---
 with st.sidebar:
     st.title("🏗️ DEEWARY.COM ERP")
+    
+    # --- PROJECT SELECTOR ---
+    st.subheader("📁 Select Project")
+    project_list = ["Yousaf Colony (5 Marla)", "Gulberg Site (10 Marla)", "Pindi Gheb Project"]
+    selected_project = st.selectbox("Current Active Site:", project_list)
+    
+    st.divider()
+    
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
         "💰 Income History", 
         "👷 Labor History", 
         "🏗️ Material History",
-        "🔍 Search & All Reports"
+        "🔍 All Reports"
     ])
     
     st.divider()
-    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-    st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
     
-    st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 5px solid #FF4B4B; color: #1E1E1E;">
-            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Current Project</h4>
-            <p style="margin: 5px 0; font-size: 13px;"><b>Location:</b> Yousaf Colony</p>
-            <p style="margin: 5px 0; font-size: 13px;"><b>Size:</b> 5 Marla</p>
-            <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
-        </div>
-    """, unsafe_allow_html=True)
+    # Dynamic Site Image (Aap different projects ke liye different URLs bhi laga sakte hain)
+    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
+    st.image(image_url, use_container_width=True, caption=f"Active: {selected_project}")
     
     st.divider()
     is_auth = check_password()
-    if is_auth:
-        st.success("🔓 Admin Active")
-        if st.button("Logout"):
-            st.session_state["authenticated"] = False
-            st.rerun()
 
-df = fetch_data()
+df_raw = fetch_data()
+
+# --- FILTER DATA BY PROJECT ---
+if not df_raw.empty and 'project' in df_raw.columns:
+    df = df_raw[df_raw['project'] == selected_project]
+else:
+    df = df_raw.copy()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    st.title("Capital Flow Analytics")
+    st.title(f"Analytics: {selected_project}")
     
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
@@ -82,15 +84,15 @@ if menu == "📊 Dashboard":
         inc, exp, bal = 0, 0, 0
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total Income", f"PKR {inc:,.0f}")
-    col2.metric("Total Expenses", f"PKR {exp:,.0f}")
+    col1.metric("Project Income", f"PKR {inc:,.0f}")
+    col2.metric("Project Expenses", f"PKR {exp:,.0f}")
     col3.metric("Net Balance", f"PKR {bal:,.0f}")
 
     st.divider()
     
     is_editing = "edit_id" in st.session_state
     if not is_editing:
-        st.subheader("Quick Actions")
+        st.subheader("Add New Entry")
         c1, c2, c3 = st.columns(3)
         if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
         if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
@@ -105,19 +107,16 @@ if menu == "📊 Dashboard":
                 edit_row = df[df['id'] == st.session_state.edit_id]
                 if not edit_row.empty:
                     row = edit_row.iloc[0]
-                    defaults = {
-                        "date": datetime.strptime(str(row['date']), '%Y-%m-%d'),
-                        "name": str(row['name']), "amount": float(row['amount']),
-                        "detail": str(row['detail']), "occ": str(row.get('occupation', "")),
-                        "rec": str(row.get('received_by', "")), "meth": str(row.get('pay_method', "Cash"))
-                    }
+                    defaults = {"date": datetime.strptime(str(row['date']), '%Y-%m-%d'), "name": str(row['name']), "amount": float(row['amount']), "detail": str(row['detail']), "occ": str(row.get('occupation', "")), "rec": str(row.get('received_by', "")), "meth": str(row.get('pay_method', "Cash"))}
 
-            with st.expander(f"{'Edit' if is_editing else 'New'} {st.session_state.show_form} Entry", expanded=True):
+            with st.expander(f"Record for {selected_project}", expanded=True):
                 with st.form("entry_form"):
+                    st.write(f"**Project:** {selected_project} | **Category:** {st.session_state.show_form}")
                     d_date = st.date_input("Date", defaults["date"])
-                    d_name = st.text_input("Name / Description", defaults["name"])
+                    d_name = st.text_input("Title", defaults["name"])
                     d_amt = st.number_input("Amount", min_value=0.0, value=defaults["amount"])
                     d_det = st.text_area("Details", defaults["detail"])
+                    
                     d_occ, d_rec, d_meth = "", "", ""
                     if st.session_state.show_form == "Labor":
                         col_a, col_b, col_c = st.columns(3)
@@ -125,117 +124,70 @@ if menu == "📊 Dashboard":
                         d_rec = col_b.text_input("Received By", defaults["rec"])
                         d_meth = col_c.selectbox("Method", ["Cash", "Online"], index=0 if defaults["meth"] == "Cash" else 1)
 
-                    if st.form_submit_button("Update Record" if is_editing else "Save to Cloud"):
-                        payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
+                    if st.form_submit_button("Save Record"):
+                        payload = {
+                            "date": str(d_date), "type": st.session_state.show_form, "project": selected_project,
+                            "name": d_name, "amount": d_amt, "detail": d_det,
+                            "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth
+                        }
                         try:
                             if is_editing: supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
                             else: supabase.table('transactions').insert(payload).execute()
                             st.cache_data.clear()
                             [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
-                            st.success("Transaction Synced!")
+                            st.success("Data Synced Successfully!")
                             st.rerun()
                         except Exception as e: st.error(f"Error: {e}")
-            if st.button("❌ Close Form"):
+            if st.button("❌ Cancel"):
                 [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
                 st.rerun()
-        else: st.warning("Admin unlock required via sidebar.")
+        else: st.warning("Please unlock Admin Access from the sidebar.")
 
-    # --- 🟢 ABOUT DEEWARY.COM ---
+    # --- ABOUT & SUPPORT SECTIONS ---
     st.write("##")
     st.divider()
-    st.subheader("🏢 About Deewary.com")
-    about_col1, about_col2 = st.columns([1.5, 1])
-    
+    about_col1, about_col2 = st.columns([2, 1])
     with about_col1:
-        st.markdown("""
-        **Deewary.com** aik premium Real Estate aur Construction firm hai jo modern architecture aur quality construction mein maharat rakhti hai. Hamara maqsad logon ko unke khuwabon ka ghar tameer kar ke dena hai.
-        
-        **Services:**
-        *   **Premium Construction:** Islamabad/Pindi mein A+ quality gharon ki tameer.
-        *   **Real Estate Portfolio:** Plots aur houses ki investment advice.
-        *   **Digital Transparency:** ERP system ke zariye clients ka aitmad.
-        """)
-
+        st.subheader("🏢 About Deewary.com")
+        st.markdown("Deewary.com is a leading Real Estate & Construction firm specializing in premium home development and transparent project management.")
     with about_col2:
-        st.markdown("""
-        <div style="background-color: #1E1E1E; padding: 20px; border-radius: 15px; color: white; border: 1px solid #4B4B4B;">
-            <h4 style="margin-top: 0; color: #FF4B4B;">🚀 Our Vision</h4>
-            <p style="font-size: 14px;">"Technology ke zariye construction industry mein imandari aur safafiyat laana."</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # --- 🟢 SYSTEM SUPPORT & STABLE WHATSAPP BUTTON ---
-    st.divider()
-    supp_col1, supp_col2 = st.columns([2, 1])
-    
-    with supp_col1:
-        st.subheader("🖥️ ERP System Info")
-        st.info("Yeh portal internal records aur financial tracking ke liye design kiya gaya hai.")
-    
-    with supp_col2:
-        st.subheader("🛠️ System Support")
         whatsapp_url = "https://wa.me/923115190118"
-        
         st.markdown(f"""
         <style>
-            .wa-btn {{
-                background-color: #25D366;
-                color: #000000 !important;
-                padding: 15px 20px;
-                border-radius: 12px;
-                text-align: center;
-                font-weight: 800;
-                font-size: 18px;
-                display: block;
-                text-decoration: none !important;
-                border: 2px solid #128C7E;
-                box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
-                transition: 0.3s;
-            }}
-            .wa-btn:hover {{
-                background-color: #128C7E !important;
-                color: #ffffff !important;
-                transform: translateY(-2px);
-            }}
+            .wa-btn {{ background-color: #25D366; color: black !important; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; display: block; text-decoration: none; border: 1px solid #128C7E; }}
+            .wa-btn:hover {{ background-color: #128C7E !important; color: white !important; transform: scale(1.02); transition: 0.2s; }}
         </style>
-        <a href="{whatsapp_url}" target="_blank" class="wa-btn">
-            💬 WhatsApp Support
-        </a>
-        <p style="font-size: 12px; text-align: center; margin-top: 10px; color: #666;">
-            Developer: umer sherin | Status: Active ✅
-        </p>
+        <a href="{whatsapp_url}" target="_blank" class="wa-btn">💬 WhatsApp Support</a>
         """, unsafe_allow_html=True)
-
-    st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
 
 # --- 6. HISTORY PAGES ---
 else:
-    st.title(menu)
+    st.title(f"{menu} ({selected_project})")
     if not df.empty:
         if "Income" in menu: filtered_df = df[df['type'] == 'Income']
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
-        search = st.text_input("🔍 Search data...")
-        if search:
-            mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
-            filtered_df = filtered_df[mask]
+        
         st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
+        st.info(f"💰 **Selected Category Total: PKR {filtered_df['amount'].sum():,.2f}**")
+        
+        # Excel Download
         buffer = io.BytesIO(); filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
-        st.divider(); st.subheader("🛠️ Manage Records")
+        st.download_button("📥 Export Project Data", buffer.getvalue(), f"{selected_project}_Report.xlsx")
+        
+        st.divider()
         if is_auth:
-            c_id, c_ed, c_de = st.columns([1, 1, 1]); target_id = c_id.number_input("Enter ID", step=1, value=0)
+            c_id, c_ed, c_de = st.columns([1, 1, 1])
+            target_id = c_id.number_input("Record ID", step=1, value=0)
             if c_ed.button("✏️ Edit"):
                 if target_id in filtered_df['id'].values:
                     row = filtered_df[filtered_df['id'] == target_id].iloc[0]
                     st.session_state.show_form = row['type']; st.session_state.edit_id = target_id
-                    st.success("ID Loaded!"); st.rerun()
-                else: st.error("ID nahi mili.")
+                    st.rerun()
             if c_de.button("🗑️ Delete"):
                 if target_id != 0:
                     supabase.table('transactions').delete().eq('id', target_id).execute()
-                    st.cache_data.clear(); st.success("Deleted!"); st.rerun()
-    else: st.warning("No records found.")
+                    st.cache_data.clear(); st.rerun()
+    else:
+        st.warning(f"No records found for {selected_project}.")
