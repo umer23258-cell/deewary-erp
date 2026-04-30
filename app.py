@@ -146,12 +146,12 @@ if menu == "📊 Dashboard":
     info_col1, info_col2 = st.columns([2, 1])
     
     with info_col1:
-        st.subheader("🚀 Deewary.com ERP System")
+        st.subheader(" Deewary.com ERP System")
         st.info("""
         Yeh software **Deewary.com** ke real estate aur construction projects ke financials 
         manage karne ke liye banaya gaya hai. 
         
-        **Zaroori Malomat:**
+        **important information:**
         *   **Automation:** Har entry cloud database (Supabase) mein save hoti hai.
         *   **Security:** Records delete ya edit karne ke liye 'Admin Unlock' lazmi hai.
         *   **Reporting:** History tab se Excel reports download ki ja sakti hain.
@@ -160,14 +160,14 @@ if menu == "📊 Dashboard":
     with info_col2:
         st.subheader("🛠️ System Support")
         st.markdown(f"""
-        **Developer:** [Your Name/IT Team]  
+        **Developer:** umer sherin 
         **Status:** Operational ✅  
         **Last Update:** April 2026  
         
         ---
         **Shortcuts:**
         - `R` reload page
-        - `Admin Pass:` admin786
+        - `Admin Pass:` -----
         """)
 
     st.divider()
