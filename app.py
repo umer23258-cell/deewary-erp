@@ -12,59 +12,34 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- 3. PREMIUM BRANDING & LOGO HEADER ---
+# --- 3. SHORT PROFESSIONAL HEADER ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
-
-    /* Main Branding Header */
-    .branding-card {
-        background: #ffffff;
-        padding: 25px;
-        border-radius: 20px;
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap');
+    
+    .main-header {
         text-align: center;
-        margin-bottom: 35px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0px 15px 35px rgba(0,0,0,0.05);
+        padding: 10px;
+        margin-bottom: 20px;
     }
-    
-    .logo-img {
-        width: 100px;
-        margin-bottom: 15px;
-    }
-
-    .branding-card h1 {
-        color: #1E3A8A !important;
+    .main-header h1 {
         font-family: 'Montserrat', sans-serif !important;
-        font-size: 48px !important;
-        font-weight: 800 !important;
+        color: #1E3A8A !important;
+        font-size: 32px !important;
         margin: 0;
-        letter-spacing: -1px;
+        letter-spacing: 1px;
+    }
+    .main-header p {
+        color: #64748B !important;
+        font-size: 14px !important;
+        margin: 0;
         text-transform: uppercase;
-    }
-    .branding-card p {
-        color: #B8860B !important; /* Golden Color */
-        font-family: 'Playfair Display', serif !important;
-        font-size: 22px !important;
-        margin-top: -5px;
         font-weight: 600;
-        font-style: italic;
-    }
-    
-    /* Global Styles */
-    .stMetric {
-        background: #f8fafc;
-        padding: 15px;
-        border-radius: 12px;
-        border: 1px solid #edf2f7;
     }
     </style>
-    
-    <div class="branding-card">
-        <!-- Logo Placeholder: Aap apna logo URL yahan paste kar sakte hain -->
-        <img src="https://cdn-icons-png.flaticon.com/512/3061/3061184.png" class="logo-img">
+    <div class="main-header">
         <h1>DEEWARY.COM</h1>
-        <p>Real Estate & Construction Company</p>
+        <p>Real Estate & Construction</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -94,7 +69,7 @@ def check_password():
 
 # --- 5. SIDEBAR MENU & PROJECT INFO ---
 with st.sidebar:
-    st.markdown("<h2 style='color:#1E3A8A; font-family:Montserrat;'>🏗️ ERP PANEL</h2>", unsafe_allow_html=True)
+    st.title("🏗️ ERP PANEL")
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
         "💰 Income History", 
@@ -108,10 +83,11 @@ with st.sidebar:
     st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
     
     st.markdown(f"""
-        <div style="background-color: #1E3A8A; padding: 15px; border-radius: 12px; color: white;">
-            <h4 style="margin: 0; color: #FFD700; font-size: 16px; font-family:Montserrat;">📍 Current Project</h4>
-            <p style="margin: 8px 0 0 0; font-size: 13px;"><b>Site:</b> Yousaf Colony</p>
-            <p style="margin: 3px 0; font-size: 13px;"><b>Area:</b> 5 Marla (2.5 Story)</p>
+        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 5px solid #1E3A8A; color: #1E1E1E;">
+            <h4 style="margin: 0; color: #1E3A8A; font-size: 16px;">📍 Current Project</h4>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Location:</b> Yousaf Colony</p>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Size:</b> 5 Marla</p>
+            <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -127,7 +103,7 @@ df = fetch_data()
 
 # --- 6. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    st.markdown("<h3 style='font-family:Montserrat; color:#334155;'>Financial Overview</h3>", unsafe_allow_html=True)
+    st.title("Capital Flow Analytics")
     
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
@@ -145,62 +121,101 @@ if menu == "📊 Dashboard":
     
     is_editing = "edit_id" in st.session_state
     if not is_editing:
-        st.subheader("Manage Transactions")
+        st.subheader("Quick Actions")
         c1, c2, c3 = st.columns(3)
         if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
         if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
         if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
-    
+    else:
+        st.warning(f"⚠️ Editing Mode Active (ID: {st.session_state.edit_id})")
+
     if "show_form" in st.session_state:
         if is_auth:
-            # Form Logic (Wahi same logic jo aapne di thi)
-            with st.expander(f"New {st.session_state.show_form} Entry", expanded=True):
+            defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
+            if is_editing and not df.empty:
+                edit_row = df[df['id'] == st.session_state.edit_id]
+                if not edit_row.empty:
+                    row = edit_row.iloc[0]
+                    defaults = {
+                        "date": datetime.strptime(str(row['date']), '%Y-%m-%d'),
+                        "name": str(row['name']), "amount": float(row['amount']),
+                        "detail": str(row['detail']), "occ": str(row.get('occupation', "")),
+                        "rec": str(row.get('received_by', "")), "meth": str(row.get('pay_method', "Cash"))
+                    }
+
+            with st.expander(f"{'Edit' if is_editing else 'New'} {st.session_state.show_form} Entry", expanded=True):
                 with st.form("entry_form"):
-                    d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Name / Description")
-                    d_amt = st.number_input("Amount", min_value=0.0)
-                    d_det = st.text_area("Details")
+                    d_date = st.date_input("Date", defaults["date"])
+                    d_name = st.text_input("Name / Description", defaults["name"])
+                    d_amt = st.number_input("Amount", min_value=0.0, value=defaults["amount"])
+                    d_det = st.text_area("Details", defaults["detail"])
                     d_occ, d_rec, d_meth = "", "", ""
                     if st.session_state.show_form == "Labor":
-                        ca, cb, cc = st.columns(3)
-                        d_occ = ca.text_input("Occupation")
-                        d_rec = cb.text_input("Received By")
-                        d_meth = cc.selectbox("Method", ["Cash", "Online"])
+                        col_a, col_b, col_c = st.columns(3)
+                        d_occ = col_a.text_input("Occupation", defaults["occ"])
+                        d_rec = col_b.text_input("Received By", defaults["rec"])
+                        d_meth = col_c.selectbox("Method", ["Cash", "Online"], index=0 if defaults["meth"] == "Cash" else 1)
 
-                    if st.form_submit_button("Sync to Cloud"):
+                    if st.form_submit_button("Update Record" if is_editing else "Save to Cloud"):
                         payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
-                        supabase.table('transactions').insert(payload).execute()
-                        st.cache_data.clear()
-                        st.session_state.pop("show_form")
-                        st.success("Record Saved!")
-                        st.rerun()
+                        try:
+                            if is_editing: supabase.table('transactions').update(payload).eq('id', st.session_state.edit_id).execute()
+                            else: supabase.table('transactions').insert(payload).execute()
+                            st.cache_data.clear()
+                            [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
+                            st.success("Transaction Synced!")
+                            st.rerun()
+                        except Exception as e: st.error(f"Error: {e}")
             if st.button("❌ Close Form"):
-                st.session_state.pop("show_form")
+                [st.session_state.pop(k) for k in ["show_form", "edit_id"] if k in st.session_state]
                 st.rerun()
+        else: st.warning("Admin unlock required via sidebar.")
+
+    # --- FOOTER & SUPPORT ---
+    st.write("##")
+    st.divider()
+    supp_col1, supp_col2 = st.columns([2, 1])
+    with supp_col2:
+        whatsapp_url = "https://wa.me/923115190118"
+        st.markdown(f"""
+        <a href="{whatsapp_url}" target="_blank" style="text-decoration:none;">
+            <div style="background-color: #25D366; color: black; padding: 12px; border-radius: 10px; text-align: center; font-weight: 800; border: 2px solid #128C7E;">
+                💬 WhatsApp Support
+            </div>
+        </a>
+        """, unsafe_allow_html=True)
 
 # --- 7. HISTORY PAGES ---
 else:
-    st.markdown(f"<h2 style='font-family:Montserrat; color:#1E3A8A;'>{menu}</h2>", unsafe_allow_html=True)
+    st.title(menu)
     if not df.empty:
         if "Income" in menu: filtered_df = df[df['type'] == 'Income']
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
         
+        search = st.text_input("🔍 Search data...")
+        if search:
+            mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
+            filtered_df = filtered_df[mask]
         st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"📊 **Total Category Flow: PKR {filtered_df['amount'].sum():,.2f}**")
-        
+        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
         buffer = io.BytesIO(); filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Export to Excel", buffer.getvalue(), f"{menu}.xlsx")
-    else:
-        st.warning("No data found.")
+        st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
+        
+        st.divider(); st.subheader("🛠️ Manage Records")
+        if is_auth:
+            c_id, c_ed, c_de = st.columns([1, 1, 1]); target_id = c_id.number_input("Enter ID", step=1, value=0)
+            if c_ed.button("✏️ Edit"):
+                if target_id in filtered_df['id'].values:
+                    row = filtered_df[filtered_df['id'] == target_id].iloc[0]
+                    st.session_state.show_form = row['type']; st.session_state.edit_id = target_id
+                    st.rerun()
+            if c_de.button("🗑️ Delete"):
+                if target_id != 0:
+                    supabase.table('transactions').delete().eq('id', target_id).execute()
+                    st.cache_data.clear(); st.success("Deleted!"); st.rerun()
+    else: st.warning("No records found.")
 
-# WhatsApp Button Global Style
-whatsapp_url = "https://wa.me/923115190118"
-st.sidebar.markdown(f"""
-<a href="{whatsapp_url}" target="_blank" style="text-decoration:none;">
-    <div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:20px;">
-        💬 WhatsApp Support
-    </div>
-</a>
-""", unsafe_allow_html=True)
+st.divider()
+st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
