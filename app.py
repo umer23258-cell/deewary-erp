@@ -5,6 +5,7 @@ from datetime import datetime
 import io
 
 # --- 1. SUPABASE SETUP ---
+# Secrets mein SUPABASE_URL aur SUPABASE_KEY lazmi add karein
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
@@ -40,6 +41,7 @@ def check_password():
 
 # --- 4. SIDEBAR MENU & PROJECT INFO ---
 with st.sidebar:
+    # Title aur Navigation sabse upar
     st.title("🏗️ DEEWARY.COM ERP")
     menu = st.radio("Navigation", [
         "📊 Dashboard", 
@@ -51,9 +53,11 @@ with st.sidebar:
     
     st.divider()
 
+    # Project Image Navigation ke niche
     image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
     st.image(image_url, use_container_width=True, caption="Site: Yousaf Colony")
     
+    # Project Details Card
     st.markdown(f"""
         <div style="
             background-color: #f8f9fa; 
@@ -71,6 +75,7 @@ with st.sidebar:
     
     st.divider()
     
+    # Admin Access Control
     is_auth = check_password()
     if is_auth:
         st.success("🔓 Admin Active")
@@ -199,17 +204,26 @@ if menu == "📊 Dashboard":
         <a href="{whatsapp_url}" target="_blank" style="text-decoration: none;">
             <div style="
                 background-color: #25D366;
-                color: white;
-                padding: 10px 20px;
-                border-radius: 8px;
+                color: #000000;
+                padding: 12px 20px;
+                border-radius: 10px;
                 text-align: center;
                 font-weight: bold;
-                display: inline-block;
-                width: 100%;
+                font-size: 16px;
+                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                border: 1px solid #128C7E;
             ">
                 💬 Chat on WhatsApp
             </div>
         </a>
+        
+        <style>
+            div:hover {{
+                background-color: #128C7E !important;
+                color: white !important;
+                transition: 0.3s;
+            }}
+        </style>
         
         ---
         `R` reload | Pass: `admin786`
@@ -243,7 +257,7 @@ else:
         st.subheader("🛠️ Manage Records")
         if is_auth:
             c_id, c_ed, c_de = st.columns([1, 1, 1])
-            target_id = c_id.number_input("Enter ID", step=1, value=0)
+            target_id = c_id.number_input("Enter ID to Edit/Delete", step=1, value=0)
             
             if c_ed.button("✏️ Edit"):
                 if target_id in filtered_df['id'].values:
@@ -262,4 +276,4 @@ else:
                     st.success("Deleted!")
                     st.rerun()
     else:
-        st.warning("No data found.")
+        st.warning("No data found in this category.")
