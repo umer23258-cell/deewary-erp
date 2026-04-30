@@ -146,8 +146,6 @@ if menu == "📊 Dashboard":
     info_col1, info_col2 = st.columns([2, 1])
     
    
-       st.subheader("🌟 About Deewary.com ERP")
-        st.markdown("""
         **Simple. Powerful. Organized.**  
         This system helps you track every rupee spent on your construction projects. No more messy registers or lost records.
         
