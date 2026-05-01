@@ -76,7 +76,7 @@ if menu == "📊 Dashboard":
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
     
     with h_col1:
-        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=150)
+        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=300)
 
     with h_col2:
         st.markdown("""
