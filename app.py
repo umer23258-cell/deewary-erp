@@ -137,29 +137,70 @@ if menu == "📊 Dashboard":
                 st.session_state.pop("show_form")
                 st.rerun()
 
-    # --- 🟢 OUR COMPLETED PROJECTS SECTION ---
+    # --- 🟢 OUR COMPLETED PROJECTS (Video Choti kar di hai) ---
     st.write("##")
     st.divider()
-    st.subheader("🏘️ Our Completed Projects")
-    proj_col1, proj_col2 = st.columns([1.5, 1])
+    st.markdown("<h3 style='color: #FF4B4B;'>🏘️ Portfolio Highlight</h3>", unsafe_allow_html=True)
+    
+    proj_col1, proj_col2 = st.columns([1, 1.2]) # Adjusted ratio to make video smaller
     with proj_col1:
+        # Small YouTube Video Container
         st.video("https://youtu.be/AiA4PkXturU")
+        st.caption("Latest Project: Premium Finish House")
+
     with proj_col2:
         st.markdown(f"""
-            <div style="background-color: #f0f2f6; padding: 20px; border-radius: 15px; border: 1px solid #ddd;">
-                <h4 style="color: #FF4B4B; margin-top: 0;">🏡 Modern House Design</h4>
-                <p style="font-size: 14px; color: #333;">Check out our latest premium construction project handover video on YouTube.</p>
-                <a href="https://youtu.be/AiA4PkXturU" target="_blank" style="background-color: #FF0000; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">▶️ Watch Full Video</a>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
+                <h4 style="color: #1E1E1E; margin-top: 0;">🏡 Modern Architecture Design</h4>
+                <p style="font-size: 14px; color: #444; line-height: 1.5;">
+                    Hamara ye project modern aesthetics aur structural durability ka behtareen imtizaaj hai. 
+                    Deewary.com har tameer mein quality ko yaqeeni banata hai.
+                </p>
+                <a href="https://youtu.be/AiA4PkXturU" target="_blank" style="background-color: #FF0000; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">
+                    ▶️ Watch Tour on YouTube
+                </a>
             </div>
         """, unsafe_allow_html=True)
 
-    # --- 🟢 SUPPORT & WHATSAPP (FIXED) ---
+    # --- 🟢 ABOUT DEEWARY.COM & VISION (Professional Detail) ---
+    st.write("##")
+    st.divider()
+    
+    about_col1, about_col2 = st.columns([1.6, 1])
+    
+    with about_col1:
+        st.subheader("🏢 About Deewary.com")
+        st.markdown("""
+        **Deewary.com** Pakistan ki construction aur real estate industry mein aik premium aur barosa-mand naam hai. Hum sirf imaraten tameer nahi karte, balkay hum aap ke khuwabon ko aik mazboot aur jadeed shakal dete hain. Islamabad aur Rawalpindi mein kae kamyab projects ke baad, hamari pehchan hamara **A+ Quality Standard** aur **Digital Transparency** ban chuki hai.
+
+        **Key Services:**
+        *   **Turnkey Construction:** Design se le kar handover tak mukammal zimadari.
+        *   **Architectural Excellence:** Modern lifestyle ke mutabiq hawa-dar aur functional layouts.
+        *   **Material Integrity:** Har project mein sirf certified aur premium brands ka istemal.
+        *   **Investment Guidance:** Property investment mein behtareen returns ke liye expert advice.
+        """)
+
+    with about_col2:
+        st.markdown("""
+        <div style="background-color: #1E1E1E; padding: 25px; border-radius: 20px; color: white; border: 2px solid #FF4B4B; box-shadow: 0px 8px 15px rgba(0,0,0,0.3);">
+            <h3 style="margin-top: 0; color: #FF4B4B; font-size: 22px;">🚀 Our Vision</h3>
+            <p style="font-size: 14px; line-height: 1.6; font-style: italic;">
+                "Hamara maqsad Pakistan ki construction industry mein technology aur imandari ka naya mayar qaim karna hai. Hum chahte hain ke har client ko digital transparency ke sath apne ghar ki tameer ka sukoon mile."
+            </p>
+            <hr style="border: 0.5px solid #444;">
+            <p style="font-size: 12px; color: #AAA; text-align: center;">
+                <b>Values:</b> Transparency | Durability | Innovation
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- 🟢 SUPPORT & WHATSAPP ---
     st.write("##")
     st.divider()
     supp_col1, supp_col2 = st.columns([2, 1])
     with supp_col1:
-        st.subheader("🏢 About Deewary.com")
-        st.info("Deewary.com aik premium Real Estate aur Construction firm hai jo Islamabad/Pindi mein modern architecture mein maharat rakhti hai.")
+        st.subheader("🖥️ ERP Digital Portal")
+        st.info("Yeh portal Deewary.com ki digital transparency ka saboot hai, jahan har kharch aur material ka record real-time update kiya jata hai.")
     with supp_col2:
         st.subheader("🛠️ System Support")
         whatsapp_url = "https://wa.me/923115190118"
@@ -181,5 +222,17 @@ else:
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
+        
+        search = st.text_input("🔍 Search data...")
+        if search:
+            mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
+            filtered_df = filtered_df[mask]
+            
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
+        
+        buffer = io.BytesIO()
+        filtered_df.to_excel(buffer, index=False, engine='openpyxl')
+        st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
+    else:
+        st.warning("No records found.")
