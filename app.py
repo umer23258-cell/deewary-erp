@@ -140,7 +140,7 @@ if menu == "📊 Dashboard":
     # --- 🟢 OUR COMPLETED PROJECTS (Video Choti kar di hai) ---
     st.write("##")
     st.divider()
-    st.markdown("<h3 style='color: #FF4B4B;'>🏘️ Portfolio Highlight</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #FF4B4B;'>🏘️ OUR COMPLETED PROJECT </h3>", unsafe_allow_html=True)
     
     proj_col1, proj_col2 = st.columns([1, 1.2]) # Adjusted ratio to make video smaller
     with proj_col1:
