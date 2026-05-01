@@ -76,7 +76,7 @@ if menu == "📊 Dashboard":
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
     
     with h_col1:
-        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
+        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=150)
 
     with h_col2:
         st.markdown("""
@@ -86,7 +86,7 @@ if menu == "📊 Dashboard":
                 </h2>
                 <hr style="width: 15%; margin: 8px auto; border: 1px solid #FF4B4B;">
                 <p style="font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #FFFFFF; letter-spacing: 2px; margin-bottom: 5px; font-weight: 500;">
-                    REAL ESTATE & CONSTRUCTION MANAGEMENT
+                    REAL ESTATE & CONSTRUCTION COMPANY
                 </p>
                 <p style="font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #FF4B4B; font-weight: 700; margin: 0;">
                     C.E.O: SARDAR SAMI ULLAH
