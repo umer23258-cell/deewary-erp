@@ -120,61 +120,55 @@ if menu == "📊 Dashboard":
     
     if "show_form" in st.session_state:
         if is_auth:
-            # (Form logic remains same as previous version)
             defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
             with st.expander(f"New {st.session_state.show_form} Entry", expanded=True):
                 with st.form("entry_form"):
                     d_date = st.date_input("Date", defaults["date"])
-                    d_name = st.text_input("Name / Description", defaults["name"])
-                    d_amt = st.number_input("Amount", min_value=0.0, value=defaults["amount"])
-                    d_det = st.text_area("Details", defaults["detail"])
+                    d_name = st.text_input("Name / Description")
+                    d_amt = st.number_input("Amount", min_value=0.0)
+                    d_det = st.text_area("Details")
                     if st.form_submit_button("Save to Cloud"):
                         payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det}
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
                         st.session_state.pop("show_form")
                         st.rerun()
-            if st.button("❌ Close"):
+            if st.button("❌ Close Form"):
                 st.session_state.pop("show_form")
                 st.rerun()
-        else: st.warning("Admin unlock required.")
 
     # --- 🟢 OUR COMPLETED PROJECTS SECTION ---
     st.write("##")
     st.divider()
     st.subheader("🏘️ Our Completed Projects")
-    
     proj_col1, proj_col2 = st.columns([1.5, 1])
-    
     with proj_col1:
         st.video("https://youtu.be/AiA4PkXturU")
-        st.caption("Video Tour: Modern House Design by Deewary.com")
-
     with proj_col2:
         st.markdown(f"""
             <div style="background-color: #f0f2f6; padding: 20px; border-radius: 15px; border: 1px solid #ddd;">
-                <h4 style="color: #FF4B4B; margin-top: 0;">🏡 Latest Handover</h4>
-                <p style="font-size: 14px; color: #333;">Hamara haaliya mukammal shuda project jo modern aesthetics aur quality ka munta hazir namuna hai.</p>
-                <ul style="font-size: 13px; color: #555;">
-                    <li>High-end Finishing</li>
-                    <li>Modern Interior Layout</li>
-                    <li>Structural Integrity Certified</li>
-                </ul>
-                <a href="https://youtu.be/AiA4PkXturU" target="_blank" style="background-color: #FF0000; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;">
-                    ▶️ Watch on YouTube
-                </a>
+                <h4 style="color: #FF4B4B; margin-top: 0;">🏡 Modern House Design</h4>
+                <p style="font-size: 14px; color: #333;">Check out our latest premium construction project handover video on YouTube.</p>
+                <a href="https://youtu.be/AiA4PkXturU" target="_blank" style="background-color: #FF0000; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">▶️ Watch Full Video</a>
             </div>
         """, unsafe_allow_html=True)
 
-    # --- ABOUT & SUPPORT ---
+    # --- 🟢 SUPPORT & WHATSAPP (FIXED) ---
     st.write("##")
     st.divider()
-    st.subheader("🏢 About Deewary.com")
-    about_col1, about_col2 = st.columns([1.5, 1])
-    with about_col1:
-        st.markdown("**Deewary.com** aik premium Real Estate aur Construction firm hai.")
-    with about_col2:
-        st.markdown('<div style="background-color: #1E1E1E; padding: 15px; border-radius: 12px; color: white;">🚀 <b>Our Vision:</b> Behtareen tameerati kaam.</div>', unsafe_allow_html=True)
+    supp_col1, supp_col2 = st.columns([2, 1])
+    with supp_col1:
+        st.subheader("🏢 About Deewary.com")
+        st.info("Deewary.com aik premium Real Estate aur Construction firm hai jo Islamabad/Pindi mein modern architecture mein maharat rakhti hai.")
+    with supp_col2:
+        st.subheader("🛠️ System Support")
+        whatsapp_url = "https://wa.me/923115190118"
+        st.markdown(f"""
+            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: block; text-align: center; border: 1px solid #128C7E;">
+                💬 WhatsApp Support
+            </a>
+            <p style="font-size: 11px; text-align: center; margin-top: 8px; color: #666;">Developer: umer sherin | Status: Active ✅</p>
+        """, unsafe_allow_html=True)
 
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
@@ -182,6 +176,10 @@ if menu == "📊 Dashboard":
 # --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
-    # (History page logic remains same as previous version)
     if not df.empty:
-        st.dataframe(df, use_container_width=True)
+        if "Income" in menu: filtered_df = df[df['type'] == 'Income']
+        elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
+        elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
+        else: filtered_df = df.copy()
+        st.dataframe(filtered_df, use_container_width=True)
+        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
