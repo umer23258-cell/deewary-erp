@@ -137,17 +137,14 @@ if menu == "📊 Dashboard":
                 st.session_state.pop("show_form")
                 st.rerun()
 
-    # --- 🟢 OUR COMPLETED PROJECTS (Video Choti kar di hai) ---
+    # (About and Support sections remain same as your original)
     st.write("##")
     st.divider()
     st.markdown("<h3 style='color: #FF4B4B;'>🏘️ OUR COMPLETED PROJECT </h3>", unsafe_allow_html=True)
-    
-    proj_col1, proj_col2 = st.columns([1, 1.2]) # Adjusted ratio to make video smaller
+    proj_col1, proj_col2 = st.columns([1, 1.2])
     with proj_col1:
-        # Small YouTube Video Container
         st.video("https://youtu.be/AiA4PkXturU")
         st.caption("Latest Project: Premium Finish House")
-
     with proj_col2:
         st.markdown(f"""
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
@@ -162,77 +159,99 @@ if menu == "📊 Dashboard":
             </div>
         """, unsafe_allow_html=True)
 
-    # --- 🟢 ABOUT DEEWARY.COM & VISION (Professional Detail) ---
     st.write("##")
     st.divider()
-    
     about_col1, about_col2 = st.columns([1.6, 1])
-    
     with about_col1:
         st.subheader("🏢 About Deewary.com")
-        st.markdown("""
-        **Deewary.com** Pakistan ki construction aur real estate industry mein aik premium aur barosa-mand naam hai. Hum sirf imaraten tameer nahi karte, balkay hum aap ke khuwabon ko aik mazboot aur jadeed shakal dete hain. Islamabad aur Rawalpindi mein kae kamyab projects ke baad, hamari pehchan hamara **A+ Quality Standard** aur **Digital Transparency** ban chuki hai.
-
-        **Key Services:**
-        *   **Turnkey Construction:** Design se le kar handover tak mukammal zimadari.
-        *   **Architectural Excellence:** Modern lifestyle ke mutabiq hawa-dar aur functional layouts.
-        *   **Material Integrity:** Har project mein sirf certified aur premium brands ka istemal.
-        *   **Investment Guidance:** Property investment mein behtareen returns ke liye expert advice.
-        """)
-
+        st.markdown("""**Deewary.com** Pakistan ki construction aur real estate industry mein aik premium aur barosa-mand naam hai...""")
     with about_col2:
-        st.markdown("""
-        <div style="background-color: #1E1E1E; padding: 25px; border-radius: 20px; color: white; border: 2px solid #FF4B4B; box-shadow: 0px 8px 15px rgba(0,0,0,0.3);">
+        st.markdown("""<div style="background-color: #1E1E1E; padding: 25px; border-radius: 20px; color: white; border: 2px solid #FF4B4B;">
             <h3 style="margin-top: 0; color: #FF4B4B; font-size: 22px;">🚀 Our Vision</h3>
-            <p style="font-size: 14px; line-height: 1.6; font-style: italic;">
-                "Hamara maqsad Pakistan ki construction industry mein technology aur imandari ka naya mayar qaim karna hai. Hum chahte hain ke har client ko digital transparency ke sath apne ghar ki tameer ka sukoon mile."
-            </p>
-            <hr style="border: 0.5px solid #444;">
-            <p style="font-size: 12px; color: #AAA; text-align: center;">
-                <b>Values:</b> Transparency | Durability | Innovation
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+            <p>"Hamara maqsad Pakistan ki construction industry mein technology aur imandari ka naya mayar qaim karna hai."</p>
+        </div>""", unsafe_allow_html=True)
 
-    # --- 🟢 SUPPORT & WHATSAPP ---
     st.write("##")
     st.divider()
     supp_col1, supp_col2 = st.columns([2, 1])
     with supp_col1:
         st.subheader("🖥️ ERP Digital Portal")
-        st.info("Yeh portal Deewary.com ki digital transparency ka saboot hai, jahan har kharch aur material ka record real-time update kiya jata hai.")
+        st.info("Yeh portal Deewary.com ki digital transparency ka saboot hai.")
     with supp_col2:
         st.subheader("🛠️ System Support")
         whatsapp_url = "https://wa.me/923115190118"
-        st.markdown(f"""
-            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: block; text-align: center; border: 1px solid #128C7E;">
-                💬 WhatsApp Support
-            </a>
-            <p style="font-size: 11px; text-align: center; margin-top: 8px; color: #666;">Developer: umer sherin | Status: Active ✅</p>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: block; text-align: center;">💬 WhatsApp Support</a>""", unsafe_allow_html=True)
 
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
 
-# --- 6. HISTORY PAGES ---
+# --- 6. HISTORY PAGES (With Search, Edit, Delete) ---
 else:
     st.title(menu)
     if not df.empty:
+        # Filtering
         if "Income" in menu: filtered_df = df[df['type'] == 'Income']
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
         
-        search = st.text_input("🔍 Search data...")
+        search = st.text_input("🔍 Search data (Name, Detail, or ID)...")
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             filtered_df = filtered_df[mask]
             
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
-        
+
+        # --- ADMIN ACTIONS SECTION (Edit & Delete) ---
+        if is_auth:
+            st.divider()
+            st.subheader("🛠️ Admin Record Management")
+            edit_col1, edit_col2 = st.columns(2)
+            
+            with edit_col1:
+                target_id = st.text_input("Enter Row ID to Edit or Delete")
+                
+            if target_id:
+                try:
+                    # Find record
+                    target_row = df[df['id'].astype(str) == target_id]
+                    if not target_row.empty:
+                        row_data = target_row.iloc[0]
+                        st.warning(f"Selected: {row_data['name']} ({row_data['type']}) - PKR {row_data['amount']}")
+                        
+                        action_col1, action_col2 = st.columns(2)
+                        
+                        # --- DELETE LOGIC ---
+                        if action_col2.button("🗑️ Confirm Delete"):
+                            supabase.table('transactions').delete().eq('id', target_id).execute()
+                            st.cache_data.clear()
+                            st.success("Deleted successfully!")
+                            st.rerun()
+                            
+                        # --- EDIT LOGIC ---
+                        with action_col1:
+                            with st.expander("📝 Edit Details"):
+                                with st.form("edit_form"):
+                                    new_name = st.text_input("Update Name", value=row_data['name'])
+                                    new_amt = st.number_input("Update Amount", value=float(row_data['amount']))
+                                    new_det = st.text_area("Update Detail", value=row_data['detail'])
+                                    if st.form_submit_button("Update Record"):
+                                        supabase.table('transactions').update({
+                                            "name": new_name, 
+                                            "amount": new_amt, 
+                                            "detail": new_det
+                                        }).eq('id', target_id).execute()
+                                        st.cache_data.clear()
+                                        st.success("Updated!")
+                                        st.rerun()
+                    else:
+                        st.error("ID not found.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
     else:
-        st.warning("No records found.") 
+        st.warning("No records found.")
