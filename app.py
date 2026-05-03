@@ -21,15 +21,6 @@ def fetch_data():
     except Exception as e:
         return pd.DataFrame()
 
-def delete_entry(id):
-    try:
-        supabase.table('transactions').delete().eq('id', id).execute()
-        st.cache_data.clear()
-        st.success("Record deleted successfully!")
-        st.rerun()
-    except Exception as e:
-        st.error(f"Error: {e}")
-
 def check_password():
     if "authenticated" not in st.session_state:
         st.session_state["authenticated"] = False
@@ -45,7 +36,7 @@ def check_password():
                 st.error("Wrong password!")
     return False
 
-# --- 4. SIDEBAR MENU ---
+# --- 4. SIDEBAR MENU & PROJECT INFO ---
 with st.sidebar:
     st.title("🏗️ DEEWARY.COM ERP")
     menu = st.radio("Navigation", [
@@ -81,16 +72,23 @@ df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # (Same Header as your original code)
+    # --- HEADER SECTION ---
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
-    with h_col1: st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
+    with h_col1:
+        st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
     with h_col2:
         st.markdown("""
             <div style="text-align: center; margin-top: 5px; background-color: #1E1E1E; padding: 15px; border-radius: 15px; border: 1px solid #333;">
-                <h2 style="font-family: 'Arial Black', sans-serif; font-size: 28px; letter-spacing: 4px; color: #FF4B4B; text-transform: uppercase; margin: 0;">DEEWARY.COM</h2>
+                <h2 style="font-family: 'Arial Black', sans-serif; font-size: 28px; letter-spacing: 4px; color: #FF4B4B; text-transform: uppercase; margin: 0;">
+                    DEEWARY.COM
+                </h2>
                 <hr style="width: 15%; margin: 8px auto; border: 1px solid #FF4B4B;">
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #FFFFFF; letter-spacing: 2px; margin-bottom: 5px; font-weight: 500;">REAL ESTATE & CONSTRUCTION MANAGEMENT</p>
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #FF4B4B; font-weight: 700; margin: 0;">C.E.O: SARDAR SAMI ULLAH</p>
+                <p style="font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #FFFFFF; letter-spacing: 2px; margin-bottom: 5px; font-weight: 500;">
+                    REAL ESTATE & CONSTRUCTION MANAGEMENT
+                </p>
+                <p style="font-family: 'Segoe UI', sans-serif; font-size: 14px; color: #FF4B4B; font-weight: 700; margin: 0;">
+                    C.E.O: SARDAR SAMI ULLAH
+                </p>
             </div>
         """, unsafe_allow_html=True)
 
@@ -111,50 +109,112 @@ if menu == "📊 Dashboard":
 
     st.divider()
     
-    # --- ADD/EDIT FORM ---
-    if is_auth:
-        if "edit_data" in st.session_state or "show_form" in st.session_state:
-            form_type = st.session_state.get("show_form", st.session_state.get("edit_data", {}).get("type", "Income"))
-            edit_mode = "edit_data" in st.session_state
-            data = st.session_state.get("edit_data", {})
-
-            with st.expander(f"{'📝 Edit' if edit_mode else '➕ New'} {form_type} Entry", expanded=True):
+    # --- QUICK ACTIONS ---
+    is_editing = "edit_id" in st.session_state
+    if not is_editing:
+        st.subheader("Quick Actions")
+        c1, c2, c3 = st.columns(3)
+        if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
+        if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
+        if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
+    
+    if "show_form" in st.session_state:
+        if is_auth:
+            defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
+            with st.expander(f"New {st.session_state.show_form} Entry", expanded=True):
                 with st.form("entry_form"):
-                    d_date = st.date_input("Date", datetime.strptime(data['date'], '%Y-%m-%d') if edit_mode else datetime.now())
-                    d_name = st.text_input("Name / Description", data.get('name', ''))
-                    d_amt = st.number_input("Amount", min_value=0.0, value=float(data.get('amount', 0.0)))
-                    d_det = st.text_area("Details", data.get('detail', ''))
-                    
+                    d_date = st.date_input("Date", defaults["date"])
+                    d_name = st.text_input("Name / Description")
+                    d_amt = st.number_input("Amount", min_value=0.0)
+                    d_det = st.text_area("Details")
                     if st.form_submit_button("Save to Cloud"):
-                        payload = {"date": str(d_date), "type": form_type, "name": d_name, "amount": d_amt, "detail": d_det}
-                        if edit_mode:
-                            supabase.table('transactions').update(payload).eq('id', data['id']).execute()
-                        else:
-                            supabase.table('transactions').insert(payload).execute()
-                        
+                        payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det}
+                        supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
-                        if "edit_data" in st.session_state: del st.session_state["edit_data"]
-                        if "show_form" in st.session_state: del st.session_state["show_form"]
-                        st.success("Done!")
+                        st.session_state.pop("show_form")
                         st.rerun()
-
             if st.button("❌ Close Form"):
-                if "edit_data" in st.session_state: del st.session_state["edit_data"]
-                if "show_form" in st.session_state: del st.session_state["show_form"]
+                st.session_state.pop("show_form")
                 st.rerun()
-        else:
-            st.subheader("Quick Actions")
-            c1, c2, c3 = st.columns(3)
-            if c1.button("➕ Add Income"): st.session_state.show_form = "Income"; st.rerun()
-            if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"; st.rerun()
-            if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"; st.rerun()
 
-    # (About and Support sections remain the same)
+    # --- 🟢 OUR COMPLETED PROJECTS (Video Choti kar di hai) ---
+    st.write("##")
     st.divider()
     st.markdown("<h3 style='color: #FF4B4B;'>🏘️ OUR COMPLETED PROJECT </h3>", unsafe_allow_html=True)
-    # ... (Rest of your original Dashboard content)
+    
+    proj_col1, proj_col2 = st.columns([1, 1.2]) # Adjusted ratio to make video smaller
+    with proj_col1:
+        # Small YouTube Video Container
+        st.video("https://youtu.be/AiA4PkXturU")
+        st.caption("Latest Project: Premium Finish House")
 
-# --- 6. HISTORY PAGES (With Edit/Delete) ---
+    with proj_col2:
+        st.markdown(f"""
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
+                <h4 style="color: #1E1E1E; margin-top: 0;">🏡 Modern Architecture Design</h4>
+                <p style="font-size: 14px; color: #444; line-height: 1.5;">
+                    Hamara ye project modern aesthetics aur structural durability ka behtareen imtizaaj hai. 
+                    Deewary.com har tameer mein quality ko yaqeeni banata hai.
+                </p>
+                <a href="https://youtu.be/AiA4PkXturU" target="_blank" style="background-color: #FF0000; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">
+                    ▶️ Watch Tour on YouTube
+                </a>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # --- 🟢 ABOUT DEEWARY.COM & VISION (Professional Detail) ---
+    st.write("##")
+    st.divider()
+    
+    about_col1, about_col2 = st.columns([1.6, 1])
+    
+    with about_col1:
+        st.subheader("🏢 About Deewary.com")
+        st.markdown("""
+        **Deewary.com** Pakistan ki construction aur real estate industry mein aik premium aur barosa-mand naam hai. Hum sirf imaraten tameer nahi karte, balkay hum aap ke khuwabon ko aik mazboot aur jadeed shakal dete hain. Islamabad aur Rawalpindi mein kae kamyab projects ke baad, hamari pehchan hamara **A+ Quality Standard** aur **Digital Transparency** ban chuki hai.
+
+        **Key Services:**
+        *   **Turnkey Construction:** Design se le kar handover tak mukammal zimadari.
+        *   **Architectural Excellence:** Modern lifestyle ke mutabiq hawa-dar aur functional layouts.
+        *   **Material Integrity:** Har project mein sirf certified aur premium brands ka istemal.
+        *   **Investment Guidance:** Property investment mein behtareen returns ke liye expert advice.
+        """)
+
+    with about_col2:
+        st.markdown("""
+        <div style="background-color: #1E1E1E; padding: 25px; border-radius: 20px; color: white; border: 2px solid #FF4B4B; box-shadow: 0px 8px 15px rgba(0,0,0,0.3);">
+            <h3 style="margin-top: 0; color: #FF4B4B; font-size: 22px;">🚀 Our Vision</h3>
+            <p style="font-size: 14px; line-height: 1.6; font-style: italic;">
+                "Hamara maqsad Pakistan ki construction industry mein technology aur imandari ka naya mayar qaim karna hai. Hum chahte hain ke har client ko digital transparency ke sath apne ghar ki tameer ka sukoon mile."
+            </p>
+            <hr style="border: 0.5px solid #444;">
+            <p style="font-size: 12px; color: #AAA; text-align: center;">
+                <b>Values:</b> Transparency | Durability | Innovation
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- 🟢 SUPPORT & WHATSAPP ---
+    st.write("##")
+    st.divider()
+    supp_col1, supp_col2 = st.columns([2, 1])
+    with supp_col1:
+        st.subheader("🖥️ ERP Digital Portal")
+        st.info("Yeh portal Deewary.com ki digital transparency ka saboot hai, jahan har kharch aur material ka record real-time update kiya jata hai.")
+    with supp_col2:
+        st.subheader("🛠️ System Support")
+        whatsapp_url = "https://wa.me/923115190118"
+        st.markdown(f"""
+            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: block; text-align: center; border: 1px solid #128C7E;">
+                💬 WhatsApp Support
+            </a>
+            <p style="font-size: 11px; text-align: center; margin-top: 8px; color: #666;">Developer: umer sherin | Status: Active ✅</p>
+        """, unsafe_allow_html=True)
+
+    st.divider()
+    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
+
+# --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
@@ -167,30 +227,12 @@ else:
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             filtered_df = filtered_df[mask]
-        
-        # Display Table
-        st.dataframe(filtered_df.drop(columns=['id'], errors='ignore'), use_container_width=True)
+            
+        st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
-
-        # Edit/Delete Actions (Only for Admin)
-        if is_auth:
-            st.subheader("Modify Records")
-            for index, row in filtered_df.iterrows():
-                col_id, col_name, col_amt, col_btn1, col_btn2 = st.columns([1, 3, 2, 1, 1])
-                col_id.write(f"`{row['date']}`")
-                col_name.write(row['name'])
-                col_amt.write(f"PKR {row['amount']:,.0f}")
-                
-                if col_btn1.button("📝 Edit", key=f"edit_{row['id']}"):
-                    st.session_state.edit_data = row.to_dict()
-                    st.session_state.menu = "📊 Dashboard" # Redirect to dashboard to use the form
-                    st.rerun()
-                
-                if col_btn2.button("🗑️ Del", key=f"del_{row['id']}"):
-                    delete_entry(row['id'])
-
+        
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
     else:
-        st.warning("No records found.")
+        st.warning("No records found.") yar es ma jo histry ha os mna edit or dlet buttions add kar do baki mar acod sab koch asa ka asa rahna do same to same
