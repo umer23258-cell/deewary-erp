@@ -235,4 +235,4 @@ else:
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
     else:
-        st.warning("No records found.") yar es ma jo histry ha os mna edit or dlet buttions add kar do baki mar acod sab koch asa ka asa rahna do same to same
+        st.warning("No records found.") 
