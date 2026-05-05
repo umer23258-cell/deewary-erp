@@ -212,7 +212,7 @@ if menu == "📊 Dashboard":
         whatsapp_url = "https://wa.me/923115190118"
         st.markdown(f"""<a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: block; text-align: center;">💬 WhatsApp Support</a>""", unsafe_allow_html=True)
 
-    st.divider()
+    st.divider(umer sherin)
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
 
 # --- 6. HISTORY PAGES (With Search, Edit, Delete) ---
