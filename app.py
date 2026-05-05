@@ -214,7 +214,7 @@ if menu == "📊 Dashboard":
 
     st.divider()
     
-    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal umer sherin  umer23258"gmail.com")
+    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal umer sherin  umer23258@gmail.com")
 
 # --- 6. HISTORY PAGES (With Search, Edit, Delete) ---
 else:
