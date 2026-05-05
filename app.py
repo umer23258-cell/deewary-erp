@@ -12,6 +12,37 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
+# --- MOBILE OPTIMIZATION CSS (Sirf styling ke liye) ---
+st.markdown("""
+    <style>
+    /* Mobile par buttons ko full width aur bada karne ke liye */
+    @media (max-width: 640px) {
+        .stButton > button {
+            width: 100%;
+            border-radius: 10px;
+            height: 3em;
+            font-size: 16px !important;
+            margin-bottom: 10px;
+        }
+        /* Dashboard metrics ko mobile par behtar dikhane ke liye */
+        [data-testid="stMetric"] {
+            background-color: #f0f2f6;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        /* Header text size adjustment for mobile */
+        h2 {
+            font-size: 20px !important;
+        }
+    }
+    /* Overall App background and clean look */
+    .main {
+        background-color: #ffffff;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- 3. FUNCTIONS ---
 @st.cache_data(ttl=60)
 def fetch_data():
@@ -137,7 +168,6 @@ if menu == "📊 Dashboard":
                 st.session_state.pop("show_form")
                 st.rerun()
 
-    # (About and Support sections remain same as your original)
     st.write("##")
     st.divider()
     st.markdown("<h3 style='color: #FF4B4B;'>🏘️ OUR COMPLETED PROJECT </h3>", unsafe_allow_html=True)
@@ -189,7 +219,6 @@ if menu == "📊 Dashboard":
 else:
     st.title(menu)
     if not df.empty:
-        # Filtering
         if "Income" in menu: filtered_df = df[df['type'] == 'Income']
         elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
@@ -203,7 +232,6 @@ else:
         st.dataframe(filtered_df, use_container_width=True)
         st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
 
-        # --- ADMIN ACTIONS SECTION (Edit & Delete) ---
         if is_auth:
             st.divider()
             st.subheader("🛠️ Admin Record Management")
@@ -214,7 +242,6 @@ else:
                 
             if target_id:
                 try:
-                    # Find record
                     target_row = df[df['id'].astype(str) == target_id]
                     if not target_row.empty:
                         row_data = target_row.iloc[0]
@@ -222,14 +249,12 @@ else:
                         
                         action_col1, action_col2 = st.columns(2)
                         
-                        # --- DELETE LOGIC ---
                         if action_col2.button("🗑️ Confirm Delete"):
                             supabase.table('transactions').delete().eq('id', target_id).execute()
                             st.cache_data.clear()
                             st.success("Deleted successfully!")
                             st.rerun()
                             
-                        # --- EDIT LOGIC ---
                         with action_col1:
                             with st.expander("📝 Edit Details"):
                                 with st.form("edit_form"):
