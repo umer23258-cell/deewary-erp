@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
@@ -20,10 +12,9 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- MOBILE OPTIMIZATION CSS (Sirf styling ke liye) ---
+# --- MOBILE OPTIMIZATION CSS ---
 st.markdown("""
     <style>
-    /* Mobile par buttons ko full width aur bada karne ke liye */
     @media (max-width: 640px) {
         .stButton > button {
             width: 100%;
@@ -32,22 +23,15 @@ st.markdown("""
             font-size: 16px !important;
             margin-bottom: 10px;
         }
-        /* Dashboard metrics ko mobile par behtar dikhane ke liye */
         [data-testid="stMetric"] {
             background-color: #f0f2f6;
             padding: 10px;
             border-radius: 10px;
             margin-bottom: 10px;
         }
-        /* Header text size adjustment for mobile */
-        h2 {
-            font-size: 20px !important;
-        }
+        h2 { font-size: 20px !important; }
     }
-    /* Overall App background and clean look */
-    .main {
-        background-color: #ffffff;
-    }
+    .main { background-color: #ffffff; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -111,7 +95,6 @@ df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # --- HEADER SECTION ---
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
     with h_col1:
         st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
@@ -149,29 +132,49 @@ if menu == "📊 Dashboard":
     st.divider()
     
     # --- QUICK ACTIONS ---
-    is_editing = "edit_id" in st.session_state
-    if not is_editing:
-        st.subheader("Quick Actions")
-        c1, c2, c3 = st.columns(3)
-        if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
-        if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
-        if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
+    st.subheader("Quick Actions")
+    c1, c2, c3 = st.columns(3)
+    if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
+    if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
+    if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
     
     if "show_form" in st.session_state:
+        form_type = st.session_state.show_form
         if is_auth:
-            defaults = {"date": datetime.now(), "name": "", "amount": 0.0, "detail": "", "occ": "", "rec": "", "meth": "Cash"}
-            with st.expander(f"New {st.session_state.show_form} Entry", expanded=True):
+            with st.expander(f"New {form_type} Entry", expanded=True):
                 with st.form("entry_form"):
-                    d_date = st.date_input("Date", defaults["date"])
+                    d_date = st.date_input("Date", datetime.now())
                     d_name = st.text_input("Name / Description")
                     d_amt = st.number_input("Amount", min_value=0.0)
+                    
+                    # Naye Fields (Sirf Income aur Labor ke liye)
+                    d_occ, d_rec, d_meth = "", "", "Cash"
+                    if form_type in ["Income", "Labor"]:
+                        col_f1, col_f2 = st.columns(2)
+                        with col_f1:
+                            d_occ = st.text_input("Occupation")
+                            d_meth = st.selectbox("Payment Method", ["Cash", "Bank Transfer", "EasyPaisa", "Cheque"])
+                        with col_f2:
+                            d_rec = st.text_input("Received By")
+                    
                     d_det = st.text_area("Details")
+                    
                     if st.form_submit_button("Save to Cloud"):
-                        payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt, "detail": d_det}
+                        payload = {
+                            "date": str(d_date), 
+                            "type": form_type, 
+                            "name": d_name, 
+                            "amount": d_amt, 
+                            "detail": d_det,
+                            "occupation": d_occ,
+                            "received_by": d_rec,
+                            "pay_method": d_meth
+                        }
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
                         st.session_state.pop("show_form")
                         st.rerun()
+            
             if st.button("❌ Close Form"):
                 st.session_state.pop("show_form")
                 st.rerun()
@@ -209,22 +212,10 @@ if menu == "📊 Dashboard":
             <p>"Hamara maqsad Pakistan ki construction industry mein technology aur imandari ka naya mayar qaim karna hai."</p>
         </div>""", unsafe_allow_html=True)
 
-    st.write("##")
     st.divider()
-    supp_col1, supp_col2 = st.columns([2, 1])
-    with supp_col1:
-        st.subheader("🖥️ ERP Digital Portal")
-        st.info("Yeh portal Deewary.com ki digital transparency ka saboot hai.")
-    with supp_col2:
-        st.subheader("🛠️ System Support")
-        whatsapp_url = "https://wa.me/923115190118"
-        st.markdown(f"""<a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: black; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; display: block; text-align: center;">💬 WhatsApp Support</a>""", unsafe_allow_html=True)
+    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal umer sherin umer23258@gmail.com")
 
-    st.divider()
-    
-    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal umer sherin  umer23258@gmail.com")
-
-# --- 6. HISTORY PAGES (With Search, Edit, Delete) ---
+# --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
@@ -233,7 +224,7 @@ else:
         elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
         else: filtered_df = df.copy()
         
-        search = st.text_input("🔍 Search data (Name, Detail, or ID)...")
+        search = st.text_input("🔍 Search data...")
         if search:
             mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             filtered_df = filtered_df[mask]
@@ -243,46 +234,14 @@ else:
 
         if is_auth:
             st.divider()
-            st.subheader("🛠️ Admin Record Management")
-            edit_col1, edit_col2 = st.columns(2)
-            
-            with edit_col1:
-                target_id = st.text_input("Enter Row ID to Edit or Delete")
-                
+            target_id = st.text_input("Enter Row ID to Edit or Delete")
             if target_id:
-                try:
-                    target_row = df[df['id'].astype(str) == target_id]
-                    if not target_row.empty:
-                        row_data = target_row.iloc[0]
-                        st.warning(f"Selected: {row_data['name']} ({row_data['type']}) - PKR {row_data['amount']}")
-                        
-                        action_col1, action_col2 = st.columns(2)
-                        
-                        if action_col2.button("🗑️ Confirm Delete"):
-                            supabase.table('transactions').delete().eq('id', target_id).execute()
-                            st.cache_data.clear()
-                            st.success("Deleted successfully!")
-                            st.rerun()
-                            
-                        with action_col1:
-                            with st.expander("📝 Edit Details"):
-                                with st.form("edit_form"):
-                                    new_name = st.text_input("Update Name", value=row_data['name'])
-                                    new_amt = st.number_input("Update Amount", value=float(row_data['amount']))
-                                    new_det = st.text_area("Update Detail", value=row_data['detail'])
-                                    if st.form_submit_button("Update Record"):
-                                        supabase.table('transactions').update({
-                                            "name": new_name, 
-                                            "amount": new_amt, 
-                                            "detail": new_det
-                                        }).eq('id', target_id).execute()
-                                        st.cache_data.clear()
-                                        st.success("Updated!")
-                                        st.rerun()
-                    else:
-                        st.error("ID not found.")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                target_row = df[df['id'].astype(str) == target_id]
+                if not target_row.empty:
+                    if st.button("🗑️ Confirm Delete"):
+                        supabase.table('transactions').delete().eq('id', target_id).execute()
+                        st.cache_data.clear()
+                        st.rerun()
 
         buffer = io.BytesIO()
         filtered_df.to_excel(buffer, index=False, engine='openpyxl')
