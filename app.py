@@ -44,7 +44,6 @@ def fetch_data():
     except Exception as e:
         return pd.DataFrame()
 
-# Naya function status control ke liye
 def fetch_project_status():
     try:
         res = supabase.table('project_status').select("*").execute()
@@ -82,6 +81,20 @@ with st.sidebar:
     ])
     
     st.divider()
+    
+    # --- UPDATED: STATUS CONTROL BUTTON IN SIDEBAR ---
+    is_auth = check_password()
+    
+    if is_auth:
+        st.success("🔓 Admin Active")
+        if st.button("⚙️ Update Project Status"):
+            st.session_state.show_status_form = True
+            
+        if st.button("Logout"):
+            st.session_state["authenticated"] = False
+            st.rerun()
+            
+    st.divider()
     image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
     st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
     
@@ -93,20 +106,11 @@ with st.sidebar:
             <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
         </div>
     """, unsafe_allow_html=True)
-    
-    st.divider()
-    is_auth = check_password()
-    if is_auth:
-        st.success("🔓 Admin Active")
-        if st.button("Logout"):
-            st.session_state["authenticated"] = False
-            st.rerun()
 
 df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # --- HEADER SECTION (Original Design) ---
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
     with h_col1:
         st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
@@ -128,7 +132,24 @@ if menu == "📊 Dashboard":
 
     st.write("##")
 
-    # --- NEW: INTERACTIVE WORK PROGRESS SECTION ---
+    # --- STATUS UPDATE FORM (Visible when button in sidebar is pressed) ---
+    if "show_status_form" in st.session_state and st.session_state.show_status_form:
+        status_df = fetch_project_status()
+        with st.expander("🛠️ Control Task Status", expanded=True):
+            with st.form("status_form"):
+                c_task = st.selectbox("Select Task to Update", status_df['task_name'].tolist())
+                c_status = st.radio("New Status", ["Pending", "Done"], horizontal=True)
+                col_btn1, col_btn2 = st.columns(2)
+                if col_btn1.form_submit_button("Save Status"):
+                    supabase.table('project_status').upsert({"task_name": c_task, "status": c_status}).execute()
+                    st.cache_data.clear()
+                    st.session_state.show_status_form = False
+                    st.rerun()
+                if col_btn2.form_submit_button("Cancel"):
+                    st.session_state.show_status_form = False
+                    st.rerun()
+
+    # --- INTERACTIVE WORK PROGRESS SECTION ---
     st.markdown("<h3 style='color: #FF4B4B;'>🏗️ Project Work Progress</h3>", unsafe_allow_html=True)
     
     status_df = fetch_project_status()
@@ -146,16 +167,6 @@ if menu == "📊 Dashboard":
                     <b>{icon} {row['task_name']}</b>: {row['status']}
                 </div>
             """, unsafe_allow_html=True)
-
-    # Admin Progress Control
-    if is_auth:
-        with st.expander("🛠️ Control Task Status (Admin Only)"):
-            c_task = st.selectbox("Select Task to Update", status_df['task_name'].tolist())
-            c_status = st.radio("New Status", ["Pending", "Done"], horizontal=True)
-            if st.button("Update Status Now"):
-                supabase.table('project_status').upsert({"task_name": c_task, "status": c_status}).execute()
-                st.cache_data.clear()
-                st.rerun()
 
     st.divider()
 
