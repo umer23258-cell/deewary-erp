@@ -44,6 +44,17 @@ def fetch_data():
     except Exception as e:
         return pd.DataFrame()
 
+# Naya function status control ke liye
+def fetch_project_status():
+    try:
+        res = supabase.table('project_status').select("*").execute()
+        if not res.data:
+            tasks = ["Mistry Ka Kam", "Plumbering", "Electric Work", "Celling", "Paint", "Wood Work", "Ragarya", "Main Door", "Grill", "Wasbasen Tottya", "Finishing"]
+            return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
+        return pd.DataFrame(res.data)
+    except:
+        return pd.DataFrame()
+
 def check_password():
     if "authenticated" not in st.session_state:
         st.session_state["authenticated"] = False
@@ -117,37 +128,34 @@ if menu == "📊 Dashboard":
 
     st.write("##")
 
-    # --- NEW: WORK TASK BAR SECTION ---
+    # --- NEW: INTERACTIVE WORK PROGRESS SECTION ---
     st.markdown("<h3 style='color: #FF4B4B;'>🏗️ Project Work Progress</h3>", unsafe_allow_html=True)
     
-    # Yahan se aap manual control kar sakte hain status ko (Done/Pending)
-    project_tasks = [
-        {"Task": "Mistry Ka Kam", "Status": "Done"},
-        {"Task": "Plumbering", "Status": "Done"},
-        {"Task": "Electric Work", "Status": "Pending"},
-        {"Task": "Celling", "Status": "Pending"},
-        {"Task": "Paint", "Status": "Pending"},
-        {"Task": "Wood Work", "Status": "Pending"},
-        {"Task": "Ragarya", "Status": "Pending"},
-        {"Task": "Main Door", "Status": "Pending"},
-        {"Task": "Grill", "Status": "Pending"},
-        {"Task": "Wasbasen Tottya", "Status": "Pending"},
-        {"Task": "Finishing", "Status": "Pending"},
-    ]
-
+    status_df = fetch_project_status()
+    
     t_col1, t_col2 = st.columns(2)
-    for idx, item in enumerate(project_tasks):
+    for idx, row in status_df.iterrows():
         target_col = t_col1 if idx % 2 == 0 else t_col2
         with target_col:
-            is_done = item["Status"] == "Done"
+            is_done = row["status"] == "Done"
             bg = "#d4edda" if is_done else "#f8d7da"
             txt = "#155724" if is_done else "#721c24"
             icon = "✅" if is_done else "⏳"
             st.markdown(f"""
                 <div style="background-color: {bg}; color: {txt}; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid {txt};">
-                    <b>{icon} {item['Task']}</b>: {item['Status']}
+                    <b>{icon} {row['task_name']}</b>: {row['status']}
                 </div>
             """, unsafe_allow_html=True)
+
+    # Admin Progress Control
+    if is_auth:
+        with st.expander("🛠️ Control Task Status (Admin Only)"):
+            c_task = st.selectbox("Select Task to Update", status_df['task_name'].tolist())
+            c_status = st.radio("New Status", ["Pending", "Done"], horizontal=True)
+            if st.button("Update Status Now"):
+                supabase.table('project_status').upsert({"task_name": c_task, "status": c_status}).execute()
+                st.cache_data.clear()
+                st.rerun()
 
     st.divider()
 
