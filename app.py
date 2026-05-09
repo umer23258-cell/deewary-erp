@@ -3,7 +3,6 @@ import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime
 import io
-import plotly.express as px
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
@@ -69,7 +68,7 @@ def check_password():
                 st.error("Wrong password!")
     return False
 
-# --- 4. SIDEBAR NAVIGATION & CONTROLS ---
+# --- 4. SIDEBAR NAVIGATION & FORMS ---
 with st.sidebar:
     st.title("🏗️ DEEWARY.COM ERP")
     menu = st.radio("Navigation", [
@@ -84,30 +83,49 @@ with st.sidebar:
     is_auth = check_password()
     
     if is_auth:
-        # Update Progress Button in Sidebar
-        st.subheader("🛠️ Management")
-        if st.button("📝 Update Work Progress"):
-            st.session_state.show_update_panel = True
+        # --- SECTION 1: TRANSACTION ENTRIES ---
+        st.subheader("➕ New Entry")
+        c1, c2, c3 = st.columns(3)
+        if c1.button("💰"): st.session_state.show_form = "Income"
+        if c2.button("👷"): st.session_state.show_form = "Labor"
+        if c3.button("🏗️"): st.session_state.show_form = "Material"
+        
+        if "show_form" in st.session_state:
+            with st.expander(f"Add {st.session_state.show_form}", expanded=True):
+                with st.form("sidebar_entry"):
+                    d_date = st.date_input("Date", datetime.now())
+                    d_name = st.text_input("Name")
+                    d_amt = st.number_input("Amount", min_value=0.0)
+                    if st.form_submit_button("Save Entry"):
+                        payload = {"date": str(d_date), "type": st.session_state.show_form, "name": d_name, "amount": d_amt}
+                        supabase.table('transactions').insert(payload).execute()
+                        st.cache_data.clear()
+                        st.session_state.pop("show_form")
+                        st.rerun()
 
-        if st.session_state.get("show_update_panel", False):
+        st.divider()
+        
+        # --- SECTION 2: PROGRESS CONTROL ---
+        st.subheader("🛠️ Progress Control")
+        if st.button("📝 Update Work Status"):
+            st.session_state.show_update_form = True
+
+        if st.session_state.get("show_update_form", False):
             status_df = fetch_project_status()
             with st.expander("Update Task Status", expanded=True):
-                with st.form("sidebar_status_form"):
-                    u_task = st.selectbox("Task", status_df['task_name'].tolist())
-                    u_status = st.radio("Status", ["Pending", "Done"], horizontal=True)
-                    if st.form_submit_button("Save Status"):
-                        supabase.table('project_status').upsert({"task_name": u_task, "status": u_status}).execute()
+                with st.form("status_form"):
+                    c_task = st.selectbox("Select Task", status_df['task_name'].tolist())
+                    c_status = st.radio("Status", ["Pending", "Done"], horizontal=True)
+                    if st.form_submit_button("Confirm Change"):
+                        supabase.table('project_status').upsert({"task_name": c_task, "status": c_status}).execute()
                         st.cache_data.clear()
-                        st.session_state.show_update_panel = False
+                        st.session_state.show_update_form = False
                         st.rerun()
                 if st.button("Cancel"):
-                    st.session_state.show_update_panel = False
+                    st.session_state.show_update_form = False
                     st.rerun()
 
     st.divider()
-    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-    st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
-    
     if is_auth and st.button("Logout"):
         st.session_state["authenticated"] = False
         st.rerun()
@@ -120,66 +138,40 @@ if menu == "📊 Dashboard":
     h_col1, h_col2 = st.columns([1, 4])
     with h_col1: st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=100)
     with h_col2:
-        st.markdown("<div style='background-color: #1E1E1E; padding: 15px; border-radius: 15px; text-align: center;'><h2 style='color: #FF4B4B; margin: 0; letter-spacing: 2px;'>DEEWARY.COM ERP</h2></div>", unsafe_allow_html=True)
+        st.markdown("<div style='background-color: #1E1E1E; padding: 10px; border-radius: 10px; text-align: center;'><h2 style='color: #FF4B4B; margin: 0;'>DEEWARY.COM</h2></div>", unsafe_allow_html=True)
 
     st.write("##")
 
-    # PROGRESS CHART & REPORT SECTION
+    # PROGRESS REPORT (Dashboard par sirf report dikhayi degi)
+    st.markdown("<h3 style='color: #FF4B4B;'>🏗️ Project Work Progress</h3>", unsafe_allow_html=True)
     status_df = fetch_project_status()
-    
-    # Calculate Progress for Chart
-    done_count = len(status_df[status_df['status'] == 'Done'])
-    total_count = len(status_df)
-    progress_percent = (done_count / total_count) * 100
-
-    c1, c2 = st.columns([1.5, 2])
-    
-    with c1:
-        st.markdown("<h4 style='color: #FF4B4B;'>📈 Overall Completion</h4>", unsafe_allow_html=True)
-        # Professional Donut Chart
-        chart_df = pd.DataFrame({
-            "Category": ["Done", "Pending"],
-            "Count": [done_count, total_count - done_count]
-        })
-        fig = px.pie(chart_df, values='Count', names='Category', 
-                     hole=0.7, color_discrete_map={'Done':'#28a745', 'Pending':'#efefef'})
-        fig.update_layout(showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=250)
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown(f"<h2 style='text-align: center; margin-top: -160px;'>{progress_percent:.0f}%</h2>", unsafe_allow_html=True)
-        st.write("##") # Spacer to push next content down
-
-    with c2:
-        st.markdown("<h4 style='color: #FF4B4B;'>📋 Work Progress Report</h4>", unsafe_allow_html=True)
-        # Displaying Status list
-        report_col1, report_col2 = st.columns(2)
-        for idx, row in status_df.iterrows():
-            target_col = report_col1 if idx % 2 == 0 else report_col2
-            with target_col:
-                is_done = row["status"] == "Done"
-                color = "#28a745" if is_done else "#dc3545"
-                icon = "✅" if is_done else "⏳"
-                st.markdown(f"""
-                    <div style="border-left: 5px solid {color}; background: #f9f9f9; padding: 8px; border-radius: 5px; margin-bottom: 5px; font-size: 13px;">
-                        {icon} <b>{row['task_name']}</b>
-                    </div>
-                """, unsafe_allow_html=True)
+    t_col1, t_col2 = st.columns(2)
+    for idx, row in status_df.iterrows():
+        target_col = t_col1 if idx % 2 == 0 else t_col2
+        with target_col:
+            is_done = row["status"] == "Done"
+            bg = "#d4edda" if is_done else "#f8d7da"
+            icon = "✅" if is_done else "⏳"
+            st.markdown(f"<div style='background-color: {bg}; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid gray;'><b>{icon} {row['task_name']}</b></div>", unsafe_allow_html=True)
 
     st.divider()
 
-    # ANALYTICS METRICS
-    st.markdown("<h4 style='text-align: center; color: #444;'>💰 Capital Flow Analytics</h4>", unsafe_allow_html=True)
+    # ANALYTICS
+    st.markdown("<h4 style='text-align: center;'>Capital Flow Analytics</h4>", unsafe_allow_html=True)
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
         bal = inc - exp
         
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total Income", f"PKR {inc:,.0f}")
-        m2.metric("Total Expenses", f"PKR {exp:,.0f}")
-        m3.metric("Net Balance", f"PKR {bal:,.0f}")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Income", f"PKR {inc:,.0f}")
+        col2.metric("Total Expenses", f"PKR {exp:,.0f}")
+        col3.metric("Net Balance", f"PKR {bal:,.0f}")
+    else:
+        st.info("No financial data to display charts.")
 
     st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Project Location: Yousaf Colony")
+    st.caption(f"© {datetime.now().year} Deewary.com")
 
 # --- 6. HISTORY PAGES ---
 else:
@@ -191,5 +183,12 @@ else:
         else: filtered_df = df.copy()
         
         st.dataframe(filtered_df, use_container_width=True)
+        
+        if is_auth:
+            target_id = st.text_input("Enter Row ID to Delete")
+            if st.button("🗑️ Delete Record") and target_id:
+                supabase.table('transactions').delete().eq('id', target_id).execute()
+                st.cache_data.clear()
+                st.rerun()
     else:
         st.warning("No records found.")
