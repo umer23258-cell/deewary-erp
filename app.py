@@ -95,7 +95,7 @@ df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # --- HEADER SECTION (Original Design) ---
+    # --- HEADER SECTION ---
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
     with h_col1:
         st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
@@ -116,6 +116,45 @@ if menu == "📊 Dashboard":
         """, unsafe_allow_html=True)
 
     st.write("##")
+    
+    # --- PROJECT WORK STATUS (NEW SECTION) ---
+    st.markdown("<h3 style='text-align: center; color: #1E1E1E;'>🚧 Construction Progress Tracker</h3>", unsafe_allow_html=True)
+    
+    # Task List with Status
+    # Yahan aap percentage change kar sakte hain (100 = Done, 0 = Pending)
+    project_tasks = {
+        "Mistry Ka Kam (Structure)": 100,
+        "Electric Work": 90,
+        "Plumbering": 80,
+        "Celling": 60,
+        "Ragarya (Grinding)": 40,
+        "Main Door & Grill": 30,
+        "Paint Work": 10,
+        "Wasbasen & Tottya": 5,
+        "Wood Work": 0,
+        "Finishing": 0
+    }
+
+    t_col1, t_col2 = st.columns(2)
+    for i, (task, progress) in enumerate(project_tasks.items()):
+        target_col = t_col1 if i % 2 == 0 else t_col2
+        with target_col:
+            status_label = "✅ DONE" if progress == 100 else "⏳ IN PROGRESS" if progress > 0 else "❌ PENDING"
+            status_color = "#28a745" if progress == 100 else "#ffc107" if progress > 0 else "#dc3545"
+            
+            st.markdown(f"""
+                <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #eee; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: bold; font-size: 14px;">{task}</span>
+                        <span style="color: {status_color}; font-weight: bold; font-size: 12px;">{status_label}</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.progress(progress / 100)
+
+    st.divider()
+
+    # --- ANALYTICS ---
     st.markdown("<h4 style='text-align: center; color: #444; font-size: 18px;'>Capital Flow Analytics</h4>", unsafe_allow_html=True)
     
     if not df.empty:
@@ -150,7 +189,6 @@ if menu == "📊 Dashboard":
                     d_name = st.text_input("Name / Description")
                     d_amt = st.number_input("Amount", min_value=0.0)
                     
-                    # Naye Fields (Only for Income and Labor)
                     d_occ, d_rec, d_meth = "", "", "Cash"
                     if form_type in ["Income", "Labor"]:
                         col_f1, col_f2 = st.columns(2)
@@ -176,7 +214,7 @@ if menu == "📊 Dashboard":
                 st.session_state.pop("show_form")
                 st.rerun()
 
-    # --- COMPLETED PROJECTS & ABOUT (Original Design) ---
+    # --- COMPLETED PROJECTS & ABOUT ---
     st.write("##")
     st.divider()
     st.markdown("<h3 style='color: #FF4B4B;'>🏘️ OUR COMPLETED PROJECT </h3>", unsafe_allow_html=True)
@@ -213,7 +251,7 @@ if menu == "📊 Dashboard":
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal umer sherin umer23258@gmail.com")
 
-# --- 6. HISTORY PAGES (With original Edit/Delete management) ---
+# --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
