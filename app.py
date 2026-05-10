@@ -1,121 +1,3 @@
-import streamlit as st
-import pandas as pd
-from supabase import create_client, Client
-from datetime import datetime
-import io
-import streamlit.components.v1 as components
-
-# --- 1. SUPABASE SETUP ---
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(url, key)
-
-# --- 2. PAGE CONFIG ---
-st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
-
-# --- MOBILE OPTIMIZATION CSS ---
-st.markdown("""
-    <style>
-    @media (max-width: 640px) {
-        .stButton > button {
-            width: 100%;
-            border-radius: 10px;
-            height: 3em;
-            font-size: 16px !important;
-            margin-bottom: 10px;
-        }
-        [data-testid="stMetric"] {
-            background-color: #f0f2f6;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-        }
-        h2 { font-size: 20px !important; }
-    }
-    .main { background-color: #ffffff; }
-    /* Compact Graph Card Style */
-    .graph-card {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 12px;
-        border: 1px solid #eee;
-        text-align: center;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- 3. FUNCTIONS ---
-@st.cache_data(ttl=60)
-def fetch_data():
-    try:
-        res = supabase.table('transactions').select("*").order('date', desc=True).execute()
-        return pd.DataFrame(res.data)
-    except Exception as e:
-        return pd.DataFrame()
-
-def fetch_project_status():
-    try:
-        res = supabase.table('project_status').select("*").execute()
-        if not res.data:
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-            return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
-        return pd.DataFrame(res.data)
-    except:
-        return pd.DataFrame()
-
-def check_password():
-    if "authenticated" not in st.session_state:
-        st.session_state["authenticated"] = False
-    if st.session_state["authenticated"]:
-        return True
-    with st.sidebar.expander("🔐 Admin Access", expanded=True):
-        pwd = st.text_input("Admin Password", type="password")
-        if st.button("Unlock"):
-            if pwd == st.secrets.get("ADMIN_PASSWORD", "admin786"):
-                st.session_state["authenticated"] = True
-                st.rerun()
-            else:
-                st.error("Wrong password!")
-    return False
-
-# --- 4. SIDEBAR MENU & PROJECT INFO ---
-with st.sidebar:
-    st.title("🏗️ DEEWARY.COM ERP")
-    menu = st.radio("Navigation", [
-        "📊 Dashboard", 
-        "💰 Income History", 
-        "👷 Labor History", 
-        "🏗️ Material History",
-        "🔍 Search & All Reports"
-    ])
-    
-    st.divider()
-    
-    is_auth = check_password()
-    if is_auth:
-        st.success("🔓 Admin Active")
-        if st.button("⚙️ Update Task Status"):
-            st.session_state.show_status_form = True
-
-        if st.button("Logout"):
-            st.session_state["authenticated"] = False
-            st.rerun()
-
-    st.divider()
-    image_url = "https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg"
-    st.image(image_url, use_container_width=True, caption="Active Site: Yousaf Colony")
-    
-    st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 5px solid #FF4B4B; color: #1E1E1E;">
-            <h4 style="margin: 0; color: #FF4B4B; font-size: 16px;">📍 Current Project</h4>
-            <p style="margin: 5px 0; font-size: 13px;"><b>Location:</b> Yousaf Colony</p>
-            <p style="margin: 5px 0; font-size: 13px;"><b>Size:</b> 5 Marla</p>
-            <p style="margin: 5px 0; font-size: 13px;"><b>Structure:</b> 2.5 Story</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-df = fetch_data()
-
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
     h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
@@ -139,6 +21,20 @@ if menu == "📊 Dashboard":
 
     st.write("##")
 
+    # --- 💰 CAPITAL FLOW ANALYTICS (MOVED TO TOP) ---
+    if not df.empty:
+        inc = df[df['type'] == 'Income']['amount'].sum()
+        exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
+        bal = inc - exp
+    else: inc, exp, bal = 0, 0, 0
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Income", f"PKR {inc:,.0f}")
+    col2.metric("Total Expenses", f"PKR {exp:,.0f}")
+    col3.metric("Net Balance", f"PKR {bal:,.0f}")
+    
+    st.divider()
+
     # --- COMPACT GRAPHS SECTION ---
     status_df = fetch_project_status()
     total_tasks = len(status_df)
@@ -149,7 +45,6 @@ if menu == "📊 Dashboard":
     
     with g_col1:
         st.markdown('<div class="graph-card"><b>Work Done (%)</b>', unsafe_allow_html=True)
-        # Compact Mermaid Chart
         chart_code = f"""
         graph TD
             A((Progress)) --> B({prog_val}% Done)
@@ -200,20 +95,6 @@ if menu == "📊 Dashboard":
                     <small style="color: {color}; font-weight: bold;">{row['status']}</small>
                 </div>
             """, unsafe_allow_html=True)
-
-    st.divider()
-    st.markdown("<h4 style='text-align: center; color: #444; font-size: 18px;'>Capital Flow Analytics</h4>", unsafe_allow_html=True)
-    
-    if not df.empty:
-        inc = df[df['type'] == 'Income']['amount'].sum()
-        exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
-        bal = inc - exp
-    else: inc, exp, bal = 0, 0, 0
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Income", f"PKR {inc:,.0f}")
-    col2.metric("Total Expenses", f"PKR {exp:,.0f}")
-    col3.metric("Net Balance", f"PKR {bal:,.0f}")
 
     st.divider()
     
@@ -273,50 +154,3 @@ if menu == "📊 Dashboard":
 
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
-
-# --- 6. HISTORY PAGES ---
-else:
-    st.title(menu)
-    if not df.empty:
-        if "Income" in menu: filtered_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
-        else: filtered_df = df.copy()
-        
-        search = st.text_input("🔍 Search data...")
-        if search:
-            mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
-            filtered_df = filtered_df[mask]
-            
-        st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
-
-        if is_auth:
-            st.divider()
-            st.subheader("🛠️ Admin Record Management")
-            target_id = st.text_input("Enter Row ID to Edit or Delete")
-            if target_id:
-                target_row = df[df['id'].astype(str) == target_id]
-                if not target_row.empty:
-                    row_data = target_row.iloc[0]
-                    st.warning(f"Selected: {row_data['name']} - PKR {row_data['amount']}")
-                    action_col1, action_col2 = st.columns(2)
-                    if action_col2.button("🗑️ Confirm Delete"):
-                        supabase.table('transactions').delete().eq('id', target_id).execute()
-                        st.cache_data.clear()
-                        st.rerun()
-                    with action_col1:
-                        with st.expander("📝 Edit Details"):
-                            with st.form("edit_form"):
-                                new_name = st.text_input("Update Name", value=row_data['name'])
-                                new_amt = st.number_input("Update Amount", value=float(row_data['amount']))
-                                if st.form_submit_button("Update Record"):
-                                    supabase.table('transactions').update({"name": new_name, "amount": new_amt}).eq('id', target_id).execute()
-                                    st.cache_data.clear()
-                                    st.rerun()
-
-        buffer = io.BytesIO()
-        filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
-    else:
-        st.warning("No records found.")
