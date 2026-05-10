@@ -4,6 +4,7 @@ from supabase import create_client, Client
 from datetime import datetime
 import io
 import streamlit.components.v1 as components
+import base64
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
@@ -68,7 +69,7 @@ def fetch_project_status():
     try:
         res = supabase.table('project_status').select("*").execute()
         if not res.data:
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
             return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
         return pd.DataFrame(res.data)
     except:
@@ -224,7 +225,10 @@ else:
             f_df = f_df[mask]
         
         st.dataframe(f_df, use_container_width=True)
-        st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
+        
+        # Calculate Total for Report
+        total_val = f_df['amount'].sum()
+        st.metric(f"Total Amount ({menu})", f"PKR {total_val:,.0f}")
 
         # ADMIN TOOLS
         if is_auth:
@@ -235,7 +239,7 @@ else:
                     supabase.table('transactions').delete().eq('id', tid).execute()
                     st.cache_data.clear(); st.rerun()
 
-        # DOWNLOAD SECTION (FIXED FOR PDF GENERATION)
+        # DOWNLOAD SECTION
         st.divider()
         col_down1, col_down2 = st.columns(2)
         
@@ -244,24 +248,45 @@ else:
         f_df.to_excel(buf, index=False)
         col_down1.download_button("📥 Download Excel", buf.getvalue(), f"{menu}.xlsx")
 
-        # 2. PDF REPORT DOWNLOAD (HTML Format to avoid 'Failed to load' error)
-        # This converts the table to a printable HTML report
+        # 2. PDF REPORT DOWNLOAD (Professional HTML-to-PDF Template)
         report_html = f"""
         <html>
-        <head><title>Deewary ERP Report</title></head>
-        <body style='font-family: Arial, sans-serif;'>
-            <h2 style='color: #FF4B4B;'>{menu} - Deewary.com ERP</h2>
-            <p>Report Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 30px; }}
+                .header {{ text-align: center; border-bottom: 3px solid #FF4B4B; padding-bottom: 10px; }}
+                .title {{ color: #FF4B4B; font-size: 28px; font-weight: bold; margin: 0; }}
+                .subtitle {{ font-size: 14px; color: #555; }}
+                table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                th {{ background-color: #f2f2f2; border: 1px solid #ddd; padding: 10px; text-align: left; }}
+                td {{ border: 1px solid #ddd; padding: 8px; font-size: 12px; }}
+                .total-section {{ margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; color: #FF4B4B; border-top: 2px solid #333; padding-top: 10px; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="title">DEEWARY.COM ERP</div>
+                <div class="subtitle">Construction Management Report - {menu}</div>
+                <p>Date Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+            </div>
+            
             {f_df.to_html(index=False)}
+            
+            <div class="total-section">
+                GRAND TOTAL: PKR {total_val:,.0f}
+            </div>
+            
+            <p style="text-align:center; font-size:10px; margin-top:50px; color:#888;">
+                This is a computer generated report from Deewary.com ERP Portal.
+            </p>
         </body>
         </html>
         """
-        col_down2.download_button(
-            label="📄 Download PDF Report",
-            data=report_html,
-            file_name=f"{menu}_Report.html",
-            mime="text/html"
-        )
+        
+        # Convert to Base64 for download
+        b64 = base64.b64encode(report_html.encode()).decode()
+        pdf_href = f'<a href="data:text/html;base64,{b64}" download="{menu}_Report.html" style="text-decoration:none;"><button style="width:100%; background-color:#FF4B4B; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">📄 Download PDF Report</button></a>'
+        col_down2.markdown(pdf_href, unsafe_allow_html=True)
 
     else:
         st.warning("No data found.")
