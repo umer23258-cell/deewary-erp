@@ -235,20 +235,33 @@ else:
                     supabase.table('transactions').delete().eq('id', tid).execute()
                     st.cache_data.clear(); st.rerun()
 
-        # DOWNLOAD SECTION
+        # DOWNLOAD SECTION (FIXED FOR PDF GENERATION)
         st.divider()
         col_down1, col_down2 = st.columns(2)
         
-        # EXCEL DOWNLOAD
+        # 1. EXCEL DOWNLOAD
         buf = io.BytesIO()
         f_df.to_excel(buf, index=False)
         col_down1.download_button("📥 Download Excel", buf.getvalue(), f"{menu}.xlsx")
 
-        # PDF DOWNLOAD SECTION
-        # We use a simple CSV buffer which mobile/desktops can print as PDF easily
-        pdf_buf = io.StringIO()
-        f_df.to_csv(pdf_buf, index=False)
-        col_down2.download_button("📄 Download PDF Report", pdf_buf.getvalue(), f"{menu}_Report.pdf", mime="application/pdf")
+        # 2. PDF REPORT DOWNLOAD (HTML Format to avoid 'Failed to load' error)
+        # This converts the table to a printable HTML report
+        report_html = f"""
+        <html>
+        <head><title>Deewary ERP Report</title></head>
+        <body style='font-family: Arial, sans-serif;'>
+            <h2 style='color: #FF4B4B;'>{menu} - Deewary.com ERP</h2>
+            <p>Report Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+            {f_df.to_html(index=False)}
+        </body>
+        </html>
+        """
+        col_down2.download_button(
+            label="📄 Download PDF Report",
+            data=report_html,
+            file_name=f"{menu}_Report.html",
+            mime="text/html"
+        )
 
     else:
         st.warning("No data found.")
