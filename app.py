@@ -13,7 +13,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- 3. PREMIUM CSS (Back to Original Style) ---
+# --- 3. PREMIUM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -71,7 +71,7 @@ def check_password():
 df = fetch_data()
 status_df = fetch_project_status()
 
-# --- 6. SIDEBAR ---
+# --- 6. SIDEBAR (Ye section menu define karta hai) ---
 with st.sidebar:
     st.markdown("### 🏗️ DEEWARY ERP")
     menu = st.radio("Navigation", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "🔍 Reports"])
@@ -84,7 +84,7 @@ with st.sidebar:
     st.divider()
     st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption="Site: Yousaf Colony")
 
-# --- 7. DASHBOARD ---
+# --- 7. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
     st.markdown("""
         <div class="main-header">
@@ -96,10 +96,10 @@ if menu == "📊 Dashboard":
 
     # Metrics Calculation
     if not df.empty:
-        inc = df[df['type'] == 'Income']['amount'].sum()
-        exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
+        inc = float(df[df['type'] == 'Income']['amount'].sum())
+        exp = float(df[df['type'].isin(['Labor', 'Material'])]['amount'].sum())
         bal = inc - exp
-    else: inc, exp, bal = 0, 0, 0
+    else: inc, exp, bal = 0.0, 0.0, 0.0
 
     m1, m2, m3 = st.columns(3)
     m1.metric("Total Income", f"PKR {inc:,.0f}")
@@ -112,8 +112,22 @@ if menu == "📊 Dashboard":
     col_chart, col_prog = st.columns([1, 1])
     with col_chart:
         st.markdown("##### 💰 Cash Flow Analysis")
-        pie_chart = f'pie title Income vs Expense \n "Income" : {int(inc) if inc>0 else 1} \n "Expense" : {int(exp) if exp>0 else 1}'
-        components.html(f"<div style='background:#f8f9fa; border-radius:15px; padding:10px; border:1px solid #eee;'><pre class='mermaid'>{pie_chart}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=300)
+        # Fixed Mermaid Logic to prevent Syntax Error
+        c_inc = int(inc) if inc > 0 else 1
+        c_exp = int(exp) if exp > 0 else 1
+        pie_chart = f'pie title "Cash Flow" \n "Income" : {c_inc} \n "Expenses" : {c_exp}'
+        
+        components.html(f"""
+            <div style='background:#f8f9fa; border-radius:15px; padding:10px; border:1px solid #eee;'>
+                <pre class='mermaid'>
+                {pie_chart}
+                </pre>
+            </div>
+            <script type='module'>
+                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+                mermaid.initialize({{startOnLoad:true, theme:'neutral'}});
+            </script>
+        """, height=350)
 
     with col_prog:
         total_tasks = len(status_df)
@@ -146,7 +160,7 @@ if menu == "📊 Dashboard":
 
     st.divider()
 
-    # --- QUICK ENTRY FORMS (With requested fields) ---
+    # --- QUICK ENTRY FORMS ---
     st.markdown("##### ⚡ Quick Entry")
     q1, q2, q3 = st.columns(3)
     if q1.button("➕ Income"): st.session_state.show_form = "Income"
@@ -161,7 +175,7 @@ if menu == "📊 Dashboard":
                     f_col1, f_col2 = st.columns(2)
                     d_date = f_col1.date_input("Date", datetime.now())
                     d_name = f_col2.text_input("Name / Title")
-                    d_amt = f_col1.number_input("Amount (PKR)", min_value=0)
+                    d_amt = f_col1.number_input("Amount (PKR)", min_value=0.0)
                     d_occ = f_col2.text_input("Occupation")
                     d_rec = f_col1.text_input("Received By")
                     d_meth = f_col2.selectbox("Payment Method", ["Cash", "Bank Transfer", "EasyPaisa", "JazzCash", "Cheque"])
