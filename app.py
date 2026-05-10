@@ -3,6 +3,7 @@ import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime
 import io
+import streamlit.components.v1 as components
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
@@ -77,7 +78,8 @@ with st.sidebar:
         "💰 Income History", 
         "👷 Labor History", 
         "🏗️ Material History",
-        "🔍 Search & All Reports"
+        "🔍 Search & All Reports",
+        "⚙️ System Logic"
     ])
     
     st.divider()
@@ -241,7 +243,39 @@ if menu == "📊 Dashboard":
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
 
-# --- 6. HISTORY PAGES ---
+# --- 6. SYSTEM LOGIC (NEW) ---
+elif menu == "⚙️ System Logic":
+    st.title("⚙️ Deewary.com ERP Workflow")
+    mermaid_code = """
+    graph TD
+        A[Start App] --> B{Navigation Menu}
+        B -->|Dashboard| C[Fetch Data from Supabase]
+        C --> D[Show Progress & Analytics]
+        D --> E{Quick Actions}
+        E -->|Add Income/Labor/Material| F[Input Form]
+        F -->|Submit| G[(Supabase Cloud)]
+        B -->|History Pages| H[Filter & Search Data]
+        H --> I[Show Data Table]
+        I --> J[Download Excel Report]
+        subgraph Admin_Access
+        K[Admin Login] -->|Success| L[Update Project Status]
+        L --> G
+        I -->|Admin Only| M[Edit/Delete Record]
+        M --> G
+        end
+        G --> C
+    """
+    components.html(
+        f"""
+        <pre class="mermaid">{mermaid_code}</pre>
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true, theme: 'neutral' }});
+        </script>
+        """, height=700
+    )
+
+# --- 7. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
