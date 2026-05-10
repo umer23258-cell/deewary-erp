@@ -39,6 +39,7 @@ st.markdown("""
 @st.cache_data(ttl=60)
 def fetch_data():
     try:
+      
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
         return pd.DataFrame(res.data)
     except Exception as e:
