@@ -3,6 +3,7 @@ import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime
 import io
+import streamlit.components.v1 as components
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
@@ -32,6 +33,14 @@ st.markdown("""
         h2 { font-size: 20px !important; }
     }
     .main { background-color: #ffffff; }
+    /* Compact Graph Card Style */
+    .graph-card {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #eee;
+        text-align: center;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -130,8 +139,37 @@ if menu == "📊 Dashboard":
 
     st.write("##")
 
+    # --- COMPACT GRAPHS SECTION ---
+    status_df = fetch_project_status()
+    total_tasks = len(status_df)
+    done_tasks = len(status_df[status_df['status'] == 'Done'])
+    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+
+    g_col1, g_col2 = st.columns(2)
+    
+    with g_col1:
+        st.markdown('<div class="graph-card"><b>Work Done (%)</b>', unsafe_allow_html=True)
+        # Compact Mermaid Chart
+        chart_code = f"""
+        graph TD
+            A((Progress)) --> B({prog_val}% Done)
+            A --> C({100-prog_val}% Pending)
+            style B fill:#FF4B4B,color:#fff
+            style C fill:#eee
+        """
+        components.html(f"<pre class='mermaid' style='text-align:center;'>{chart_code}</pre><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=150)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with g_col2:
+        st.markdown('<div class="graph-card"><b>Task Summary</b>', unsafe_allow_html=True)
+        st.write(f"✅ Completed: {done_tasks}")
+        st.write(f"⏳ Pending: {total_tasks - done_tasks}")
+        st.progress(prog_val / 100)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("##")
+
     if "show_status_form" in st.session_state and st.session_state.show_status_form:
-        status_df = fetch_project_status()
         with st.expander("🛠️ Update Task Status", expanded=True):
             with st.form("sidebar_status_form"):
                 c_task = st.selectbox("Select Task", status_df['task_name'].tolist())
@@ -147,11 +185,6 @@ if menu == "📊 Dashboard":
                     st.rerun()
 
     st.markdown("<h3 style='color: #FF4B4B;'>📊 Project Work Progress</h3>", unsafe_allow_html=True)
-    
-    status_df = fetch_project_status()
-    total_tasks = len(status_df)
-    done_tasks = len(status_df[status_df['status'] == 'Done'])
-    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
     
     st.progress(prog_val / 100)
     st.markdown(f"<p style='text-align: right; font-weight: bold;'>{prog_val}% Completed</p>", unsafe_allow_html=True)
