@@ -48,7 +48,7 @@ def fetch_project_status():
     try:
         res = supabase.table('project_status').select("*").execute()
         if not res.data:
-            tasks = ["Mistry Ka Kam", "Plumbering", "Electric Work", "Celling", "Paint", "Wood Work", "Ragarya", "Main Door", "Grill", "Wasbasen Tottya", "Finishing"]
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
             return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
         return pd.DataFrame(res.data)
     except:
