@@ -159,7 +159,7 @@ if menu == "📊 Dashboard":
 
     st.divider()
 
-    # FLOW ANALYTICS + CHART
+    # FLOW ANALYTICS
     st.markdown("<h4 style='text-align: center; color: #444; font-size: 18px;'>Capital Flow Analytics</h4>", unsafe_allow_html=True)
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
@@ -172,19 +172,25 @@ if menu == "📊 Dashboard":
     col2.metric("Total Expenses", f"PKR {exp:,.0f}")
     col3.metric("Net Balance", f"PKR {bal:,.0f}")
 
-    # COMPACT WEEKLY CHART
+    # --- COMPACT WEEKLY CHART (All 3 Types Together) ---
     if not df.empty:
         df_chart = df.copy()
-        df_chart['date'] = pd.to_datetime(df_chart['date'])
+        df_chart['date'] = pd.to_datetime(df_chart['date']).dt.date
         last_7_days = datetime.now().date() - timedelta(days=7)
-        weekly_df = df_chart[df_chart['date'].dt.date >= last_7_days]
+        weekly_df = df_chart[df_chart['date'] >= last_7_days]
         
         if not weekly_df.empty:
-            chart_data = weekly_df.groupby([weekly_df['date'].dt.date, 'type'])['amount'].sum().reset_index()
-            chart_data.columns = ['Date', 'Type', 'Amount']
-            fig = px.bar(chart_data, x='Date', y='Amount', color='Type', barmode='group', height=300,
-                         color_discrete_map={'Income': '#28a745', 'Labor': '#dc3545', 'Material': '#fd7e14'})
-            fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), showlegend=True, xaxis_title=None)
+            # Grouping to ensure all types show up side-by-side
+            chart_data = weekly_df.groupby(['date', 'type'])['amount'].sum().reset_index()
+            fig = px.bar(chart_data, x='date', y='amount', color='type', barmode='group', height=280,
+                         color_discrete_map={'Income': '#28a745', 'Labor': '#dc3545', 'Material': '#fd7e14'},
+                         labels={'amount': 'Amount (PKR)', 'date': 'Day', 'type': 'Category'})
+            
+            fig.update_layout(
+                margin=dict(l=10, r=10, t=10, b=10),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                xaxis=dict(tickformat="%d %b")
+            )
             st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
@@ -208,89 +214,4 @@ if menu == "📊 Dashboard":
                     d_occ, d_rec, d_meth = "", "", "Cash"
                     if form_type in ["Income", "Labor"]:
                         col_f1, col_f2 = st.columns(2)
-                        d_occ = col_f1.text_input("Occupation")
-                        d_meth = col_f1.selectbox("Payment Method", ["Cash", "Bank Transfer", "EasyPaisa", "Cheque"])
-                        d_rec = col_f2.text_input("Received By")
-                    d_det = st.text_area("Details")
-                    if st.form_submit_button("Save to Cloud"):
-                        payload = {"date": str(d_date), "type": form_type, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
-                        supabase.table('transactions').insert(payload).execute()
-                        st.cache_data.clear()
-                        st.session_state.pop("show_form")
-                        st.rerun()
-            if st.button("❌ Close Form"):
-                st.session_state.pop("show_form")
-                st.rerun()
-
-    # VIDEO & ABOUT
-    st.divider()
-    st.markdown("<h3 style='color: #FF4B4B;'>🏘️ OUR COMPLETED PROJECT </h3>", unsafe_allow_html=True)
-    proj_col1, proj_col2 = st.columns([1, 1.2])
-    with proj_col1: st.video("https://youtu.be/AiA4PkXturU")
-    with proj_col2:
-        st.markdown("""<div style="background-color: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
-                <h4 style="color: #1E1E1E; margin-top: 0;">🏡 Modern Architecture Design</h4>
-                <p style="font-size: 14px; color: #444; line-height: 1.5;">Hamara ye project modern aesthetics aur structural durability ka behtareen imtizaaj hai.</p>
-                <a href="https://youtu.be/AiA4PkXturU" target="_blank" style="background-color: #FF0000; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">▶️ Watch Tour on YouTube</a>
-            </div>""", unsafe_allow_html=True)
-
-    st.write("##")
-    st.divider()
-    about_col1, about_col2 = st.columns([1.6, 1])
-    with about_col1:
-        st.subheader("🏢 About Deewary.com")
-        st.markdown("""**Deewary.com** Pakistan ki construction aur real estate industry mein aik premium aur barosa-mand naam hai...""")
-    with about_col2:
-        st.markdown("""<div style="background-color: #1E1E1E; padding: 25px; border-radius: 20px; color: white; border: 2px solid #FF4B4B;">
-            <h3 style="margin-top: 0; color: #FF4B4B; font-size: 22px;">🚀 Our Vision</h3>
-            <p>"Hamara maqsad Pakistan ki construction industry mein technology aur imandari ka naya mayar qaim karna hai."</p>
-        </div>""", unsafe_allow_html=True)
-
-    st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
-
-else:
-    st.title(menu)
-    if not df.empty:
-        if "Income" in menu: filtered_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: filtered_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: filtered_df = df[df['type'] == 'Material']
-        else: filtered_df = df.copy()
-        
-        search = st.text_input("🔍 Search data...")
-        if search:
-            mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
-            filtered_df = filtered_df[mask]
-            
-        st.dataframe(filtered_df, use_container_width=True)
-        st.info(f"📊 **Total: PKR {filtered_df['amount'].sum():,.2f}**")
-
-        if is_auth:
-            st.divider()
-            st.subheader("🛠️ Admin Record Management")
-            target_id = st.text_input("Enter Row ID to Edit or Delete")
-            if target_id:
-                target_row = df[df['id'].astype(str) == target_id]
-                if not target_row.empty:
-                    row_data = target_row.iloc[0]
-                    st.warning(f"Selected: {row_data['name']} - PKR {row_data['amount']}")
-                    action_col1, action_col2 = st.columns(2)
-                    if action_col2.button("🗑️ Confirm Delete"):
-                        supabase.table('transactions').delete().eq('id', target_id).execute()
-                        st.cache_data.clear()
-                        st.rerun()
-                    with action_col1:
-                        with st.expander("📝 Edit Details"):
-                            with st.form("edit_form"):
-                                new_name = st.text_input("Update Name", value=row_data['name'])
-                                new_amt = st.number_input("Update Amount", value=float(row_data['amount']))
-                                if st.form_submit_button("Update Record"):
-                                    supabase.table('transactions').update({"name": new_name, "amount": new_amt}).eq('id', target_id).execute()
-                                    st.cache_data.clear()
-                                    st.rerun()
-
-        buffer = io.BytesIO()
-        filtered_df.to_excel(buffer, index=False, engine='openpyxl')
-        st.download_button("📥 Download Excel", buffer.getvalue(), f"{menu}.xlsx")
-    else:
-        st.warning("No records found.")
+                        d_occ = col_f1.text
