@@ -13,7 +13,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- 3. PREMIUM CSS ---
+# --- 3. PREMIUM CSS (Back to Original Style) ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -25,11 +25,15 @@ st.markdown("""
     div[data-testid="stMetric"] {
         background: #f8f9fa; border: 1px solid #eee;
         padding: 15px !important; border-radius: 12px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
     .status-card {
         background: #ffffff; padding: 10px; border-radius: 8px;
         border-left: 5px solid #FF4B4B; margin-bottom: 8px; font-size: 14px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+    }
+    @media (max-width: 640px) {
+        .stButton > button { width: 100%; border-radius: 10px; height: 3em; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -63,11 +67,11 @@ def check_password():
             else: st.error("Wrong!")
     return False
 
-# --- 5. DATA INITIALIZATION ---
+# --- 5. INITIALIZE DATA ---
 df = fetch_data()
 status_df = fetch_project_status()
 
-# --- 6. SIDEBAR NAVIGATION ---
+# --- 6. SIDEBAR ---
 with st.sidebar:
     st.markdown("### 🏗️ DEEWARY ERP")
     menu = st.radio("Navigation", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "🔍 Reports"])
@@ -77,56 +81,72 @@ with st.sidebar:
         if st.button("Logout"): 
             st.session_state["authenticated"] = False
             st.rerun()
+    st.divider()
     st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption="Site: Yousaf Colony")
 
-# --- 7. DASHBOARD PAGE ---
+# --- 7. DASHBOARD ---
 if menu == "📊 Dashboard":
     st.markdown("""
         <div class="main-header">
-            <h1 style="color: #FF4B4B; margin: 0; font-size: 28px;">DEEWARY.COM</h1>
-            <p style="color: white; font-size: 12px; margin: 0;">C.E.O: SARDAR SAMI ULLAH</p>
+            <h1 style="color: #FF4B4B; margin: 0; font-size: 28px; letter-spacing: 2px;">DEEWARY.COM</h1>
+            <p style="color: white; font-size: 12px; margin: 0;">REAL ESTATE & CONSTRUCTION MANAGEMENT</p>
+            <p style="color: #FF4B4B; font-weight: bold; margin-top: 5px; font-size: 14px;">C.E.O: SARDAR SAMI ULLAH</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Calculate Totals
+    # Metrics Calculation
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
         bal = inc - exp
     else: inc, exp, bal = 0, 0, 0
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Income", f"PKR {inc:,.0f}")
-    col2.metric("Total Expenses", f"PKR {exp:,.0f}")
-    col3.metric("Net Balance", f"PKR {bal:,.0f}")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Income", f"PKR {inc:,.0f}")
+    m2.metric("Total Expenses", f"PKR {exp:,.0f}")
+    m3.metric("Net Balance", f"PKR {bal:,.0f}")
 
-    # Charts Section
-    c_chart, c_prog = st.columns([1, 1])
-    with c_chart:
+    st.write("##")
+
+    # Financial Chart & Progress
+    col_chart, col_prog = st.columns([1, 1])
+    with col_chart:
         st.markdown("##### 💰 Cash Flow Analysis")
         pie_chart = f'pie title Income vs Expense \n "Income" : {int(inc) if inc>0 else 1} \n "Expense" : {int(exp) if exp>0 else 1}'
-        components.html(f"<div style='background:#f8f9fa; border-radius:15px; padding:10px;'><pre class='mermaid'>{pie_chart}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=300)
+        components.html(f"<div style='background:#f8f9fa; border-radius:15px; padding:10px; border:1px solid #eee;'><pre class='mermaid'>{pie_chart}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=300)
 
-    with c_prog:
-        total_t = len(status_df)
-        done_t = len(status_df[status_df['status'] == 'Done'])
-        prog_val = int((done_t / total_t) * 100) if total_t > 0 else 0
+    with col_prog:
+        total_tasks = len(status_df)
+        done_tasks = len(status_df[status_df['status'] == 'Done'])
+        prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
         st.markdown("##### 🏗️ Project Progress")
-        st.write(f"Overall Progress: **{prog_val}%**")
+        st.write(f"Overall Completion: **{prog_val}%**")
         st.progress(prog_val / 100)
+        st.write(f"✅ Finished: {done_tasks} | ⏳ Pending: {total_tasks - done_tasks}")
         if is_auth and st.button("⚙️ Manage Tasks"): st.session_state.show_status_form = True
 
     if "show_status_form" in st.session_state and st.session_state.show_status_form:
-        with st.form("task_update"):
-            t_n = st.selectbox("Select Task", status_df['task_name'].tolist())
-            t_s = st.radio("Status", ["Pending", "Done"], horizontal=True)
+        with st.form("status_upd"):
+            t_sel = st.selectbox("Select Task", status_df['task_name'].tolist())
+            s_sel = st.radio("Status", ["Pending", "Done"], horizontal=True)
             if st.form_submit_button("Update Status"):
-                supabase.table('project_status').upsert({"task_name": t_n, "status": t_s}).execute()
+                supabase.table('project_status').upsert({"task_name": t_sel, "status": s_sel}).execute()
                 st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
 
     st.divider()
 
-    # --- QUICK ENTRY FORMS ---
+    # Task Grid
+    st.markdown("##### 📋 Work Checklist")
+    t_cols = st.columns(3)
+    for i, row in status_df.iterrows():
+        with t_cols[i % 3]:
+            icon = "✅" if row['status'] == "Done" else "⏳"
+            color = "#28a745" if row['status'] == "Done" else "#dc3545"
+            st.markdown(f'<div class="status-card" style="border-left-color: {color};"><b>{icon} {row["task_name"]}</b><br><small style="color: {color};">{row["status"]}</small></div>', unsafe_allow_html=True)
+
+    st.divider()
+
+    # --- QUICK ENTRY FORMS (With requested fields) ---
     st.markdown("##### ⚡ Quick Entry")
     q1, q2, q3 = st.columns(3)
     if q1.button("➕ Income"): st.session_state.show_form = "Income"
@@ -136,26 +156,25 @@ if menu == "📊 Dashboard":
     if "show_form" in st.session_state:
         if is_auth:
             ftype = st.session_state.show_form
-            with st.expander(f"Register {ftype}", expanded=True):
+            with st.expander(f"Register New {ftype}", expanded=True):
                 with st.form("entry_form"):
-                    fa, fb = st.columns(2)
-                    d_date = fa.date_input("Date", datetime.now())
-                    d_name = fb.text_input("Name / Title")
-                    d_amt = fa.number_input("Amount (PKR)", min_value=0)
-                    d_occ = fb.text_input("Occupation")
-                    d_rec = fa.text_input("Received By")
-                    d_meth = fb.selectbox("Payment Method", ["Cash", "Bank Transfer", "EasyPaisa", "JazzCash", "Cheque"])
-                    d_det = st.text_area("Details")
+                    f_col1, f_col2 = st.columns(2)
+                    d_date = f_col1.date_input("Date", datetime.now())
+                    d_name = f_col2.text_input("Name / Title")
+                    d_amt = f_col1.number_input("Amount (PKR)", min_value=0)
+                    d_occ = f_col2.text_input("Occupation")
+                    d_rec = f_col1.text_input("Received By")
+                    d_meth = f_col2.selectbox("Payment Method", ["Cash", "Bank Transfer", "EasyPaisa", "JazzCash", "Cheque"])
+                    d_det = st.text_area("Details / Description")
                     
-                    if st.form_submit_button("Save Entry"):
+                    if st.form_submit_button(f"Save {ftype}"):
                         payload = {
-                            "date": str(d_date), "type": ftype, "name": d_name, 
-                            "amount": d_amt, "occupation": d_occ, "received_by": d_rec, 
-                            "pay_method": d_meth, "detail": d_det
+                            "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt,
+                            "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "detail": d_det
                         }
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
-        else: st.warning("Login as Admin first.")
+        else: st.warning("Please login as Admin to add data.")
 
     st.divider()
     st.video("https://youtu.be/AiA4PkXturU")
@@ -164,15 +183,23 @@ if menu == "📊 Dashboard":
 else:
     st.title(menu)
     if not df.empty:
-        # Filter based on menu selection
         if "Income" in menu: f_df = df[df['type'] == 'Income']
         elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
         
         st.dataframe(f_df, use_container_width=True)
-        st.info(f"Total: PKR {f_df['amount'].sum():,.0f}")
+        st.info(f"Total Amount: PKR {f_df['amount'].sum():,.0f}")
         
         if is_auth:
             st.divider()
-            tid = st.text_input("Enter Row ID to Delete")
+            del_id = st.text_input("Enter Row ID to Delete")
+            if del_id and st.button("🗑️ Delete Permanently"):
+                supabase.table('transactions').delete().eq('id', del_id).execute()
+                st.cache_data.clear(); st.rerun()
+
+        # Excel Export
+        buf = io.BytesIO()
+        f_df.to_excel(buf, index=False)
+        st.download_button("📥 Export to Excel", buf.getvalue(), f"Deewary_{menu}.xlsx")
+    else: st.warning("No data found.")
