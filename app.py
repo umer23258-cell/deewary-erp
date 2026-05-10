@@ -132,6 +132,37 @@ if menu == "📊 Dashboard":
 
     st.write("##")
 
+    # --- WEEKLY AMOUNT CHART ON DASHBOARD ---
+    if not df.empty:
+        df['date'] = pd.to_datetime(df['date'])
+        last_7_days = datetime.now() - timedelta(days=7)
+        week_df = df[df['date'] >= last_7_days]
+        w_inc = week_df[week_df['type'] == 'Income']['amount'].sum()
+        w_lab = week_df[week_df['type'] == 'Labor']['amount'].sum()
+        w_mat = week_df[week_df['type'] == 'Material']['amount'].sum()
+        
+        st.markdown("<h3 style='color: #FF4B4B;'>📅 This Week's Summary Chart</h3>", unsafe_allow_html=True)
+        amount_flow = f"""
+        graph LR
+            A[Weekly Summary] --> B(Income: {w_inc:,.0f})
+            A --> C(Labor: {w_lab:,.0f})
+            A --> D(Material: {w_mat:,.0f})
+            style B fill:#d4edda,stroke:#155724
+            style C fill:#f8d7da,stroke:#721c24
+            style D fill:#fff3cd,stroke:#856404
+        """
+        components.html(
+            f"""
+            <pre class="mermaid">{amount_flow}</pre>
+            <script type="module">
+                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+                mermaid.initialize({{ startOnLoad: true, theme: 'base' }});
+            </script>
+            """, height=220
+        )
+    
+    st.divider()
+
     if "show_status_form" in st.session_state and st.session_state.show_status_form:
         status_df = fetch_project_status()
         with st.expander("🛠️ Update Task Status", expanded=True):
@@ -171,7 +202,7 @@ if menu == "📊 Dashboard":
             """, unsafe_allow_html=True)
 
     st.divider()
-    st.markdown("<h4 style='text-align: center; color: #444; font-size: 18px;'>Capital Flow Analytics</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #444; font-size: 18px;'>Capital Flow Analytics (Total)</h4>", unsafe_allow_html=True)
     
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
@@ -243,51 +274,9 @@ if menu == "📊 Dashboard":
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
 
-# --- 6. SYSTEM LOGIC (MODIFIED TO ADD WEEKLY FLOW) ---
+# --- 6. SYSTEM LOGIC ---
 elif menu == "⚙️ System Logic":
-    st.title("⚙️ Deewary.com System & Amount Flow")
-    
-    # CALCULATE WEEKLY DATA
-    if not df.empty:
-        df['date'] = pd.to_datetime(df['date'])
-        last_7_days = datetime.now() - timedelta(days=7)
-        week_df = df[df['date'] >= last_7_days]
-        
-        w_inc = week_df[week_df['type'] == 'Income']['amount'].sum()
-        w_lab = week_df[week_df['type'] == 'Labor']['amount'].sum()
-        w_mat = week_df[week_df['type'] == 'Material']['amount'].sum()
-    else:
-        w_inc, w_lab, w_mat = 0, 0, 0
-
-    st.markdown("### 📅 This Week's Amount Flow")
-    
-    # MERMAID FOR AMOUNT FLOW
-    amount_flow = f"""
-    graph LR
-        A[This Week Total] --> B(Income: PKR {w_inc:,.0f})
-        A --> C(Labor: PKR {w_lab:,.0f})
-        A --> D(Material: PKR {w_mat:,.0f})
-        
-        style B fill:#d4edda,stroke:#155724
-        style C fill:#f8d7da,stroke:#721c24
-        style D fill:#fff3cd,stroke:#856404
-    """
-    
-    # RENDER FLOWCHARTS
-    st.markdown("#### 1. Financial Flow (Current Week)")
-    components.html(
-        f"""
-        <pre class="mermaid">{amount_flow}</pre>
-        <script type="module">
-            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-            mermaid.initialize({{ startOnLoad: true, theme: 'base' }});
-        </script>
-        """, height=250
-    )
-
-    st.divider()
-    
-    st.markdown("#### 2. Technical System Workflow")
+    st.title("⚙️ Deewary.com System Logic")
     system_flow = """
     graph TD
         Start[App Launch] --> DB[Fetch Supabase Data]
