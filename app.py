@@ -21,45 +21,41 @@ st.markdown("""
         [data-testid="stMetric"] { background-color: #f0f2f6; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
     }
     .main { background-color: #ffffff; }
-    /* Professional Tracking Cards */
-    .tracking-card {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid #FF4B4B;
-        margin-bottom: 10px;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. FUNCTIONS ---
+# --- 3. FUNCTIONS (ORIGINAL LOGIC PRESERVED) ---
 @st.cache_data(ttl=60)
 def fetch_data():
     try:
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
         return pd.DataFrame(res.data)
-    except: return pd.DataFrame()
+    except:
+        return pd.DataFrame()
 
 def fetch_project_status():
     try:
         res = supabase.table('project_status').select("*").execute()
         if not res.data:
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Tile Polish", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
             return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
         return pd.DataFrame(res.data)
-    except: return pd.DataFrame()
+    except:
+        return pd.DataFrame()
 
 def check_password():
-    if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
-    if st.session_state["authenticated"]: return True
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
+    if st.session_state["authenticated"]:
+        return True
     with st.sidebar.expander("🔐 Admin Access", expanded=True):
         pwd = st.text_input("Admin Password", type="password")
         if st.button("Unlock"):
             if pwd == st.secrets.get("ADMIN_PASSWORD", "admin786"):
                 st.session_state["authenticated"] = True
                 st.rerun()
-            else: st.error("Wrong password!")
+            else:
+                st.error("Wrong password!")
     return False
 
 # --- 4. SIDEBAR ---
@@ -71,149 +67,132 @@ with st.sidebar:
     if is_auth:
         st.success("🔓 Admin Active")
         if st.button("⚙️ Update Task Status"): st.session_state.show_status_form = True
-        if st.button("Logout"): st.session_state["authenticated"] = False; st.rerun()
+        if st.button("Logout"): 
+            st.session_state["authenticated"] = False
+            st.rerun()
     st.divider()
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", use_container_width=True, caption="Active Site: Yousaf Colony")
+    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", use_container_width=True)
 
 df = fetch_data()
 
 # --- 5. DASHBOARD PAGE ---
 if menu == "📊 Dashboard":
-    # Header Section
-    h_col1, h_col2, h_col3 = st.columns([1, 4, 1])
-    with h_col1: st.image("https://i.ibb.co/HfKMwQJh/deewaryn-com-logo.jpg", width=110)
-    with h_col2:
-        st.markdown("""
-            <div style="text-align: center; background-color: #1E1E1E; padding: 15px; border-radius: 15px;">
-                <h2 style="color: #FF4B4B; margin: 0; letter-spacing: 2px;">DEEWARY.COM</h2>
-                <p style="color: white; margin: 0; font-size: 14px;">SITE MONITORING & FINANCIAL TRACKING</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
+    # Header
+    st.markdown("""
+        <div style="text-align: center; background-color: #1E1E1E; padding: 20px; border-radius: 15px; border-bottom: 5px solid #FF4B4B;">
+            <h1 style="color: #FF4B4B; margin: 0; letter-spacing: 3px;">PROJECT STATUS REPORT</h1>
+            <p style="color: white; margin: 0; font-size: 14px;">Real-Time Site Monitoring & Analytics</p>
+        </div>
+    """, unsafe_allow_html=True)
+
     st.write("##")
 
-    # --- PROFESSIONAL TRACKING SECTION ---
-    st.markdown("<h2 style='text-align: center; color: #333;'>🚀 Live Project Tracking</h2>", unsafe_allow_html=True)
-    
-    chart_col1, chart_col2 = st.columns(2)
+    # --- PROFESSIONAL REPORT SECTION ---
+    status_df = fetch_project_status()
+    done_count = len(status_df[status_df['status'] == 'Done'])
+    total_tasks = len(status_df)
+    prog_perc = int((done_count/total_tasks)*100) if total_tasks > 0 else 0
 
-    with chart_col1:
-        st.markdown("#### 🏗️ Work Execution Flow")
-        status_df = fetch_project_status()
-        done = len(status_df[status_df['status'] == 'Done'])
-        total = len(status_df)
-        
-        # Mermaid Progress Chart
-        work_chart = f"""
-        graph TD
-            A[Project: Yousaf Colony] --> B(Completed Tasks: {done})
-            A --> C(Remaining Tasks: {total - done})
-            style B fill:#28a745,stroke:#fff,color:#fff
-            style C fill:#dc3545,stroke:#fff,color:#fff
-        """
-        components.html(f"""
-            <pre class="mermaid">{work_chart}</pre>
-            <script type="module">
-                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                mermaid.initialize({{ startOnLoad: true, theme: 'neutral' }});
-            </script>
-        """, height=250)
-        
-        st.progress(int((done/total)*100))
-        st.caption(f"Overall Completion: {int((done/total)*100)}%")
+    col_stats, col_main = st.columns([1, 3])
 
-    with chart_col2:
-        st.markdown("#### 💰 Weekly Financial Flow")
-        if not df.empty:
-            df['date'] = pd.to_datetime(df['date'])
-            week_df = df[df['date'] >= (datetime.now() - timedelta(days=7))]
-            w_inc = week_df[week_df['type'] == 'Income']['amount'].sum()
-            w_lab = week_df[week_df['type'] == 'Labor']['amount'].sum()
-            w_mat = week_df[week_df['type'] == 'Material']['amount'].sum()
-            
-            amt_chart = f"""
-            graph LR
-                W[Weekly Flow] --> I(Income: {w_inc:,.0f})
-                W --> L(Labor: {w_lab:,.0f})
-                W --> M(Material: {w_mat:,.0f})
-                style I fill:#d4edda,stroke:#155724
-                style L fill:#f8d7da,stroke:#721c24
-                style M fill:#fff3cd,stroke:#856404
+    with col_stats:
+        st.markdown(f"""
+            <div style="background: #6f42c1; color: white; padding: 20px; border-radius: 10px; margin-bottom: 10px; text-align: center;">
+                <small>WORK DONE</small><h2 style="margin:0;">{prog_perc}%</h2>
+            </div>
+            <div style="background: #007bff; color: white; padding: 20px; border-radius: 10px; margin-bottom: 10px; text-align: center;">
+                <small>TASKS DONE</small><h2 style="margin:0;">{done_count}/{total_tasks}</h2>
+            </div>
+            <div style="background: #28a745; color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <small>PROJECT STATUS</small><h2 style="margin:0;">ACTIVE</h2>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_main:
+        c1, c2 = st.columns([1.5, 2])
+        with c1:
+            st.markdown("#### 🥧 Task Distribution")
+            pie_chart = f"""
+            graph TD
+                A((Tasks)) --> B(Done: {done_count})
+                A --> C(Pending: {total_tasks - done_count})
+                style B fill:#28a745,stroke:#fff,color:#fff
+                style C fill:#6c757d,stroke:#fff,color:#fff
             """
-            components.html(f"""
-                <pre class="mermaid">{amt_chart}</pre>
-                <script type="module">
-                    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                    mermaid.initialize({{ startOnLoad: true, theme: 'base' }});
-                </script>
-            """, height=250)
-        else: st.info("No data for this week.")
+            components.html(f"<pre class='mermaid'>{pie_chart}</pre><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=220)
+        
+        with c2:
+            st.markdown("#### 📈 Progress Timeline")
+            for i, row in status_df.iterrows():
+                p_val = 100 if row['status'] == "Done" else 0
+                st.write(f"**{row['task_name']}**")
+                st.progress(p_val/100)
 
     st.divider()
 
-    # Admin Form for Status
-    if "show_status_form" in st.session_state and st.session_state.show_status_form:
-        status_df = fetch_project_status()
-        with st.expander("🛠️ Update Task Status", expanded=True):
-            with st.form("sidebar_status_form"):
-                c_task = st.selectbox("Select Task", status_df['task_name'].tolist())
-                c_status = st.radio("New Status", ["Pending", "Done"], horizontal=True)
-                if st.form_submit_button("Update Now"):
-                    supabase.table('project_status').upsert({"task_name": c_task, "status": c_status}).execute()
-                    st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
+    # --- WEEKLY AMOUNT FLOW ---
+    st.markdown("### 💰 Weekly Financial Summary")
+    if not df.empty:
+        df['date'] = pd.to_datetime(df['date'])
+        last_7 = datetime.now() - timedelta(days=7)
+        w_df = df[df['date'] >= last_7]
+        w_inc = w_df[w_df['type'] == 'Income']['amount'].sum()
+        w_lab = w_df[w_df['type'] == 'Labor']['amount'].sum()
+        w_mat = w_df[w_df['type'] == 'Material']['amount'].sum()
 
-    # Analytics Metrics
-    st.markdown("#### 📑 Lifetime Totals")
-    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
-    exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum() if not df.empty else 0
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Total Income", f"PKR {inc:,.0f}")
-    m2.metric("Total Expenses", f"PKR {exp:,.0f}")
-    m3.metric("Net Balance", f"PKR {inc-exp:,.0f}")
+        f_col1, f_col2, f_col3 = st.columns(3)
+        f_col1.metric("Income (7 Days)", f"PKR {w_inc:,.0f}")
+        f_col2.metric("Labor (7 Days)", f"PKR {w_lab:,.0f}")
+        f_col3.metric("Material (7 Days)", f"PKR {w_mat:,.0f}")
 
     st.divider()
-    
-    # Quick Actions
-    st.subheader("⚡ Quick Management")
-    c1, c2, c3 = st.columns(3)
-    if c1.button("➕ Add Income"): st.session_state.show_form = "Income"
-    if c2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
-    if c3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
-    
+
+    # --- QUICK ACTIONS (ORIGINAL) ---
+    if "edit_id" not in st.session_state:
+        st.subheader("⚡ Quick Actions")
+        q1, q2, q3 = st.columns(3)
+        if q1.button("➕ Add Income"): st.session_state.show_form = "Income"
+        if q2.button("👷 Pay Labor"): st.session_state.show_form = "Labor"
+        if q3.button("🏗️ Buy Material"): st.session_state.show_form = "Material"
+
     if "show_form" in st.session_state:
         if is_auth:
-            form_type = st.session_state.show_form
-            with st.expander(f"New {form_type} Entry", expanded=True):
+            f_type = st.session_state.show_form
+            with st.expander(f"New {f_type} Entry", expanded=True):
                 with st.form("entry_form"):
                     d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Description")
+                    d_name = st.text_input("Name / Description")
                     d_amt = st.number_input("Amount", min_value=0.0)
+                    d_occ, d_rec, d_meth = "", "", "Cash"
+                    if f_type in ["Income", "Labor"]:
+                        col_f1, col_f2 = st.columns(2)
+                        d_occ = col_f1.text_input("Occupation")
+                        d_meth = col_f1.selectbox("Payment Method", ["Cash", "Bank Transfer", "EasyPaisa", "Cheque"])
+                        d_rec = col_f2.text_input("Received By")
                     d_det = st.text_area("Details")
-                    if st.form_submit_button("Save to Cloud"):
-                        payload = {"date": str(d_date), "type": form_type, "name": d_name, "amount": d_amt, "detail": d_det}
+                    if st.form_submit_button("Save Record"):
+                        payload = {"date": str(d_date), "type": f_type, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
                         supabase.table('transactions').insert(payload).execute()
-                        st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
-            if st.button("❌ Close"): st.session_state.pop("show_form"); st.rerun()
+                        st.cache_data.clear()
+                        st.session_state.pop("show_form")
+                        st.rerun()
 
-    st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com | Authorized Access Only")
+    if "show_status_form" in st.session_state and st.session_state.show_status_form:
+        with st.expander("🛠️ Update Project Progress", expanded=True):
+            with st.form("status_update"):
+                c_task = st.selectbox("Select Task", status_df['task_name'].tolist())
+                c_status = st.radio("Status", ["Pending", "Done"], horizontal=True)
+                if st.form_submit_button("Update Status"):
+                    supabase.table('project_status').upsert({"task_name": c_task, "status": c_status}).execute()
+                    st.cache_data.clear()
+                    st.session_state.show_status_form = False
+                    st.rerun()
 
 # --- 6. SYSTEM LOGIC ---
 elif menu == "⚙️ System Logic":
-    st.title("⚙️ ERP System Logic")
-    components.html("""
-        <pre class="mermaid">
-        graph TD
-            A[User Interface] --> B{Menu Selection}
-            B --> Dashboard --> DB[(Supabase Cloud)]
-            B --> History --> Excel[Export Excel]
-            DB --> Analytics[Progress & Flow Charts]
-        </pre>
-        <script type="module">
-            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-            mermaid.initialize({ startOnLoad: true });
-        </script>
-    """, height=400)
+    st.title("⚙️ System Workflow")
+    system_flow = "graph LR\nStart[User] --> Input[ERP Forms] --> DB[(Supabase Cloud)] --> Report[Professional Dashboard]"
+    components.html(f"<pre class='mermaid'>{system_flow}</pre><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true}});</script>", height=300)
 
 # --- 7. HISTORY PAGES ---
 else:
@@ -225,19 +204,14 @@ else:
         else: f_df = df.copy()
         
         search = st.text_input("🔍 Search...")
-        if search: f_df = f_df[f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
+        if search:
+            f_df = f_df[f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
             
         st.dataframe(f_df, use_container_width=True)
-        st.info(f"📊 **Total: PKR {f_df['amount'].sum():,.2f}**")
-
-        if is_auth:
-            st.divider()
-            target_id = st.text_input("Enter ID to Delete/Edit")
-            if target_id and st.button("🗑️ Delete"):
-                supabase.table('transactions').delete().eq('id', target_id).execute()
-                st.cache_data.clear(); st.rerun()
-
+        st.info(f"Total: PKR {f_df['amount'].sum():,.0f}")
+        
         buffer = io.BytesIO()
         f_df.to_excel(buffer, index=False)
         st.download_button("📥 Excel Download", buffer.getvalue(), f"{menu}.xlsx")
-    else: st.warning("No records found.")
+    else:
+        st.warning("No records found.")
