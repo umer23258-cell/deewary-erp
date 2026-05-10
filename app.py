@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, timedelta
 import io
 import streamlit.components.v1 as components
 
@@ -243,36 +243,68 @@ if menu == "📊 Dashboard":
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com | Management Portal")
 
-# --- 6. SYSTEM LOGIC (NEW) ---
+# --- 6. SYSTEM LOGIC (MODIFIED TO ADD WEEKLY FLOW) ---
 elif menu == "⚙️ System Logic":
-    st.title("⚙️ Deewary.com ERP Workflow")
-    mermaid_code = """
+    st.title("⚙️ Deewary.com System & Amount Flow")
+    
+    # CALCULATE WEEKLY DATA
+    if not df.empty:
+        df['date'] = pd.to_datetime(df['date'])
+        last_7_days = datetime.now() - timedelta(days=7)
+        week_df = df[df['date'] >= last_7_days]
+        
+        w_inc = week_df[week_df['type'] == 'Income']['amount'].sum()
+        w_lab = week_df[week_df['type'] == 'Labor']['amount'].sum()
+        w_mat = week_df[week_df['type'] == 'Material']['amount'].sum()
+    else:
+        w_inc, w_lab, w_mat = 0, 0, 0
+
+    st.markdown("### 📅 This Week's Amount Flow")
+    
+    # MERMAID FOR AMOUNT FLOW
+    amount_flow = f"""
+    graph LR
+        A[This Week Total] --> B(Income: PKR {w_inc:,.0f})
+        A --> C(Labor: PKR {w_lab:,.0f})
+        A --> D(Material: PKR {w_mat:,.0f})
+        
+        style B fill:#d4edda,stroke:#155724
+        style C fill:#f8d7da,stroke:#721c24
+        style D fill:#fff3cd,stroke:#856404
+    """
+    
+    # RENDER FLOWCHARTS
+    st.markdown("#### 1. Financial Flow (Current Week)")
+    components.html(
+        f"""
+        <pre class="mermaid">{amount_flow}</pre>
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true, theme: 'base' }});
+        </script>
+        """, height=250
+    )
+
+    st.divider()
+    
+    st.markdown("#### 2. Technical System Workflow")
+    system_flow = """
     graph TD
-        A[Start App] --> B{Navigation Menu}
-        B -->|Dashboard| C[Fetch Data from Supabase]
-        C --> D[Show Progress & Analytics]
-        D --> E{Quick Actions}
-        E -->|Add Income/Labor/Material| F[Input Form]
-        F -->|Submit| G[(Supabase Cloud)]
-        B -->|History Pages| H[Filter & Search Data]
-        H --> I[Show Data Table]
-        I --> J[Download Excel Report]
-        subgraph Admin_Access
-        K[Admin Login] -->|Success| L[Update Project Status]
-        L --> G
-        I -->|Admin Only| M[Edit/Delete Record]
-        M --> G
-        end
-        G --> C
+        Start[App Launch] --> DB[Fetch Supabase Data]
+        DB --> UI[Render Dashboard]
+        UI --> Action{User Input}
+        Action -->|New Entry| Cloud[(Update Supabase)]
+        Action -->|History| Report[Show Tables]
+        Cloud --> DB
     """
     components.html(
         f"""
-        <pre class="mermaid">{mermaid_code}</pre>
+        <pre class="mermaid">{system_flow}</pre>
         <script type="module">
             import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
             mermaid.initialize({{ startOnLoad: true, theme: 'neutral' }});
         </script>
-        """, height=700
+        """, height=400
     )
 
 # --- 7. HISTORY PAGES ---
