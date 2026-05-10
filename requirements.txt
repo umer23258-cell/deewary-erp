@@ -3,3 +3,4 @@ supabase
 pandas
 openpyxl
 plotly
+from fpdf import FPDF
