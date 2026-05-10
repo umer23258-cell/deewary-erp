@@ -4,7 +4,7 @@ from supabase import create_client, Client
 from datetime import datetime
 import io
 import streamlit.components.v1 as components
-from fpdf import FPDF  # PDF banane ke liye zaruri hai
+from fpdf import FPDF
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
@@ -33,39 +33,41 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
-    @media (max-width: 640px) {
-        .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- PDF GENERATOR LOGIC ---
+# --- NEW: FUNCTION TO REMOVE EMOJIS (Prevents PDF Error) ---
+def clean_text(text):
+    return "".join(c for c in str(text) if ord(c) < 128)
+
+# --- PDF GENERATOR LOGIC (UPDATED) ---
 def export_to_pdf(df, title):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
     
-    # Title
-    pdf.cell(190, 10, f"Deewary.com - {title}", ln=True, align="C")
+    # Title (Cleaning emoji from title)
+    pdf.set_font("Arial", "B", 16)
+    clean_title = clean_text(title)
+    pdf.cell(190, 10, f"Deewary.com - {clean_title}", ln=True, align="C")
+    
     pdf.set_font("Arial", "I", 10)
     pdf.cell(190, 10, f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align="C")
     pdf.ln(10)
     
     # Header
     pdf.set_font("Arial", "B", 10)
-    # Sirf zaruri columns le rahe hain
     cols = ["date", "name", "amount", "type"]
     for col in cols:
         pdf.cell(47, 10, col.capitalize(), border=1, align="C")
     pdf.ln()
     
-    # Data
+    # Data rows (Cleaning emojis from data)
     pdf.set_font("Arial", "", 9)
     for i, row in df.iterrows():
-        pdf.cell(47, 10, str(row['date']), border=1)
-        pdf.cell(47, 10, str(row['name'])[:20], border=1) # Name chota kar diya taake table mein fit aaye
+        pdf.cell(47, 10, clean_text(row['date']), border=1)
+        pdf.cell(47, 10, clean_text(row['name'])[:20], border=1)
         pdf.cell(47, 10, f"{row['amount']:,.0f}", border=1)
-        pdf.cell(47, 10, str(row['type']), border=1)
+        pdf.cell(47, 10, clean_text(row['type']), border=1)
         pdf.ln()
         
     return pdf.output(dest='S').encode('latin-1')
@@ -144,7 +146,6 @@ if menu == "📊 Dashboard":
     st.write("##")
     status_df = fetch_project_status()
     
-    # ... Dashboard progress & checklist logic (stays the same) ...
     st.markdown("### 🏗️ Construction Checklist")
     t_cols = st.columns(3)
     for i, row in status_df.iterrows():
@@ -182,7 +183,7 @@ else:
         f_df.to_excel(excel_buf, index=False)
         col_down1.download_button("📥 Download Excel", excel_buf.getvalue(), f"{menu}.xlsx")
 
-        # 2. PROPER PDF DOWNLOAD
+        # 2. PROPER PDF DOWNLOAD (CLEANED)
         try:
             pdf_bytes = export_to_pdf(f_df, menu)
             col_down2.download_button(
