@@ -29,13 +29,12 @@ def export_to_pdf(dataframe, title):
     elements.append(Spacer(1, 12))
 
     # Data Formatting
-    # Hum wahi columns le rahe hain jo report mein zaruri hain
     cols = ['date', 'name', 'amount', 'detail']
     pdf_df = dataframe[cols].copy()
     total_val = pdf_df['amount'].sum()
     
     # Table Data List
-    data = [["Date", "Item Name", "Amount (PKR)", "Detail"]] # Header row
+    data = [["Date", "Item Name", "Amount (PKR)", "Detail"]] 
     for _, row in pdf_df.iterrows():
         data.append([str(row['date']), str(row['name']), f"{row['amount']:,.0f}", str(row['detail'])])
     
@@ -43,34 +42,24 @@ def export_to_pdf(dataframe, title):
     data.append(["", "TOTAL", f"{total_val:,.0f}", ""])
 
     # Table Styling
-    # Column widths: Date(80), Name(120), Amount(90), Detail(200)
     t = Table(data, colWidths=[80, 120, 90, 200])
-    
     style = TableStyle([
-        # Header Row Style
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-        
-        # Body Style
         ('FONTSIZE', (0, 1), (-1, -1), 8),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        
-        # Total Row Style (Highlighting)
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
         ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
         ('FONTSIZE', (0, -1), (-1, -1), 10),
-        ('ALIGN', (2, -1), (2, -1), 'LEFT'),
     ])
     
     t.setStyle(style)
     elements.append(t)
-    
     doc.build(elements)
     buf.seek(0)
     return buf
@@ -81,10 +70,7 @@ st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗�
 # --- CUSTOM CSS FOR INTERFACE ---
 st.markdown("""
     <style>
-    /* Main Background */
     .stApp { background-color: #ffffff; }
-    
-    /* Metric Cards Styling */
     div[data-testid="stMetric"] {
         background-color: #f8f9fa;
         border: 1px solid #e9ecef;
@@ -92,8 +78,6 @@ st.markdown("""
         border-radius: 15px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
-    
-    /* Professional Header Box */
     .header-box {
         text-align: center;
         background: linear-gradient(135deg, #1e1e1e 0%, #333333 100%);
@@ -102,17 +86,6 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
-
-    /* Task Progress Card */
-    .task-card {
-        background: #ffffff;
-        padding: 10px;
-        border-radius: 8px;
-        border-left: 5px solid #FF4B4B;
-        margin-bottom: 10px;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-    }
-
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
         h2 { font-size: 1.5rem !important; }
@@ -204,7 +177,6 @@ if menu == "📊 Dashboard":
         st.markdown("### 📈 Overall Progress")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Work Completed**")
-        
         chart_code = f"graph LR\nA[Project Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
         components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
@@ -224,22 +196,15 @@ if menu == "📊 Dashboard":
                     st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
 
     st.divider()
-
     st.markdown("### 🏗️ Construction Checklist")
     t_cols = st.columns(3)
     for i, row in status_df.iterrows():
         with t_cols[i % 3]:
             icon = "✅" if row['status'] == "Done" else "⏳"
             bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
-            st.markdown(f"""
-                <div style="background:{bg}; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;">
-                    <strong style="font-size:14px;">{icon} {row['task_name']}</strong><br>
-                    <small>{row['status']}</small>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f'<div style="background:{bg}; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;"><strong style="font-size:14px;">{icon} {row["task_name"]}</strong><br><small>{row["status"]}</small></div>', unsafe_allow_html=True)
 
     st.divider()
-
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
     if q1.button("➕ Income"): st.session_state.show_form = "Income"
@@ -254,6 +219,12 @@ if menu == "📊 Dashboard":
                     d_date = st.date_input("Date", datetime.now())
                     d_name = st.text_input("Title")
                     d_amt = st.number_input("Amount", min_value=0)
+                    
+                    # Naya Photo Option (Sirf Material ke liye)
+                    uploaded_photo = None
+                    if ftype == "Material":
+                        uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
+
                     d_occ, d_rec, d_meth = "", "", "Cash"
                     if ftype in ["Income", "Labor"]:
                         c_a, c_b = st.columns(2)
@@ -261,8 +232,15 @@ if menu == "📊 Dashboard":
                         d_meth = c_a.selectbox("Method", ["Cash", "Online", "Cheque"])
                         d_rec = c_b.text_input("Authorized By")
                     d_det = st.text_area("Notes")
+                    
                     if st.form_submit_button("Submit"):
-                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
+                        img_url = ""
+                        if uploaded_photo:
+                            f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                            supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                            img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                        
+                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "image_url": img_url}
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
         else: st.warning("Please login as Admin to add data.")
@@ -271,11 +249,7 @@ if menu == "📊 Dashboard":
     st.markdown("### 🏘️ Showcase Project")
     v1, v2 = st.columns([1, 1])
     with v1: st.video("https://youtu.be/AiA4PkXturU")
-    with v2:
-        st.info("Hamara ye project modern aesthetics aur structural durability ka behtareen namuna hai. Yousaf Colony ki top site.")
-
-    st.divider()
-    st.caption(f"© {datetime.now().year} Deewary.com Portal | Smart Management")
+    with v2: st.info("Hamara ye project modern aesthetics aur structural durability ka behtareen namuna hai.")
 
 # --- 7. HISTORY PAGES ---
 else:
@@ -286,34 +260,32 @@ else:
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
         
-        search = st.text_input("🔎 Filter results...")
+        search = st.text_input("🔎 Search by ID or Name...")
         if search:
             mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             f_df = f_df[mask]
         
         st.dataframe(f_df, use_container_width=True)
+        
+        # SEARCH KE BAAD PHOTO DIKHANE KA LOGIC
+        if search and not f_df.empty:
+            for _, row in f_df.iterrows():
+                if row.get('image_url'):
+                    with st.expander(f"🖼️ View Bill Photo (ID: {row['id']})"):
+                        st.image(row['image_url'], caption=row['name'], use_container_width=True)
+
         st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
 
         if is_auth:
             st.divider()
-            tid = st.text_input("Enter ID to Delete/Edit")
-            if tid:
-                if st.button("🗑️ Delete Permanently"):
-                    supabase.table('transactions').delete().eq('id', tid).execute()
-                    st.cache_data.clear(); st.rerun()
+            tid = st.text_input("Enter ID to Delete")
+            if st.button("🗑️ Delete Permanently") and tid:
+                supabase.table('transactions').delete().eq('id', tid).execute()
+                st.cache_data.clear(); st.rerun()
 
-        # DOWNLOAD BUTTONS (EXCEL & COLORFUL PDF)
         st.divider()
         c1, c2 = st.columns(2)
-        
-        # Excel
         buf_ex = io.BytesIO()
         f_df.to_excel(buf_ex, index=False)
-        c1.download_button("📥 Download Excel", buf_ex.getvalue(), f"{menu}.xlsx")
-        
-        # PDF
-        pdf_file = export_to_pdf(f_df, menu)
-        c2.download_button("📄 Download PDF Report", pdf_file, f"{menu}.pdf")
-
-    else:
-        st.warning("No data found.")
+        c1.download_button("📥 Excel", buf_ex.getvalue(), f"{menu}.xlsx")
+        c2.download_button("📄 PDF Report", export_to_pdf(f_df, menu), f"{menu}.pdf")
