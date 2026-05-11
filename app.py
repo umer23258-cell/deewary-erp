@@ -33,6 +33,14 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
+    .task-card {
+        background: #ffffff;
+        padding: 10px;
+        border-radius: 8px;
+        border-left: 5px solid #FF4B4B;
+        margin-bottom: 10px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+    }
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
     }
@@ -78,9 +86,11 @@ with st.sidebar:
     is_auth = check_password()
     if is_auth:
         st.success("🔓 Admin Mode")
+        if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
+    st.divider()
     st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption="Active Site: Yousaf Colony")
 
 df = fetch_data()
@@ -90,7 +100,10 @@ if menu == "📊 Dashboard":
     st.markdown("""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
-            <p style="color: white; font-size: 12px;">C.E.O: SARDAR SAMI ULLAH</p>
+            <p style="color: white; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px;">PREMIUM CONSTRUCTION MANAGEMENT</p>
+            <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+                C.E.O: SARDAR SAMI ULLAH
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -105,106 +118,26 @@ if menu == "📊 Dashboard":
     m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
     m3.metric("⚖️ Net Balance", f"PKR {bal:,.0f}")
 
-    st.divider()
-    st.subheader("⚡ Quick Transactions")
-    q1, q2, q3 = st.columns(3)
-    if q1.button("➕ Income"): st.session_state.show_form = "Income"
-    if q2.button("👷 Labor"): st.session_state.show_form = "Labor"
-    if q3.button("🏗️ Material"): st.session_state.show_form = "Material"
+    st.write("##")
 
-    if "show_form" in st.session_state:
-        if is_auth:
-            ftype = st.session_state.show_form
-            with st.expander(f"Register {ftype}", expanded=True):
-                # Yahan form start hota hai
-                with st.form("quick_form", clear_on_submit=True):
-                    d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Title/Party Name")
-                    d_amt = st.number_input("Amount", min_value=0)
-                    
-                    d_occ, d_rec, d_meth = "", "", "Cash"
-                    
-                    if ftype in ["Income", "Labor"]:
-                        c_a, c_b = st.columns(2)
-                        d_occ = c_a.text_input("Occupation")
-                        d_meth = c_a.selectbox("Method", ["Cash", "Online", "Cheque"])
-                        d_rec = c_b.text_input("Authorized By")
-                    
-                    # --- PHOTO SECTION ---
-                    photo_data = None
-                    if ftype == "Material":
-                        st.info("Ooper button se camera ya gallery select karein, phir niche submit dabayein.")
-                        cam_photo = st.camera_input("Take Photo")
-                        file_photo = st.file_uploader("OR Upload from Gallery", type=["jpg", "png", "jpeg"])
-                        
-                        # Priority: Pehle camera, phir file
-                        if cam_photo:
-                            photo_data = cam_photo.getvalue()
-                        elif file_photo:
-                            photo_data = file_photo.getvalue()
-
-                    d_det = st.text_area("Notes/Details")
-                    
-                    submit_btn = st.form_submit_button("SUBMIT AND SAVE")
-
-                    if submit_btn:
-                        bill_url = ""
-                        # Agar photo hai to upload karein
-                        if photo_data:
-                            try:
-                                f_name = f"bill_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                                f_path = f"bills/{f_name}"
-                                supabase.storage.from_('bill_images').upload(f_path, photo_data, {"content-type": "image/jpeg"})
-                                bill_url = supabase.storage.from_('bill_images').get_public_url(f_path)
-                            except Exception as e:
-                                st.error(f"Image Error: {e}")
-
-                        # Database Payload
-                        payload = {
-                            "date": str(d_date), "type": ftype, "name": d_name, 
-                            "amount": d_amt, "detail": d_det, "occupation": d_occ, 
-                            "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url
-                        }
-                        
-                        try:
-                            supabase.table('transactions').insert(payload).execute()
-                            st.success("Data Saved Successfully!")
-                            st.cache_data.clear()
-                            st.session_state.pop("show_form")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Database Error: {e}")
-        else:
-            st.warning("Please login as Admin to add data.")
-
-    # Baqi progress checklist
     status_df = fetch_project_status()
-    st.divider()
-    st.markdown("### 🏗️ Construction Progress")
-    t_cols = st.columns(3)
-    for i, row in status_df.iterrows():
-        with t_cols[i % 3]:
-            bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
-            st.markdown(f"<div style='background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border:1px solid #ddd;'><strong>{row['task_name']}</strong></div>", unsafe_allow_html=True)
+    total_tasks = len(status_df)
+    done_tasks = len(status_df[status_df['status'] == 'Done'])
+    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
 
-# --- 6. HISTORY ---
-else:
-    st.title(menu)
-    if not df.empty:
-        if "Income" in menu: f_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: f_df = df[df['type'] == 'Material']
-        else: f_df = df.copy()
-        
-        st.dataframe(f_df, use_container_width=True)
-        
-        # History mein photo dekhne ke liye
-        if "Material" in menu and "bill_url" in f_df.columns:
-            st.subheader("🖼️ View Attached Bills")
-            bills_list = f_df[f_df['bill_url'] != '']
-            if not bills_list.empty:
-                s_id = st.selectbox("Select Transaction ID to view photo", bills_list['id'].tolist())
-                img_path = bills_list[bills_list['id'] == s_id]['bill_url'].values[0]
-                st.image(img_path, width=400)
-    else:
-        st.warning("No data found.")
+    col_left, col_right = st.columns([1, 1])
+    
+    with col_left:
+        st.markdown("### 📈 Overall Progress")
+        st.progress(prog_val / 100)
+        st.markdown(f"**{prog_val}% Work Completed**")
+        chart_code = f"graph LR\nA[Project Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
+        components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
+
+    with col_right:
+        st.markdown("### 📝 Quick Tasks View")
+        st.write(f"✅ Finished: {done_tasks}")
+        st.write(f"⏳ In Progress: {total_tasks - done_tasks}")
+        if st.button("Refresh Data"): st.cache_data.clear(); st.rerun()
+
+    if "show_status_
