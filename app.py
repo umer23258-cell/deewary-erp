@@ -7,13 +7,12 @@ import streamlit.components.v1 as components
 import base64
 
 # --- 1. SUPABASE SETUP ---
-# Ensure secrets are set in .streamlit/secrets.toml
 try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     supabase: Client = create_client(url, key)
 except Exception as e:
-    st.error("Supabase Credentials missing or incorrect!")
+    st.error("Secrets not found! Please check your Streamlit Cloud secrets.")
     st.stop()
 
 # --- 2. PAGE CONFIG ---
@@ -48,7 +47,6 @@ def fetch_data():
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
         return pd.DataFrame(res.data)
     except Exception as e:
-        st.error(f"Error fetching transactions: {e}")
         return pd.DataFrame()
 
 @st.cache_data(ttl=60)
@@ -63,38 +61,32 @@ def fetch_project_status():
         return pd.DataFrame()
 
 def check_password():
-    if "authenticated" not in st.session_state: 
+    if "authenticated" not in st.session_state:
         st.session_state["authenticated"] = False
-    if st.session_state["authenticated"]: 
+    if st.session_state["authenticated"]:
         return True
-    
     with st.sidebar.expander("🔐 Admin Access", expanded=True):
         pwd = st.text_input("Admin Password", type="password")
         if st.button("Unlock"):
             if pwd == st.secrets.get("ADMIN_PASSWORD", "admin786"):
                 st.session_state["authenticated"] = True
                 st.rerun()
-            else: 
+            else:
                 st.error("Wrong password!")
     return False
 
-# --- 4. SIDEBAR & DATA ---
+# --- 4. SIDEBAR ---
 df = fetch_data()
-
 with st.sidebar:
     st.title("🏗️ DEEWARY ERP")
     menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "🔍 Search & All Reports"])
     st.divider()
     is_auth = check_password()
-    
     if is_auth:
         st.success("🔓 Admin Mode")
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
-    st.divider()
-    # Handle Image carefully (ensure URL is valid)
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption="Active Site: Yousaf Colony")
 
 # --- 5. DASHBOARD ---
 if menu == "📊 Dashboard":
@@ -108,7 +100,6 @@ if menu == "📊 Dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-    # Metrics calculation
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
@@ -121,18 +112,8 @@ if menu == "📊 Dashboard":
     m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
     m3.metric("⚖️ Net Balance", f"PKR {bal:,.0f}")
 
-    # Progress Section
-    status_df = fetch_project_status()
-    if not status_df.empty:
-        done_tasks = len(status_df[status_df['status'] == 'Done'])
-        total_tasks = len(status_df)
-        prog_val = int((done_tasks / total_tasks) * 100)
-        
-        st.write("### 📈 Overall Progress")
-        st.progress(prog_val / 100)
-        st.write(f"**{prog_val}% Completed**")
-
-    # Quick Add Buttons
+    # Transaction Form
+    st.divider()
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
     if q1.button("➕ Income"): st.session_state.show_form = "Income"
@@ -148,7 +129,6 @@ if menu == "📊 Dashboard":
                     d_name = st.text_input("Title/Name")
                     d_amt = st.number_input("Amount", min_value=0)
                     d_det = st.text_area("Notes")
-                    
                     if st.form_submit_button("Submit"):
                         payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det}
                         supabase.table('transactions').insert(payload).execute()
@@ -156,25 +136,22 @@ if menu == "📊 Dashboard":
                         del st.session_state["show_form"]
                         st.rerun()
         else:
-            st.warning("Admin login required to add data.")
+            st.warning("Please login as Admin to add data.")
 
 # --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
-        # Filter Logic
         if "Income" in menu: f_df = df[df['type'] == 'Income']
         elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
 
-        # Display Data
         st.dataframe(f_df, use_container_width=True)
         
-        # Excel Download
+        # Download Section
         buf = io.BytesIO()
-        with pd.ExcelWriter(buf, engine='openpyxl') as writer:
-            f_df.to_excel(writer, index=False)
+        f_df.to_excel(buf, index=False, engine='openpyxl')
         st.download_button("📥 Download Excel", buf.getvalue(), f"{menu}.xlsx")
     else:
         st.warning("No data found.")
