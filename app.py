@@ -15,7 +15,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- 2. PDF GENERATION FUNCTION ---
+# --- 2. PDF GENERATION FUNCTION (With Red Total) ---
 def export_to_pdf(dataframe, title):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=letter)
@@ -47,7 +47,6 @@ def export_to_pdf(dataframe, title):
         ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
     ])
-    
     t.setStyle(style)
     elements.append(t)
     doc.build(elements)
@@ -57,7 +56,7 @@ def export_to_pdf(dataframe, title):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS (Original Style) ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -66,6 +65,7 @@ st.markdown("""
         border: 1px solid #e9ecef;
         padding: 15px 20px;
         border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
     .header-box {
         text-align: center;
@@ -74,6 +74,9 @@ st.markdown("""
         border-radius: 20px;
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
+    }
+    @media (max-width: 640px) {
+        .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -84,8 +87,7 @@ def fetch_data():
     try:
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
         return pd.DataFrame(res.data)
-    except:
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
 def fetch_project_status():
     try:
@@ -94,8 +96,7 @@ def fetch_project_status():
             tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
             return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
         return pd.DataFrame(res.data)
-    except:
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
 def check_password():
     if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
@@ -115,20 +116,25 @@ with st.sidebar:
     st.divider()
     is_auth = check_password()
     if is_auth:
+        st.success("🔓 Admin Mode")
         if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg")
+    st.divider()
+    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption="Active Site: Yousaf Colony")
 
 df = fetch_data()
 
-# --- 6. DASHBOARD ---
+# --- 6. DASHBOARD INTERFACE ---
 if menu == "📊 Dashboard":
     st.markdown("""
         <div class="header-box">
-            <h1 style="color: #FF4B4B;">DEEWARY.COM</h1>
-            <p style="color: white;">C.E.O: SARDAR SAMI ULLAH</p>
+            <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
+            <p style="color: white; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px;">PREMIUM CONSTRUCTION MANAGEMENT</p>
+            <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+                C.E.O: SARDAR SAMI ULLAH
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -140,7 +146,47 @@ if menu == "📊 Dashboard":
         m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
         m3.metric("⚖️ Net Balance", f"PKR {inc-exp:,.0f}")
 
+    # --- PROGRESS & MERMAID CHART ---
+    st.write("##")
     status_df = fetch_project_status()
+    total_tasks = len(status_df)
+    done_tasks = len(status_df[status_df['status'] == 'Done'])
+    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+
+    col_left, col_right = st.columns([1, 1])
+    with col_left:
+        st.markdown("### 📈 Overall Progress")
+        st.progress(prog_val / 100)
+        st.markdown(f"**{prog_val}% Work Completed**")
+        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
+        components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
+
+    with col_right:
+        st.markdown("### 📝 Tasks Summary")
+        st.write(f"✅ Finished: {done_tasks}")
+        st.write(f"⏳ Remaining: {total_tasks - done_tasks}")
+        if st.button("Refresh Data"): st.cache_data.clear(); st.rerun()
+
+    if "show_status_form" in st.session_state and is_auth:
+        with st.expander("🛠️ Admin: Update Site Status", expanded=True):
+            with st.form("status_form"):
+                task = st.selectbox("Select Task", status_df['task_name'].tolist())
+                stat = st.radio("Status", ["Pending", "Done"], horizontal=True)
+                if st.form_submit_button("Update"):
+                    supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
+                    st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
+
+    # --- CHECKLIST ---
+    st.divider()
+    st.markdown("### 🏗️ Checklist")
+    t_cols = st.columns(3)
+    for i, row in status_df.iterrows():
+        with t_cols[i % 3]:
+            icon = "✅" if row['status'] == "Done" else "⏳"
+            bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
+            st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
+
+    # --- QUICK TRANSACTIONS ---
     st.divider()
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
@@ -169,7 +215,10 @@ if menu == "📊 Dashboard":
                     supabase.table('transactions').insert(payload).execute()
                     st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
 
-# --- 7. HISTORY PAGES ---
+    st.divider()
+    st.video("https://youtu.be/AiA4PkXturU")
+
+# --- 7. HISTORY PAGES & SEARCH PIC LOGIC ---
 else:
     st.title(menu)
     if not df.empty:
@@ -185,7 +234,7 @@ else:
         
         st.dataframe(f_df, use_container_width=True)
         
-        # SEARCH KE MUTABIQ PIC LOGIC
+        # ID/Search par pic dikhane wala logic
         if search and not f_df.empty and 'image_url' in f_df.columns:
             st.markdown("### 🖼️ Result Detail & Photo")
             for _, row in f_df.iterrows():
@@ -194,6 +243,7 @@ else:
                         st.image(row['image_url'], use_container_width=True)
 
         st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
+        
         if is_auth:
             tid = st.text_input("Enter ID to Delete")
             if st.button("🗑️ Delete"):
