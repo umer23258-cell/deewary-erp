@@ -14,7 +14,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS (Aapka Original Style) ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -91,7 +91,10 @@ if menu == "📊 Dashboard":
     st.markdown("""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
-            <p style="color: white; font-size: 12px;">C.E.O: SARDAR SAMI ULLAH</p>
+            <p style="color: white; font-size: 12px; margin-bottom: 10px;">PREMIUM CONSTRUCTION MANAGEMENT</p>
+            <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+                C.E.O: SARDAR SAMI ULLAH
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -117,14 +120,13 @@ if menu == "📊 Dashboard":
         if is_auth:
             ftype = st.session_state.show_form
             with st.expander(f"Register {ftype}", expanded=True):
-                
-                # PHOTO SECTION (Form se bahar taake instant upload ho)
-                captured_photo = None
+                # Photo section form se oopar taake data mil sakay
+                photo_data = None
                 if ftype == "Material":
-                    st.write("📸 **Attach Bill**")
+                    st.write("📷 **Attach Bill Photo**")
                     cam = st.camera_input("Take Photo")
-                    up = st.file_uploader("Or Gallery", type=['jpg','png','jpeg'])
-                    captured_photo = cam if cam else up
+                    file_up = st.file_uploader("Or Gallery", type=['jpg','png','jpeg'])
+                    photo_data = cam if cam else file_up
 
                 with st.form("quick_form", clear_on_submit=True):
                     d_date = st.date_input("Date", datetime.now())
@@ -142,18 +144,17 @@ if menu == "📊 Dashboard":
                     
                     if st.form_submit_button("Submit"):
                         bill_url = ""
-                        if captured_photo:
+                        if photo_data:
                             f_name = f"bill_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                            supabase.storage.from_('bill_images').upload(f"bills/{f_name}", captured_photo.getvalue())
+                            supabase.storage.from_('bill_images').upload(f"bills/{f_name}", photo_data.getvalue())
                             bill_url = supabase.storage.from_('bill_images').get_public_url(f"bills/{f_name}")
 
                         payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url}
                         supabase.table('transactions').insert(payload).execute()
-                        st.success("Saved!")
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
         else: st.warning("Login as Admin")
 
-# --- 6. HISTORY & SEARCH ---
+# --- 6. HISTORY SECTION ---
 else:
     st.title(menu)
     if not df.empty:
@@ -162,10 +163,23 @@ else:
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
         
-        # Search Box
-        search_id = st.text_input("🔎 Search by ID or Name...")
-        if search_id:
-            mask = f_df.astype(str).apply(lambda x: x.str.contains(search_id, case=False)).any(axis=1)
+        search = st.text_input("🔎 Search by Name or ID...")
+        if search:
+            mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             f_df = f_df[mask]
         
-        st.dataframe(f_
+        st.dataframe(f_df, use_container_width=True)
+
+        if "Material" in menu and not f_df.empty:
+            st.divider()
+            st.subheader("🖼️ View Bill")
+            # Filter rows that have a URL
+            bills_only = f_df[f_df['bill_url'].str.len() > 10]
+            if not bills_only.empty:
+                s_id = st.selectbox("Select ID to see Photo", bills_only['id'].tolist())
+                p_url = bills_only[bills_only['id'] == s_id]['bill_url'].values[0]
+                st.image(p_url, width=400)
+            else:
+                st.info("No photos found.")
+    else:
+        st.warning("No data found.")
