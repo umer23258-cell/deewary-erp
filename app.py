@@ -55,7 +55,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. LOGIC FUNCTIONS (SAME AS BEFORE) ---
+# --- 3. LOGIC FUNCTIONS ---
 @st.cache_data(ttl=60)
 def fetch_data():
     try:
@@ -105,7 +105,6 @@ df = fetch_data()
 
 # --- 5. DASHBOARD INTERFACE ---
 if menu == "📊 Dashboard":
-    # --- NEW INTERFACE HEADER ---
     st.markdown("""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
@@ -116,7 +115,6 @@ if menu == "📊 Dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-    # --- TOP METRICS (CAPITAL FLOW) ---
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
@@ -130,7 +128,6 @@ if menu == "📊 Dashboard":
 
     st.write("##")
 
-    # --- PROJECT PROGRESS ---
     status_df = fetch_project_status()
     total_tasks = len(status_df)
     done_tasks = len(status_df[status_df['status'] == 'Done'])
@@ -142,19 +139,15 @@ if menu == "📊 Dashboard":
         st.markdown("### 📈 Overall Progress")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Work Completed**")
-        
-        # Mermaid Visual
         chart_code = f"graph LR\nA[Project Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
         components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
     with col_right:
         st.markdown("### 📝 Quick Tasks View")
-        # Displaying 4 latest tasks or summary
         st.write(f"✅ Finished: {done_tasks}")
         st.write(f"⏳ In Progress: {total_tasks - done_tasks}")
         if st.button("Refresh Data"): st.cache_data.clear(); st.rerun()
 
-    # --- ADMIN STATUS UPDATE FORM ---
     if "show_status_form" in st.session_state and st.session_state.show_status_form:
         with st.expander("🛠️ Admin: Update Site Status", expanded=True):
             with st.form("status_form"):
@@ -165,8 +158,6 @@ if menu == "📊 Dashboard":
                     st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
 
     st.divider()
-
-    # --- TASK GRID ---
     st.markdown("### 🏗️ Construction Checklist")
     t_cols = st.columns(3)
     for i, row in status_df.iterrows():
@@ -181,8 +172,6 @@ if menu == "📊 Dashboard":
             """, unsafe_allow_html=True)
 
     st.divider()
-
-    # --- QUICK ACTIONS ---
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
     if q1.button("➕ Income"): st.session_state.show_form = "Income"
@@ -197,6 +186,12 @@ if menu == "📊 Dashboard":
                     d_date = st.date_input("Date", datetime.now())
                     d_name = st.text_input("Title")
                     d_amt = st.number_input("Amount", min_value=0)
+                    
+                    # --- NEW IMAGE UPLOAD FOR MATERIAL ---
+                    img_file = None
+                    if ftype == "Material":
+                        img_file = st.file_uploader("Upload Bill/Material Photo", type=['jpg', 'png', 'jpeg'])
+                    
                     d_occ, d_rec, d_meth = "", "", "Cash"
                     if ftype in ["Income", "Labor"]:
                         c_a, c_b = st.columns(2)
@@ -204,13 +199,30 @@ if menu == "📊 Dashboard":
                         d_meth = c_a.selectbox("Method", ["Cash", "Online", "Cheque"])
                         d_rec = c_b.text_input("Authorized By")
                     d_det = st.text_area("Notes")
+                    
                     if st.form_submit_button("Submit"):
-                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}
+                        img_url = ""
+                        # Handle Image Upload to Supabase Storage
+                        if img_file and ftype == "Material":
+                            file_path = f"bills/{datetime.now().strftime('%Y%m%d_%H%M%S')}_{img_file.name}"
+                            supabase.storage.from_('bill_images').upload(file_path, img_file.getvalue())
+                            img_url = supabase.storage.from_('bill_images').get_public_url(file_path)
+
+                        payload = {
+                            "date": str(d_date), 
+                            "type": ftype, 
+                            "name": d_name, 
+                            "amount": d_amt, 
+                            "detail": d_det, 
+                            "occupation": d_occ, 
+                            "received_by": d_rec, 
+                            "pay_method": d_meth,
+                            "bill_url": img_url # Make sure to add this column in your Supabase 'transactions' table
+                        }
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
         else: st.warning("Please login as Admin to add data.")
 
-    # --- VIDEO & ABOUT (STAYING THE SAME) ---
     st.divider()
     st.markdown("### 🏘️ Showcase Project")
     v1, v2 = st.columns([1, 1])
@@ -221,7 +233,7 @@ if menu == "📊 Dashboard":
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com Portal | Smart Management")
 
-# --- 6. HISTORY PAGES (LOGIC UNTOUCHED) ---
+# --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
@@ -238,7 +250,6 @@ else:
         st.dataframe(f_df, use_container_width=True)
         st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
 
-        # ADMIN TOOLS
         if is_auth:
             st.divider()
             tid = st.text_input("Enter ID to Delete/Edit")
@@ -247,10 +258,8 @@ else:
                     supabase.table('transactions').delete().eq('id', tid).execute()
                     st.cache_data.clear(); st.rerun()
 
-        # DOWNLOAD
         buf = io.BytesIO()
         f_df.to_excel(buf, index=False)
         st.download_button("📥 Download Excel", buf.getvalue(), f"{menu}.xlsx")
     else:
         st.warning("No data found.")
-        
