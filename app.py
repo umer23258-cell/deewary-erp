@@ -15,7 +15,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- 2. PDF GENERATION FUNCTION (With Red Total) ---
+# --- 2. PDF GENERATION FUNCTION (Updated to include all fields) ---
 def export_to_pdf(dataframe, title):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=letter)
@@ -27,17 +27,34 @@ def export_to_pdf(dataframe, title):
     elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 12))
 
-    cols = ['date', 'name', 'amount', 'detail']
-    pdf_df = dataframe[cols].copy()
+    # Updated columns to match your new fields
+    cols = ['date', 'name', 'occupation', 'received_by', 'pay_method', 'amount']
+    pdf_df = dataframe.copy()
+    
+    # Missing columns handle karne ke liye (agar database se na aayein)
+    for c in cols:
+        if c not in pdf_df.columns: pdf_df[c] = ""
+        
     total_val = pdf_df['amount'].sum()
     
-    data = [["Date", "Item Name", "Amount (PKR)", "Detail"]] 
-    for _, row in pdf_df.iterrows():
-        data.append([str(row['date']), str(row['name']), f"{row['amount']:,.0f}", str(row['detail'])])
+    # PDF Table Header
+    data = [["Date", "Title/Name", "Occupation", "Rec. By", "Method", "Amount"]] 
     
-    data.append(["", "TOTAL", f"{total_val:,.0f}", ""])
+    for _, row in pdf_df.iterrows():
+        data.append([
+            str(row['date']), 
+            str(row['name']), 
+            str(row.get('occupation', '')), 
+            str(row.get('received_by', '')), 
+            str(row.get('pay_method', '')), 
+            f"{row['amount']:,.0f}"
+        ])
+    
+    # Total Row
+    data.append(["", "", "", "", "TOTAL", f"{total_val:,.0f}"])
 
-    t = Table(data, colWidths=[80, 120, 90, 200])
+    # Adjusted column widths for more fields
+    t = Table(data, colWidths=[70, 100, 90, 90, 70, 80])
     style = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -46,6 +63,7 @@ def export_to_pdf(dataframe, title):
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
         ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9), # Text size thora chota kiya taake fit aa jaye
     ])
     t.setStyle(style)
     elements.append(t)
@@ -186,7 +204,7 @@ if menu == "📊 Dashboard":
             bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
             st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
 
-    # --- QUICK TRANSACTIONS (WITH UPDATED FORM) ---
+    # --- QUICK TRANSACTIONS ---
     st.divider()
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
@@ -202,7 +220,7 @@ if menu == "📊 Dashboard":
                 d_name = st.text_input("Title / Name")
                 d_amt = st.number_input("Amount", min_value=0)
                 
-                # --- Nayi fields yahan add ki hain ---
+                # --- Occupation, Received By, Pay Method ---
                 d_occ, d_rec, d_meth = "", "", "Cash"
                 
                 if ftype in ["Income", "Labor", "Material"]:
