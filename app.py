@@ -4,9 +4,9 @@ from supabase import create_client, Client
 from datetime import datetime
 import io
 import streamlit.components.v1 as components
-# PDF ke liye nayi library
+# PDF ke liye libraries
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 
@@ -15,38 +15,67 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- PDF GENERATION FUNCTION (Naya Function) ---
+# --- 2. PDF GENERATION FUNCTION (COLORFUL WITH TOTAL) ---
 def export_to_pdf(dataframe, title):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=letter)
     elements = []
-    
     styles = getSampleStyleSheet()
-    elements.append(Paragraph(f"Deewary.com ERP - {title}", styles['Title']))
+    
+    # Header
+    elements.append(Paragraph(f"<font color='#FF4B4B' size=16><b>{title}</b></font>", styles['Title']))
+    elements.append(Paragraph(f"Deewary.com ERP - Smart Management", styles['Normal']))
     elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    # Data Formatting
+    # Hum wahi columns le rahe hain jo report mein zaruri hain
+    cols = ['date', 'name', 'amount', 'detail']
+    pdf_df = dataframe[cols].copy()
+    total_val = pdf_df['amount'].sum()
     
-    # Data ko list mein convert karna table ke liye
-    data = [dataframe.columns.tolist()] + dataframe.values.tolist()
+    # Table Data List
+    data = [["Date", "Item Name", "Amount (PKR)", "Detail"]] # Header row
+    for _, row in pdf_df.iterrows():
+        data.append([str(row['date']), str(row['name']), f"{row['amount']:,.0f}", str(row['detail'])])
     
-    # Table ki styling
-    t = Table(data)
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+    # Last Row for TOTAL
+    data.append(["", "TOTAL", f"{total_val:,.0f}", ""])
+
+    # Table Styling
+    # Column widths: Date(80), Name(120), Amount(90), Detail(200)
+    t = Table(data, colWidths=[80, 120, 90, 200])
+    
+    style = TableStyle([
+        # Header Row Style
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        
+        # Body Style
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        
+        # Total Row Style (Highlighting)
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
+        ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, -1), (-1, -1), 10),
+        ('ALIGN', (2, -1), (2, -1), 'LEFT'),
+    ])
     
+    t.setStyle(style)
     elements.append(t)
+    
     doc.build(elements)
     buf.seek(0)
     return buf
 
-# --- 2. PAGE CONFIG ---
+# --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
 # --- CUSTOM CSS FOR INTERFACE ---
@@ -91,7 +120,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. LOGIC FUNCTIONS ---
+# --- 4. LOGIC FUNCTIONS ---
 @st.cache_data(ttl=60)
 def fetch_data():
     try:
@@ -122,7 +151,7 @@ def check_password():
             else: st.error("Wrong password!")
     return False
 
-# --- 4. SIDEBAR ---
+# --- 5. SIDEBAR ---
 with st.sidebar:
     st.title("🏗️ DEEWARY ERP")
     menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "🔍 Search & All Reports"])
@@ -139,7 +168,7 @@ with st.sidebar:
 
 df = fetch_data()
 
-# --- 5. DASHBOARD INTERFACE ---
+# --- 6. DASHBOARD INTERFACE ---
 if menu == "📊 Dashboard":
     st.markdown("""
         <div class="header-box">
@@ -248,7 +277,7 @@ if menu == "📊 Dashboard":
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com Portal | Smart Management")
 
-# --- 6. HISTORY PAGES ---
+# --- 7. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
@@ -273,16 +302,16 @@ else:
                     supabase.table('transactions').delete().eq('id', tid).execute()
                     st.cache_data.clear(); st.rerun()
 
-        # DOWNLOAD SECTION (Excel aur PDF Dono)
+        # DOWNLOAD BUTTONS (EXCEL & COLORFUL PDF)
         st.divider()
         c1, c2 = st.columns(2)
         
-        # Excel Download
+        # Excel
         buf_ex = io.BytesIO()
         f_df.to_excel(buf_ex, index=False)
         c1.download_button("📥 Download Excel", buf_ex.getvalue(), f"{menu}.xlsx")
         
-        # PDF Download (Naya Button)
+        # PDF
         pdf_file = export_to_pdf(f_df, menu)
         c2.download_button("📄 Download PDF Report", pdf_file, f"{menu}.pdf")
 
