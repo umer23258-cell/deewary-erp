@@ -5,7 +5,7 @@ from datetime import datetime
 import io
 import streamlit.components.v1 as components
 # PDF ke liye libraries
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
@@ -15,55 +15,56 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- 2. PDF GENERATION FUNCTION (Updated to include all fields) ---
+# --- 2. PDF GENERATION FUNCTION (Full Table View) ---
 def export_to_pdf(dataframe, title):
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=letter)
+    # Landscape mode use kiya hai taake saare columns fit aayein
+    doc = SimpleDocTemplate(buf, pagesize=landscape(letter), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
     elements = []
     styles = getSampleStyleSheet()
     
-    elements.append(Paragraph(f"<font color='#FF4B4B' size=16><b>{title}</b></font>", styles['Title']))
-    elements.append(Paragraph(f"Deewary.com ERP - Smart Management", styles['Normal']))
-    elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
-    elements.append(Spacer(1, 12))
+    elements.append(Paragraph(f"<font color='#FF4B4B' size=18><b>{title}</b></font>", styles['Title']))
+    elements.append(Paragraph(f"Deewary.com ERP - Full System Report", styles['Normal']))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 15))
 
-    # Updated columns to match your new fields
-    cols = ['date', 'name', 'occupation', 'received_by', 'pay_method', 'amount']
+    # Saare columns jo history mein nazar aate hain
+    cols_to_show = ['id', 'date', 'name', 'amount', 'detail', 'occupation', 'received_by', 'pay_method']
     pdf_df = dataframe.copy()
     
-    # Missing columns handle karne ke liye (agar database se na aayein)
-    for c in cols:
-        if c not in pdf_df.columns: pdf_df[c] = ""
-        
-    total_val = pdf_df['amount'].sum()
-    
-    # PDF Table Header
-    data = [["Date", "Title/Name", "Occupation", "Rec. By", "Method", "Amount"]] 
+    # Header Row
+    data = [["ID", "Date", "Item/Name", "Amount", "Detail", "Occupation", "Rec. By", "Method"]]
     
     for _, row in pdf_df.iterrows():
+        # Har cell ko string mein convert kiya aur 'nan' ko empty kiya
         data.append([
-            str(row['date']), 
-            str(row['name']), 
-            str(row.get('occupation', '')), 
-            str(row.get('received_by', '')), 
-            str(row.get('pay_method', '')), 
-            f"{row['amount']:,.0f}"
+            str(row.get('id', '')),
+            str(row.get('date', '')),
+            str(row.get('name', '')),
+            f"{row.get('amount', 0):,.0f}",
+            str(row.get('detail', ''))[:30] + "..." if len(str(row.get('detail', ''))) > 30 else str(row.get('detail', '')),
+            str(row.get('occupation', '')),
+            str(row.get('received_by', '')),
+            str(row.get('pay_method', ''))
         ])
     
     # Total Row
-    data.append(["", "", "", "", "TOTAL", f"{total_val:,.0f}"])
+    total_val = pdf_df['amount'].sum()
+    data.append(["", "", "TOTAL", f"{total_val:,.0f}", "", "", "", ""])
 
-    # Adjusted column widths for more fields
-    t = Table(data, colWidths=[70, 100, 90, 90, 70, 80])
+    # Column Widths (Adjusted for Landscape)
+    t = Table(data, colWidths=[40, 70, 110, 80, 150, 90, 90, 70])
+    
     style = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
         ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9), # Text size thora chota kiya taake fit aa jaye
     ])
     t.setStyle(style)
     elements.append(t)
@@ -74,7 +75,7 @@ def export_to_pdf(dataframe, title):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS (Original Style) ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -164,7 +165,6 @@ if menu == "📊 Dashboard":
         m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
         m3.metric("⚖️ Net Balance", f"PKR {inc-exp:,.0f}")
 
-    # --- PROGRESS & MERMAID CHART ---
     st.write("##")
     status_df = fetch_project_status()
     total_tasks = len(status_df)
@@ -194,7 +194,6 @@ if menu == "📊 Dashboard":
                     supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
                     st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
 
-    # --- CHECKLIST ---
     st.divider()
     st.markdown("### 🏗️ Checklist")
     t_cols = st.columns(3)
@@ -204,7 +203,6 @@ if menu == "📊 Dashboard":
             bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
             st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
 
-    # --- QUICK TRANSACTIONS ---
     st.divider()
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
@@ -220,9 +218,7 @@ if menu == "📊 Dashboard":
                 d_name = st.text_input("Title / Name")
                 d_amt = st.number_input("Amount", min_value=0)
                 
-                # --- Occupation, Received By, Pay Method ---
                 d_occ, d_rec, d_meth = "", "", "Cash"
-                
                 if ftype in ["Income", "Labor", "Material"]:
                     col1, col2 = st.columns(2)
                     d_occ = col1.text_input("Occupation / Job Type")
@@ -243,15 +239,9 @@ if menu == "📊 Dashboard":
                         img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
                     
                     payload = {
-                        "date": str(d_date), 
-                        "type": ftype, 
-                        "name": d_name, 
-                        "amount": d_amt, 
-                        "detail": d_det, 
-                        "image_url": img_url,
-                        "occupation": d_occ,
-                        "received_by": d_rec,
-                        "pay_method": d_meth
+                        "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
+                        "detail": d_det, "image_url": img_url, "occupation": d_occ,
+                        "received_by": d_rec, "pay_method": d_meth
                     }
                     supabase.table('transactions').insert(payload).execute()
                     st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
@@ -259,7 +249,7 @@ if menu == "📊 Dashboard":
     st.divider()
     st.video("https://youtu.be/AiA4PkXturU")
 
-# --- 7. HISTORY PAGES & SEARCH PIC LOGIC ---
+# --- 7. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
