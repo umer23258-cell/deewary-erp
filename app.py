@@ -4,11 +4,47 @@ from supabase import create_client, Client
 from datetime import datetime
 import io
 import streamlit.components.v1 as components
+# PDF ke liye nayi library
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
+
+# --- PDF GENERATION FUNCTION (Naya Function) ---
+def export_to_pdf(dataframe, title):
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=letter)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph(f"Deewary.com ERP - {title}", styles['Title']))
+    elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    
+    # Data ko list mein convert karna table ke liye
+    data = [dataframe.columns.tolist()] + dataframe.values.tolist()
+    
+    # Table ki styling
+    t = Table(data)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    elements.append(t)
+    doc.build(elements)
+    buf.seek(0)
+    return buf
 
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
@@ -55,7 +91,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. LOGIC FUNCTIONS (SAME AS BEFORE) ---
+# --- 3. LOGIC FUNCTIONS ---
 @st.cache_data(ttl=60)
 def fetch_data():
     try:
@@ -105,7 +141,6 @@ df = fetch_data()
 
 # --- 5. DASHBOARD INTERFACE ---
 if menu == "📊 Dashboard":
-    # --- NEW INTERFACE HEADER ---
     st.markdown("""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
@@ -116,7 +151,6 @@ if menu == "📊 Dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-    # --- TOP METRICS (CAPITAL FLOW) ---
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
@@ -130,7 +164,6 @@ if menu == "📊 Dashboard":
 
     st.write("##")
 
-    # --- PROJECT PROGRESS ---
     status_df = fetch_project_status()
     total_tasks = len(status_df)
     done_tasks = len(status_df[status_df['status'] == 'Done'])
@@ -143,18 +176,15 @@ if menu == "📊 Dashboard":
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Work Completed**")
         
-        # Mermaid Visual
         chart_code = f"graph LR\nA[Project Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
         components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
     with col_right:
         st.markdown("### 📝 Quick Tasks View")
-        # Displaying 4 latest tasks or summary
         st.write(f"✅ Finished: {done_tasks}")
         st.write(f"⏳ In Progress: {total_tasks - done_tasks}")
         if st.button("Refresh Data"): st.cache_data.clear(); st.rerun()
 
-    # --- ADMIN STATUS UPDATE FORM ---
     if "show_status_form" in st.session_state and st.session_state.show_status_form:
         with st.expander("🛠️ Admin: Update Site Status", expanded=True):
             with st.form("status_form"):
@@ -166,7 +196,6 @@ if menu == "📊 Dashboard":
 
     st.divider()
 
-    # --- TASK GRID ---
     st.markdown("### 🏗️ Construction Checklist")
     t_cols = st.columns(3)
     for i, row in status_df.iterrows():
@@ -182,7 +211,6 @@ if menu == "📊 Dashboard":
 
     st.divider()
 
-    # --- QUICK ACTIONS ---
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
     if q1.button("➕ Income"): st.session_state.show_form = "Income"
@@ -210,7 +238,6 @@ if menu == "📊 Dashboard":
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
         else: st.warning("Please login as Admin to add data.")
 
-    # --- VIDEO & ABOUT (STAYING THE SAME) ---
     st.divider()
     st.markdown("### 🏘️ Showcase Project")
     v1, v2 = st.columns([1, 1])
@@ -221,7 +248,7 @@ if menu == "📊 Dashboard":
     st.divider()
     st.caption(f"© {datetime.now().year} Deewary.com Portal | Smart Management")
 
-# --- 6. HISTORY PAGES (LOGIC UNTOUCHED) ---
+# --- 6. HISTORY PAGES ---
 else:
     st.title(menu)
     if not df.empty:
@@ -238,7 +265,6 @@ else:
         st.dataframe(f_df, use_container_width=True)
         st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
 
-        # ADMIN TOOLS
         if is_auth:
             st.divider()
             tid = st.text_input("Enter ID to Delete/Edit")
@@ -247,10 +273,18 @@ else:
                     supabase.table('transactions').delete().eq('id', tid).execute()
                     st.cache_data.clear(); st.rerun()
 
-        # DOWNLOAD
-        buf = io.BytesIO()
-        f_df.to_excel(buf, index=False)
-        st.download_button("📥 Download Excel", buf.getvalue(), f"{menu}.xlsx")
+        # DOWNLOAD SECTION (Excel aur PDF Dono)
+        st.divider()
+        c1, c2 = st.columns(2)
+        
+        # Excel Download
+        buf_ex = io.BytesIO()
+        f_df.to_excel(buf_ex, index=False)
+        c1.download_button("📥 Download Excel", buf_ex.getvalue(), f"{menu}.xlsx")
+        
+        # PDF Download (Naya Button)
+        pdf_file = export_to_pdf(f_df, menu)
+        c2.download_button("📄 Download PDF Report", pdf_file, f"{menu}.pdf")
+
     else:
         st.warning("No data found.")
-        
