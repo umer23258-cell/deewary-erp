@@ -38,7 +38,7 @@ def export_to_pdf(dataframe, title):
     for _, row in pdf_df.iterrows():
         data.append([str(row['date']), str(row['name']), f"{row['amount']:,.0f}", str(row['detail'])])
     
-    # Last Row for TOTAL
+    # Last Row for TOTAL (Red Highlight)
     data.append(["", "TOTAL", f"{total_val:,.0f}", ""])
 
     # Table Styling
@@ -220,7 +220,7 @@ if menu == "📊 Dashboard":
                     d_name = st.text_input("Title")
                     d_amt = st.number_input("Amount", min_value=0)
                     
-                    # Naya Photo Option (Sirf Material ke liye)
+                    # Naya Photo Option (Sirf Material/Bill ke liye)
                     uploaded_photo = None
                     if ftype == "Material":
                         uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
@@ -235,10 +235,13 @@ if menu == "📊 Dashboard":
                     
                     if st.form_submit_button("Submit"):
                         img_url = ""
+                        # Photo Upload logic
                         if uploaded_photo:
-                            f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
-                            supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
-                            img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                            try:
+                                f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                                supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                                img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                            except: img_url = ""
                         
                         payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "image_url": img_url}
                         supabase.table('transactions').insert(payload).execute()
@@ -267,12 +270,13 @@ else:
         
         st.dataframe(f_df, use_container_width=True)
         
-        # SEARCH KE BAAD PHOTO DIKHANE KA LOGIC
-        if search and not f_df.empty:
+        # --- PHOTO DIKHANE KA LOGIC ---
+        if not f_df.empty and 'image_url' in f_df.columns:
+            st.markdown("### 🖼️ Attached Bills")
             for _, row in f_df.iterrows():
-                if row.get('image_url'):
-                    with st.expander(f"🖼️ View Bill Photo (ID: {row['id']})"):
-                        st.image(row['image_url'], caption=row['name'], use_container_width=True)
+                if row['image_url'] and str(row['image_url']) != "nan":
+                    with st.expander(f"View Bill Photo (ID: {row['id']} - {row['name']})"):
+                        st.image(row['image_url'], use_container_width=True)
 
         st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
 
