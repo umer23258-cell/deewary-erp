@@ -3,7 +3,6 @@ import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime
 import io
-import streamlit.components.v1 as components
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
@@ -13,7 +12,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS (0% Change) ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -22,7 +21,6 @@ st.markdown("""
         border: 1px solid #e9ecef;
         padding: 15px 20px;
         border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
     .header-box {
         text-align: center;
@@ -67,8 +65,8 @@ df = fetch_data()
 
 # --- 5. DASHBOARD ---
 if menu == "📊 Dashboard":
-    st.markdown('<div class="header-box"><h1 style="color: #FF4B4B; margin: 0;">DEEWARY.COM</h1><p style="color: white;">C.E.O: SARDAR SAMI ULLAH</p></div>', unsafe_allow_html=True)
-
+    st.markdown('<div class="header-box"><h1 style="color:#FF4B4B; margin:0;">DEEWARY.COM</h1><p style="color:white;">C.E.O: SARDAR SAMI ULLAH</p></div>', unsafe_allow_html=True)
+    
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
@@ -89,53 +87,44 @@ if menu == "📊 Dashboard":
     if "show_form" in st.session_state:
         if is_auth:
             ftype = st.session_state.show_form
-            with st.expander(f"Register {ftype}", expanded=True):
-                img_file = None
-                if ftype == "Material":
-                    img_file = st.file_uploader("Upload Bill Photo", type=['jpg', 'png', 'jpeg'])
-
+            with st.expander(f"Add {ftype}", expanded=True):
+                img_file = st.file_uploader("Upload Bill Photo", type=['jpg', 'png', 'jpeg']) if ftype == "Material" else None
                 with st.form("entry_form", clear_on_submit=True):
                     d_date = st.date_input("Date", datetime.now())
                     d_name = st.text_input("Name")
                     d_amt = st.number_input("Amount", min_value=0)
                     d_det = st.text_area("Notes")
-                    
                     if st.form_submit_button("Submit"):
-                        final_url = ""
+                        url_p = ""
                         if img_file:
                             try:
-                                f_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                                supabase.storage.from_('bill_images').upload(f_name, img_file.getvalue())
-                                final_url = supabase.storage.from_('bill_images').get_public_url(f_name)
-                            except Exception as e:
-                                st.error("Storage Error: Policies set karein Dashboard mein.")
-
-                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "bill_url": final_url}
+                                fname = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                supabase.storage.from_('bill_images').upload(fname, img_file.getvalue())
+                                url_p = supabase.storage.from_('bill_images').get_public_url(fname)
+                            except: st.error("Storage error! Check Policies.")
+                        
+                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "bill_url": url_p}
                         supabase.table('transactions').insert(payload).execute()
-                        st.success("Saved!")
-                        st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
-        else: st.warning("Login as Admin.")
+                        st.success("Saved!"); st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
+        else: st.warning("Login required.")
 
-# --- 6. HISTORY & SEARCH BY ID ---
+# --- 6. HISTORY & SEARCH ---
 else:
     st.title(menu)
     if not df.empty:
-        if "Income" in menu: f_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: f_df = df[df['type'] == 'Material']
-        else: f_df = df.copy()
-
+        f_type = menu.split()[1] if "History" in menu else ""
+        f_df = df[df['type'] == f_type] if f_type else df
+        
         search = st.text_input("🔎 Search by ID or Name...")
         if search:
             f_df = f_df[f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
-
+        
         st.dataframe(f_df, use_container_width=True)
-
+        
         if not f_df.empty:
             st.divider()
-            sel_id = st.selectbox("Select ID to view Image", f_df['id'].tolist())
+            sel_id = st.selectbox("Select ID to view detail/image", f_df['id'].tolist())
             row = f_df[f_df['id'] == sel_id].iloc[0]
-            if 'bill_url' in row and row['bill_url']:
-                st.image(row['bill_url'], caption=f"Bill for ID: {sel_id}", width=400)
-            else:
-                st.info("Is entry ki image nahi hai.")
+            if row.get('bill_url'): st.image(row['bill_url'], width=400)
+            else: st.info("No image found.")
+    else: st.info("No data.")
