@@ -14,10 +14,13 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS FOR INTERFACE ---
 st.markdown("""
     <style>
+    /* Main Background */
     .stApp { background-color: #ffffff; }
+    
+    /* Metric Cards Styling */
     div[data-testid="stMetric"] {
         background-color: #f8f9fa;
         border: 1px solid #e9ecef;
@@ -25,6 +28,8 @@ st.markdown("""
         border-radius: 15px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
+    
+    /* Professional Header Box */
     .header-box {
         text-align: center;
         background: linear-gradient(135deg, #1e1e1e 0%, #333333 100%);
@@ -33,6 +38,8 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
+
+    /* Task Progress Card */
     .task-card {
         background: #ffffff;
         padding: 10px;
@@ -41,6 +48,7 @@ st.markdown("""
         margin-bottom: 10px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
     }
+
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
         h2 { font-size: 1.5rem !important; }
@@ -189,31 +197,31 @@ if menu == "📊 Dashboard":
                         d_meth = c_a.selectbox("Method", ["Cash", "Online", "Cheque"])
                         d_rec = c_b.text_input("Authorized By")
                     
-                    # --- NEW CAMERA LOGIC: Only opens when checkbox is clicked ---
-                    captured_image = None
+                    # --- MATERIAL PHOTO OPTIONS ---
+                    final_image_data = None
                     if ftype == "Material":
-                        take_photo = st.checkbox("📸 Take Bill Photo?")
-                        if take_photo:
-                            captured_image = st.camera_input("Capture Bill")
-                    
+                        photo_option = st.radio("Bill Attachment", ["No Photo", "Take Photo (Camera)", "Upload Image (Gallery)"], horizontal=True)
+                        if photo_option == "Take Photo (Camera)":
+                            captured = st.camera_input("Snap Bill")
+                            if captured: final_image_data = captured.getvalue()
+                        elif photo_option == "Upload Image (Gallery)":
+                            uploaded = st.file_uploader("Choose Bill Image", type=["jpg", "jpeg", "png"])
+                            if uploaded: final_image_data = uploaded.getvalue()
+
                     d_det = st.text_area("Notes")
                     
                     if st.form_submit_button("Submit"):
-                        # Process image if captured
-                        if captured_image is not None:
+                        # Image Upload Logic
+                        if final_image_data:
                             try:
                                 f_name = f"bill_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                                 f_path = f"bills/{f_name}"
-                                supabase.storage.from_('bill_images').upload(f_path, captured_image.getvalue(), {"content-type": "image/jpeg"})
+                                supabase.storage.from_('bill_images').upload(f_path, final_image_data, {"content-type": "image/jpeg"})
                                 bill_url = supabase.storage.from_('bill_images').get_public_url(f_path)
                             except Exception as e:
-                                st.error(f"Upload failed: {e}")
+                                st.error(f"Image Error: {e}")
 
-                        payload = {
-                            "date": str(d_date), "type": ftype, "name": d_name, 
-                            "amount": d_amt, "detail": d_det, "occupation": d_occ, 
-                            "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url
-                        }
+                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url}
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
         else: st.warning("Please login as Admin to add data.")
@@ -243,15 +251,16 @@ else:
             f_df = f_df[mask]
         
         st.dataframe(f_df, use_container_width=True)
-        
-        # Display Bill if Material History
-        if "Material" in menu and "bill_url" in f_df.columns:
-            st.subheader("🖼️ View Bill Photo")
-            selected_id = st.selectbox("Select ID to view photo", f_df[f_df['bill_url'] != '']['id'].tolist() if not f_df.empty else [])
-            if selected_id:
-                img_url = f_df[f_df['id'] == selected_id]['bill_url'].values[0]
-                if img_url: st.image(img_url, width=400)
 
+        # Show Bill Preview in History
+        if "Material" in menu and "bill_url" in f_df.columns:
+            st.subheader("🖼️ Bill Preview")
+            has_bill = f_df[f_df['bill_url'] != '']
+            if not has_bill.empty:
+                sid = st.selectbox("Select ID to view bill", has_bill['id'].tolist())
+                url_to_show = has_bill[has_bill['id'] == sid]['bill_url'].values[0]
+                st.image(url_to_show, width=400)
+        
         total_val = f_df['amount'].sum()
         st.metric(f"Total Amount ({menu})", f"PKR {total_val:,.0f}")
 
@@ -269,31 +278,9 @@ else:
         f_df.to_excel(buf, index=False)
         col_down1.download_button("📥 Download Excel", buf.getvalue(), f"{menu}.xlsx")
 
-        report_html = f"""
-        <html>
-        <head>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 30px; }}
-                .header {{ text-align: center; border-bottom: 3px solid #FF4B4B; padding-bottom: 10px; }}
-                .title {{ color: #FF4B4B; font-size: 28px; font-weight: bold; margin: 0; }}
-                table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                th {{ background-color: #f2f2f2; border: 1px solid #ddd; padding: 10px; text-align: left; }}
-                td {{ border: 1px solid #ddd; padding: 8px; font-size: 12px; }}
-                .total-section {{ margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; color: #FF4B4B; border-top: 2px solid #333; padding-top: 10px; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <div class="title">DEEWARY.COM ERP</div>
-                <p>Date Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
-            </div>
-            {f_df.to_html(index=False)}
-            <div class="total-section">GRAND TOTAL: PKR {total_val:,.0f}</div>
-        </body>
-        </html>
-        """
+        report_html = f"<html><body><h1>{menu} Report</h1>{f_df.to_html(index=False)}</body></html>"
         b64 = base64.b64encode(report_html.encode()).decode()
-        pdf_href = f'<a href="data:text/html;base64,{b64}" download="{menu}_Report.html" style="text-decoration:none;"><button style="width:100%; background-color:#FF4B4B; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">📄 Download PDF Report</button></a>'
+        pdf_href = f'<a href="data:text/html;base64,{b64}" download="Report.html">📄 Download Report</a>'
         col_down2.markdown(pdf_href, unsafe_allow_html=True)
     else:
         st.warning("No data found.")
