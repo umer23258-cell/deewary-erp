@@ -14,7 +14,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS (Bilkul Aapke Wala) ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -33,8 +33,17 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
+    .task-card {
+        background: #ffffff;
+        padding: 10px;
+        border-radius: 8px;
+        border-left: 5px solid #FF4B4B;
+        margin-bottom: 10px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+    }
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
+        h2 { font-size: 1.5rem !important; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -92,7 +101,10 @@ if menu == "📊 Dashboard":
     st.markdown("""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
-            <p style="color: white; font-size: 12px;">C.E.O: SARDAR SAMI ULLAH</p>
+            <p style="color: white; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px;">PREMIUM CONSTRUCTION MANAGEMENT</p>
+            <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+                C.E.O: SARDAR SAMI ULLAH
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -110,15 +122,23 @@ if menu == "📊 Dashboard":
     # --- Update Status Form ---
     if "show_status_form" in st.session_state and st.session_state.show_status_form:
         status_df = fetch_project_status()
-        with st.expander("🛠️ Update Site Status", expanded=True):
+        with st.expander("🛠️ Admin: Update Site Status", expanded=True):
             with st.form("status_form"):
-                task = st.selectbox("Select Task", status_df['task_name'].tolist())
+                task = st.selectbox("Select Project Task", status_df['task_name'].tolist())
                 stat = st.radio("Status", ["Pending", "Done"], horizontal=True)
-                if st.form_submit_button("Update"):
+                if st.form_submit_button("Update Status"):
                     supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
-                    st.cache_data.clear()
-                    st.session_state.show_status_form = False
-                    st.rerun()
+                    st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
+
+    st.divider()
+    status_df = fetch_project_status()
+    st.markdown("### 🏗️ Construction Checklist")
+    t_cols = st.columns(3)
+    for i, row in status_df.iterrows():
+        with t_cols[i % 3]:
+            icon = "✅" if row['status'] == "Done" else "⏳"
+            bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
+            st.markdown(f"<div style='background:{bg}; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;'><strong>{icon} {row['task_name']}</strong><br><small>{row['status']}</small></div>", unsafe_allow_html=True)
 
     st.divider()
     st.subheader("⚡ Quick Transactions")
@@ -144,17 +164,18 @@ if menu == "📊 Dashboard":
                         d_meth = c_a.selectbox("Method", ["Cash", "Online", "Cheque"])
                         d_rec = c_b.text_input("Authorized By")
                     
+                    # Photo Feature for Material
                     photo_data = None
                     if ftype == "Material":
-                        st.info("Take a photo or upload from gallery")
-                        cam_photo = st.camera_input("Camera")
-                        file_photo = st.file_uploader("Gallery", type=["jpg", "png", "jpeg"])
+                        st.write("📷 **Take Bill Picture or Upload:**")
+                        cam_photo = st.camera_input("Camera Snap")
+                        file_photo = st.file_uploader("Upload from Gallery", type=["jpg", "png", "jpeg"])
                         if cam_photo: photo_data = cam_photo.getvalue()
                         elif file_photo: photo_data = file_photo.getvalue()
 
                     d_det = st.text_area("Notes")
                     
-                    if st.form_submit_button("SAVE"):
+                    if st.form_submit_button("Submit"):
                         bill_url = ""
                         if photo_data:
                             try:
@@ -168,17 +189,13 @@ if menu == "📊 Dashboard":
                         payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url}
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
-        else: st.warning("Please login first.")
+        else: st.warning("Please login as Admin to add data.")
 
-    # Project Checklist
     st.divider()
-    status_df = fetch_project_status()
-    st.markdown("### 🏗️ Site Progress")
-    t_cols = st.columns(3)
-    for i, row in status_df.iterrows():
-        with t_cols[i % 3]:
-            bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
-            st.markdown(f"<div style='background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border:1px solid #ddd;'><strong>{row['task_name']}</strong></div>", unsafe_allow_html=True)
+    st.markdown("### 🏘️ Showcase Project")
+    v1, v2 = st.columns([1, 1])
+    with v1: st.video("https://youtu.be/AiA4PkXturU")
+    with v2: st.info("Hamara ye project modern aesthetics aur structural durability ka behtareen namuna hai.")
 
 # --- 6. HISTORY PAGES ---
 else:
@@ -190,14 +207,13 @@ else:
         else: f_df = df.copy()
         
         st.dataframe(f_df, use_container_width=True)
-        
+
         if "Material" in menu and "bill_url" in f_df.columns:
-            st.subheader("🖼️ View Bills")
-            bills_list = f_df[f_df['bill_url'].notna() & (f_df['bill_url'].str.strip() != "")]
-            if not bills_list.empty:
-                s_id = st.selectbox("Select ID", bills_list['id'].tolist())
-                img_path = bills_list[bills_list['id'] == s_id]['bill_url'].values[0]
-                if img_path and str(img_path).startswith("http"):
-                    st.image(img_path, width=400)
+            st.subheader("🖼️ View Bill Photos")
+            valid_bills = f_df[f_df['bill_url'].notna() & (f_df['bill_url'].str.strip() != "")]
+            if not valid_bills.empty:
+                s_id = st.selectbox("Select ID", valid_bills['id'].tolist())
+                path = valid_bills[valid_bills['id'] == s_id]['bill_url'].values[0]
+                if path and str(path).startswith("http"): st.image(path, width=400)
     else:
         st.warning("No data found.")
