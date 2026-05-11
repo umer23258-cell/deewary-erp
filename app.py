@@ -186,7 +186,7 @@ if menu == "📊 Dashboard":
             bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
             st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
 
-    # --- QUICK TRANSACTIONS ---
+    # --- QUICK TRANSACTIONS (WITH UPDATED FORM) ---
     st.divider()
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
@@ -199,19 +199,42 @@ if menu == "📊 Dashboard":
         with st.expander(f"Register {ftype}", expanded=True):
             with st.form("quick_form"):
                 d_date = st.date_input("Date", datetime.now())
-                d_name = st.text_input("Title")
+                d_name = st.text_input("Title / Name")
                 d_amt = st.number_input("Amount", min_value=0)
+                
+                # --- Nayi fields yahan add ki hain ---
+                d_occ, d_rec, d_meth = "", "", "Cash"
+                
+                if ftype in ["Income", "Labor", "Material"]:
+                    col1, col2 = st.columns(2)
+                    d_occ = col1.text_input("Occupation / Job Type")
+                    d_rec = col2.text_input("Received By / Authorized")
+                    d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
+
                 uploaded_photo = None
                 if ftype == "Material":
                     uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
+                
                 d_det = st.text_area("Notes")
+                
                 if st.form_submit_button("Submit"):
                     img_url = ""
                     if uploaded_photo:
                         f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
                         supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
                         img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                    payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "image_url": img_url}
+                    
+                    payload = {
+                        "date": str(d_date), 
+                        "type": ftype, 
+                        "name": d_name, 
+                        "amount": d_amt, 
+                        "detail": d_det, 
+                        "image_url": img_url,
+                        "occupation": d_occ,
+                        "received_by": d_rec,
+                        "pay_method": d_meth
+                    }
                     supabase.table('transactions').insert(payload).execute()
                     st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
 
@@ -234,7 +257,6 @@ else:
         
         st.dataframe(f_df, use_container_width=True)
         
-        # ID/Search par pic dikhane wala logic
         if search and not f_df.empty and 'image_url' in f_df.columns:
             st.markdown("### 🖼️ Result Detail & Photo")
             for _, row in f_df.iterrows():
