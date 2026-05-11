@@ -14,7 +14,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS (Aapka Original Style) ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -23,7 +23,6 @@ st.markdown("""
         border: 1px solid #e9ecef;
         padding: 15px 20px;
         border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
     .header-box {
         text-align: center;
@@ -33,9 +32,6 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
-    @media (max-width: 640px) {
-        .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -44,6 +40,16 @@ st.markdown("""
 def fetch_data():
     try:
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
+        return pd.DataFrame(res.data)
+    except:
+        return pd.DataFrame()
+
+def fetch_project_status():
+    try:
+        res = supabase.table('project_status').select("*").execute()
+        if not res.data:
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
         return pd.DataFrame(res.data)
     except:
         return pd.DataFrame()
@@ -70,9 +76,14 @@ with st.sidebar:
 
 df = fetch_data()
 
-# --- 5. DASHBOARD INTERFACE ---
+# --- 5. DASHBOARD ---
 if menu == "📊 Dashboard":
-    st.markdown('<div class="header-box"><h1 style="color: #FF4B4B; margin: 0;">DEEWARY.COM</h1><p style="color: white;">C.E.O: SARDAR SAMI ULLAH</p></div>', unsafe_allow_html=True)
+    st.markdown("""
+        <div class="header-box">
+            <h1 style="color: #FF4B4B; margin: 0;">DEEWARY.COM</h1>
+            <p style="color: white; font-size: 12px;">C.E.O: SARDAR SAMI ULLAH</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
@@ -85,7 +96,15 @@ if menu == "📊 Dashboard":
     m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
     m3.metric("⚖️ Net Balance", f"PKR {bal:,.0f}")
 
+    # Progress Section
     st.divider()
+    status_df = fetch_project_status()
+    done_tasks = len(status_df[status_df['status'] == 'Done'])
+    prog = int((done_tasks / len(status_df)) * 100) if len(status_df) > 0 else 0
+    st.write(f"### 📈 Progress: {prog}%")
+    st.progress(prog / 100)
+
+    # Quick Transactions
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
     if q1.button("➕ Income"): st.session_state.show_form = "Income"
@@ -95,31 +114,60 @@ if menu == "📊 Dashboard":
     if "show_form" in st.session_state:
         if is_auth:
             ftype = st.session_state.show_form
-            with st.expander(f"Register {ftype}", expanded=True):
-                # Image Section for Material (Form se bahar taake live capture ho sakay)
-                uploaded_photo = None
+            with st.expander(f"Add {ftype}", expanded=True):
+                # Photo Section for Material
+                captured_photo = None
                 if ftype == "Material":
-                    st.write("📸 **Attach Bill**")
-                    cam = st.camera_input("Take Photo")
-                    gal = st.file_uploader("Or Gallery", type=['jpg','png','jpeg'])
-                    uploaded_photo = cam if cam else gal
+                    cam = st.camera_input("Take Bill Photo")
+                    up = st.file_uploader("Or Upload", type=['jpg','png','jpeg'])
+                    captured_photo = cam if cam else up
 
-                with st.form("quick_form", clear_on_submit=True):
+                with st.form("entry_form", clear_on_submit=True):
                     d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Title")
+                    d_name = st.text_input("Name/Party")
                     d_amt = st.number_input("Amount", min_value=0)
                     d_det = st.text_area("Notes")
-                    d_occ, d_rec, d_meth = "", "", "Cash"
-                    if ftype in ["Income", "Labor"]:
-                        d_occ = st.text_input("Occupation")
-                        d_meth = st.selectbox("Method", ["Cash", "Online", "Cheque"])
-                        d_rec = st.text_input("Authorized By")
                     
-                    if st.form_submit_button("Submit"):
-                        img_url = ""
-                        if uploaded_photo:
-                            f_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                            supabase.storage.from_('bill_images').upload(f"bills/{f_name}", uploaded_photo.getvalue())
-                            img_url = supabase.storage.from_('bill_images').get_public_url(f"bills/{f_name}")
+                    if st.form_submit_button("SUBMIT"):
+                        url_path = ""
+                        if captured_photo:
+                            try:
+                                fname = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                supabase.storage.from_('bill_images').upload(f"bills/{fname}", captured_photo.getvalue())
+                                url_path = supabase.storage.from_('bill_images').get_public_url(f"bills/{fname}")
+                            except: st.error("Storage Error: Make sure 'bill_images' bucket exists.")
 
-                        payload = {"date": str(d_date), "type": ftype,
+                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "bill_url": url_path}
+                        supabase.table('transactions').insert(payload).execute()
+                        st.success("Data Saved!")
+                        st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
+        else: st.warning("Login as Admin First")
+
+    st.divider()
+    st.video("https://youtu.be/AiA4PkXturU")
+
+# --- 6. HISTORY SECTIONS ---
+else:
+    st.title(menu)
+    if not df.empty:
+        # Filter data
+        f_type = menu.split()[0] if "History" in menu else ""
+        f_df = df[df['type'] == f_type] if f_type else df
+        
+        search = st.text_input("🔎 Search Name or ID...")
+        if search:
+            f_df = f_df[f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
+        
+        st.dataframe(f_df, use_container_width=True)
+
+        # Show Photo Logic
+        if "Material" in menu and not f_df.empty:
+            st.divider()
+            st.subheader("🖼️ View Bill Photo")
+            valid_rows = f_df[f_df['bill_url'].str.len() > 10]
+            if not valid_rows.empty:
+                sid = st.selectbox("Select ID to see Photo", valid_rows['id'].tolist())
+                img = valid_rows[valid_rows['id'] == sid]['bill_url'].values[0]
+                st.image(img, width=500)
+            else: st.info("No photos found for these records.")
+    else: st.warning("No data found.")
