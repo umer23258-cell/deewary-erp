@@ -14,7 +14,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS (Aapka Original Style) ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -145,9 +145,13 @@ if menu == "📊 Dashboard":
                     if st.form_submit_button("Submit"):
                         bill_url = ""
                         if photo_data:
-                            f_name = f"bill_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                            supabase.storage.from_('bill_images').upload(f"bills/{f_name}", photo_data.getvalue())
-                            bill_url = supabase.storage.from_('bill_images').get_public_url(f"bills/{f_name}")
+                            try:
+                                f_name = f"bill_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                # Storage error handle karne ke liye try-except
+                                supabase.storage.from_('bill_images').upload(f"bills/{f_name}", photo_data.getvalue())
+                                bill_url = supabase.storage.from_('bill_images').get_public_url(f"bills/{f_name}")
+                            except Exception as e:
+                                st.error(f"Storage Error: Make sure 'bill_images' bucket exists in Supabase.")
 
                         payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url}
                         supabase.table('transactions').insert(payload).execute()
@@ -172,14 +176,16 @@ else:
 
         if "Material" in menu and not f_df.empty:
             st.divider()
-            st.subheader("🖼️ View Bill")
-            # Filter rows that have a URL
-            bills_only = f_df[f_df['bill_url'].str.len() > 10]
-            if not bills_only.empty:
-                s_id = st.selectbox("Select ID to see Photo", bills_only['id'].tolist())
-                p_url = bills_only[bills_only['id'] == s_id]['bill_url'].values[0]
-                st.image(p_url, width=400)
-            else:
-                st.info("No photos found.")
+            st.subheader("🖼️ View Bill Photo")
+            # Sirf wo rows dikhayen jin mein photo URL mojood ho
+            if 'bill_url' in f_df.columns:
+                valid_bills = f_df[f_df['bill_url'].str.len() > 10]
+                if not valid_bills.empty:
+                    s_id = st.selectbox("Select ID to see Photo", valid_bills['id'].tolist())
+                    img_path = valid_bills[valid_bills['id'] == s_id]['bill_url'].values[0]
+                    if img_path:
+                        st.image(img_path, width=400)
+                else:
+                    st.info("Abhi tak koi bill upload nahi hua.")
     else:
         st.warning("No data found.")
