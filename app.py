@@ -18,7 +18,6 @@ supabase: Client = create_client(url, key)
 # --- 2. PDF GENERATION FUNCTION (Full Table View) ---
 def export_to_pdf(dataframe, title):
     buf = io.BytesIO()
-    # Landscape mode use kiya hai taake saare columns fit aayein
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
     elements = []
     styles = getSampleStyleSheet()
@@ -28,15 +27,10 @@ def export_to_pdf(dataframe, title):
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 15))
 
-    # Saare columns jo history mein nazar aate hain
-    cols_to_show = ['id', 'date', 'name', 'amount', 'detail', 'occupation', 'received_by', 'pay_method']
     pdf_df = dataframe.copy()
-    
-    # Header Row
     data = [["ID", "Date", "Item/Name", "Amount", "Detail", "Occupation", "Rec. By", "Method"]]
     
     for _, row in pdf_df.iterrows():
-        # Har cell ko string mein convert kiya aur 'nan' ko empty kiya
         data.append([
             str(row.get('id', '')),
             str(row.get('date', '')),
@@ -48,13 +42,10 @@ def export_to_pdf(dataframe, title):
             str(row.get('pay_method', ''))
         ])
     
-    # Total Row
     total_val = pdf_df['amount'].sum()
     data.append(["", "", "TOTAL", f"{total_val:,.0f}", "", "", "", ""])
 
-    # Column Widths (Adjusted for Landscape)
     t = Table(data, colWidths=[40, 70, 110, 80, 150, 90, 90, 70])
-    
     style = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -94,6 +85,7 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
+    .sidebar-btn-container { margin-bottom: 10px; }
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
     }
@@ -134,8 +126,14 @@ with st.sidebar:
     menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "🔍 Search & All Reports"])
     st.divider()
     is_auth = check_password()
+    
     if is_auth:
         st.success("🔓 Admin Mode")
+        st.write("### ⚡ Quick Actions")
+        if st.button("➕ Income", use_container_width=True): st.session_state.show_form = "Income"
+        if st.button("👷 Labor", use_container_width=True): st.session_state.show_form = "Labor"
+        if st.button("🏗️ Material", use_container_width=True): st.session_state.show_form = "Material"
+        st.divider()
         if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
         if st.button("Logout"):
             st.session_state["authenticated"] = False
@@ -164,6 +162,43 @@ if menu == "📊 Dashboard":
         m1.metric("💰 Total Income", f"PKR {inc:,.0f}")
         m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
         m3.metric("⚖️ Net Balance", f"PKR {inc-exp:,.0f}")
+
+    # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
+    if "show_form" in st.session_state and is_auth:
+        ftype = st.session_state.show_form
+        with st.expander(f"Register {ftype}", expanded=True):
+            with st.form("quick_form"):
+                d_date = st.date_input("Date", datetime.now())
+                d_name = st.text_input("Title / Name")
+                d_amt = st.number_input("Amount", min_value=0)
+                
+                d_occ, d_rec, d_meth = "", "", "Cash"
+                if ftype in ["Income", "Labor", "Material"]:
+                    col1, col2 = st.columns(2)
+                    d_occ = col1.text_input("Occupation / Job Type")
+                    d_rec = col2.text_input("Received By / Authorized")
+                    d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
+
+                uploaded_photo = None
+                if ftype == "Material":
+                    uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
+                
+                d_det = st.text_area("Notes")
+                
+                if st.form_submit_button("Submit"):
+                    img_url = ""
+                    if uploaded_photo:
+                        f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                        supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                        img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                    
+                    payload = {
+                        "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
+                        "detail": d_det, "image_url": img_url, "occupation": d_occ,
+                        "received_by": d_rec, "pay_method": d_meth
+                    }
+                    supabase.table('transactions').insert(payload).execute()
+                    st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
 
     st.write("##")
     status_df = fetch_project_status()
@@ -202,49 +237,6 @@ if menu == "📊 Dashboard":
             icon = "✅" if row['status'] == "Done" else "⏳"
             bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
             st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
-
-    st.divider()
-    st.subheader("⚡ Quick Transactions")
-    q1, q2, q3 = st.columns(3)
-    if q1.button("➕ Income"): st.session_state.show_form = "Income"
-    if q2.button("👷 Labor"): st.session_state.show_form = "Labor"
-    if q3.button("🏗️ Material"): st.session_state.show_form = "Material"
-
-    if "show_form" in st.session_state and is_auth:
-        ftype = st.session_state.show_form
-        with st.expander(f"Register {ftype}", expanded=True):
-            with st.form("quick_form"):
-                d_date = st.date_input("Date", datetime.now())
-                d_name = st.text_input("Title / Name")
-                d_amt = st.number_input("Amount", min_value=0)
-                
-                d_occ, d_rec, d_meth = "", "", "Cash"
-                if ftype in ["Income", "Labor", "Material"]:
-                    col1, col2 = st.columns(2)
-                    d_occ = col1.text_input("Occupation / Job Type")
-                    d_rec = col2.text_input("Received By / Authorized")
-                    d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
-
-                uploaded_photo = None
-                if ftype == "Material":
-                    uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
-                
-                d_det = st.text_area("Notes")
-                
-                if st.form_submit_button("Submit"):
-                    img_url = ""
-                    if uploaded_photo:
-                        f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
-                        supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
-                        img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                    
-                    payload = {
-                        "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
-                        "detail": d_det, "image_url": img_url, "occupation": d_occ,
-                        "received_by": d_rec, "pay_method": d_meth
-                    }
-                    supabase.table('transactions').insert(payload).execute()
-                    st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
 
     st.divider()
     st.video("https://youtu.be/AiA4PkXturU")
