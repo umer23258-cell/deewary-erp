@@ -14,7 +14,7 @@ supabase: Client = create_client(url, key)
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS (Bilkul Aapke Wala) ---
+# --- CUSTOM CSS FOR INTERFACE ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -33,17 +33,8 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
-    .task-card {
-        background: #ffffff;
-        padding: 10px;
-        border-radius: 8px;
-        border-left: 5px solid #FF4B4B;
-        margin-bottom: 10px;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-    }
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
-        h2 { font-size: 1.5rem !important; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -87,7 +78,6 @@ with st.sidebar:
     is_auth = check_password()
     if is_auth:
         st.success("🔓 Admin Mode")
-        if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
@@ -119,27 +109,6 @@ if menu == "📊 Dashboard":
     m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
     m3.metric("⚖️ Net Balance", f"PKR {bal:,.0f}")
 
-    # --- Update Status Form ---
-    if "show_status_form" in st.session_state and st.session_state.show_status_form:
-        status_df = fetch_project_status()
-        with st.expander("🛠️ Admin: Update Site Status", expanded=True):
-            with st.form("status_form"):
-                task = st.selectbox("Select Project Task", status_df['task_name'].tolist())
-                stat = st.radio("Status", ["Pending", "Done"], horizontal=True)
-                if st.form_submit_button("Update Status"):
-                    supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
-                    st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
-
-    st.divider()
-    status_df = fetch_project_status()
-    st.markdown("### 🏗️ Construction Checklist")
-    t_cols = st.columns(3)
-    for i, row in status_df.iterrows():
-        with t_cols[i % 3]:
-            icon = "✅" if row['status'] == "Done" else "⏳"
-            bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
-            st.markdown(f"<div style='background:{bg}; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;'><strong>{icon} {row['task_name']}</strong><br><small>{row['status']}</small></div>", unsafe_allow_html=True)
-
     st.divider()
     st.subheader("⚡ Quick Transactions")
     q1, q2, q3 = st.columns(3)
@@ -151,51 +120,60 @@ if menu == "📊 Dashboard":
         if is_auth:
             ftype = st.session_state.show_form
             with st.expander(f"Register {ftype}", expanded=True):
-                with st.form("quick_form", clear_on_submit=True):
+                with st.form("quick_form"):
                     d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Title")
+                    d_name = st.text_input("Title/Party Name")
                     d_amt = st.number_input("Amount", min_value=0)
                     
+                    # Image Handling for Material
+                    bill_img_data = None
+                    if ftype == "Material":
+                        st.write("📷 **Bill Photo (Select One Option)**")
+                        photo_option = st.radio("How to add bill?", ["No Photo", "Camera", "Gallery"], horizontal=True)
+                        if photo_option == "Camera":
+                            bill_img_data = st.camera_input("Take Bill Photo")
+                        elif photo_option == "Gallery":
+                            bill_img_data = st.file_uploader("Upload Bill Image", type=["jpg", "png", "jpeg"])
+
                     d_occ, d_rec, d_meth = "", "", "Cash"
-                    
                     if ftype in ["Income", "Labor"]:
                         c_a, c_b = st.columns(2)
                         d_occ = c_a.text_input("Occupation")
                         d_meth = c_a.selectbox("Method", ["Cash", "Online", "Cheque"])
                         d_rec = c_b.text_input("Authorized By")
                     
-                    # Photo Feature for Material
-                    photo_data = None
-                    if ftype == "Material":
-                        st.write("📷 **Take Bill Picture or Upload:**")
-                        cam_photo = st.camera_input("Camera Snap")
-                        file_photo = st.file_uploader("Upload from Gallery", type=["jpg", "png", "jpeg"])
-                        if cam_photo: photo_data = cam_photo.getvalue()
-                        elif file_photo: photo_data = file_photo.getvalue()
-
                     d_det = st.text_area("Notes")
                     
-                    if st.form_submit_button("Submit"):
+                    if st.form_submit_button("Submit Transaction"):
                         bill_url = ""
-                        if photo_data:
+                        # Upload Image if exists
+                        if bill_img_data:
                             try:
-                                f_name = f"bill_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                                f_path = f"bills/{f_name}"
-                                supabase.storage.from_('bill_images').upload(f_path, photo_data, {"content-type": "image/jpeg"})
-                                bill_url = supabase.storage.from_('bill_images').get_public_url(f_path)
+                                file_name = f"bill_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                file_path = f"bills/{file_name}"
+                                supabase.storage.from_('bill_images').upload(file_path, bill_img_data.getvalue(), {"content-type": "image/jpeg"})
+                                bill_url = supabase.storage.from_('bill_images').get_public_url(file_path)
                             except Exception as e:
-                                st.error(f"Image Error: {e}")
+                                st.warning(f"Image upload failed: {e}")
 
-                        payload = {"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url}
+                        payload = {
+                            "date": str(d_date), "type": ftype, "name": d_name, 
+                            "amount": d_amt, "detail": d_det, "occupation": d_occ, 
+                            "received_by": d_rec, "pay_method": d_meth, "bill_url": bill_url
+                        }
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
         else: st.warning("Please login as Admin to add data.")
 
+    # Status Cards (Simplified for space)
     st.divider()
-    st.markdown("### 🏘️ Showcase Project")
-    v1, v2 = st.columns([1, 1])
-    with v1: st.video("https://youtu.be/AiA4PkXturU")
-    with v2: st.info("Hamara ye project modern aesthetics aur structural durability ka behtareen namuna hai.")
+    status_df = fetch_project_status()
+    st.markdown("### 🏗️ Construction Checklist")
+    t_cols = st.columns(3)
+    for i, row in status_df.iterrows():
+        with t_cols[i % 3]:
+            bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
+            st.markdown(f"<div style='background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border:1px solid #ddd;'><strong>{row['task_name']}</strong> ({row['status']})</div>", unsafe_allow_html=True)
 
 # --- 6. HISTORY PAGES ---
 else:
@@ -206,14 +184,45 @@ else:
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
         
+        search = st.text_input("🔎 Filter results...")
+        if search:
+            mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
+            f_df = f_df[mask]
+        
         st.dataframe(f_df, use_container_width=True)
+        
+        # --- ID SEARCH FOR BILL PREVIEW ---
+        if "Material" in menu:
+            st.divider()
+            st.subheader("🔍 View Bill by ID")
+            bill_id = st.text_input("Enter Transaction ID to see Bill Photo")
+            if bill_id:
+                try:
+                    target_row = f_df[f_df['id'].astype(str) == bill_id]
+                    if not target_row.empty:
+                        img_url = target_row['bill_url'].values[0]
+                        if img_url:
+                            st.image(img_url, caption=f"Bill for ID: {bill_id}", width=500)
+                        else:
+                            st.info("Is transaction ka bill upload nahi kiya gaya.")
+                    else:
+                        st.error("ID nahi mili.")
+                except: pass
 
-        if "Material" in menu and "bill_url" in f_df.columns:
-            st.subheader("🖼️ View Bill Photos")
-            valid_bills = f_df[f_df['bill_url'].notna() & (f_df['bill_url'].str.strip() != "")]
-            if not valid_bills.empty:
-                s_id = st.selectbox("Select ID", valid_bills['id'].tolist())
-                path = valid_bills[valid_bills['id'] == s_id]['bill_url'].values[0]
-                if path and str(path).startswith("http"): st.image(path, width=400)
+        total_val = f_df['amount'].sum()
+        st.metric(f"Total Amount", f"PKR {total_val:,.0f}")
+
+        # DOWNLOAD SECTION (Bilkul Aapke Wala)
+        st.divider()
+        col_down1, col_down2 = st.columns(2)
+        buf = io.BytesIO()
+        f_df.to_excel(buf, index=False)
+        col_down1.download_button("📥 Download Excel", buf.getvalue(), f"{menu}.xlsx")
+
+        report_html = f"<html><body><h1>{menu} Report</h1>{f_df.to_html(index=False)}</body></html>"
+        b64 = base64.b64encode(report_html.encode()).decode()
+        pdf_href = f'<a href="data:text/html;base64,{b64}" download="{menu}_Report.html" style="text-decoration:none;"><button style="width:100%; background-color:#FF4B4B; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">📄 Download Report</button></a>'
+        col_down2.markdown(pdf_href, unsafe_allow_html=True)
+
     else:
         st.warning("No data found.")
