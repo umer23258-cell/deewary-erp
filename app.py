@@ -3,6 +3,7 @@ import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime
 import io
+import urllib.parse
 import streamlit.components.v1 as components
 # PDF ke liye libraries
 from reportlab.lib.pagesizes import letter, landscape
@@ -85,6 +86,14 @@ st.markdown("""
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 25px;
     }
+    .kpi-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 5px solid #FF4B4B;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 15px;
+    }
     .sidebar-btn-container { margin-bottom: 10px; }
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
@@ -120,7 +129,6 @@ def check_password():
                 st.rerun()
     return False
 
-# --- NEW FUNCTION FOR LABOR PROFILES ---
 @st.cache_data(ttl=30)
 def fetch_labor_profiles():
     try:
@@ -128,11 +136,22 @@ def fetch_labor_profiles():
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
+# --- HELPER FUNCTION FOR WHATSAPP LINK GENERATION ---
+def generate_whatsapp_link(type_tx, name, amount, detail):
+    base_msg = f"🏗️ *Deewary.com ERP Notification*\n\n"
+    base_msg += f"• *Type:* {type_tx}\n"
+    base_msg += f"• *Name/Item:* {name}\n"
+    base_msg += f"• *Amount:* PKR {amount:,.0f}\n"
+    if detail:
+        base_msg += f"• *Details:* {detail}\n"
+    base_msg += f"\n_System generated tracking logs summary entry._"
+    encoded_text = urllib.parse.quote(base_msg)
+    return f"https://api.whatsapp.com/send?text={encoded_text}"
+
 
 # --- 5. SIDEBAR ---
 with st.sidebar:
     st.title("🏗️ DEEWARY ERP")
-    # Added "👷 Labor Profiles Application" inside the radio menu options
     menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"])
     st.divider()
     is_auth = check_password()
@@ -143,7 +162,6 @@ with st.sidebar:
         if st.button("➕ Income", use_container_width=True): st.session_state.show_form = "Income"
         if st.button("👷 Labor", use_container_width=True): st.session_state.show_form = "Labor"
         if st.button("🏗️ Material", use_container_width=True): st.session_state.show_form = "Material"
-        # New administrative quick action button for registrations
         if st.button("📝 Register New Labor Profile", use_container_width=True): st.session_state.show_form = "RegisterLabor"
         st.divider()
         if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
@@ -169,17 +187,63 @@ if menu == "📊 Dashboard":
 
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
-        exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
-        m1, m2, m3 = st.columns(3)
-        m1.metric("💰 Total Income", f"PKR {inc:,.0f}")
-        m2.metric("📉 Total Expenses", f"PKR {exp:,.0f}")
-        m3.metric("⚖️ Net Balance", f"PKR {inc-exp:,.0f}")
+        lab_exp = df[df['type'] == 'Labor']['amount'].sum()
+        mat_exp = df[df['type'] == 'Material']['amount'].sum()
+        exp = lab_exp + mat_exp
+        net_bal = inc - exp
+        
+        # --- FEATURE 1: EXECUTIVE KPI CARDS & ANALYTICS VISUAL SPLIT ---
+        col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
+        with col_kpi1:
+            st.markdown(f"""<div class='kpi-card'>
+                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>💰 TOTAL INVESTMENT RECEIPT</p>
+                <h2 style='color:#2e7d32; margin:5px 0 0 0;'>PKR {inc:,.0f}</h2>
+            </div>""", unsafe_allow_html=True)
+        with col_kpi2:
+            st.markdown(f"""<div class='kpi-card'>
+                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>📉 RUNNING OUTFLOW EXPENSES</p>
+                <h2 style='color:#c62828; margin:5px 0 0 0;'>PKR {exp:,.0f}</h2>
+            </div>""", unsafe_allow_html=True)
+        with col_kpi3:
+            bal_color = "#2e7d32" if net_bal >= 0 else "#c62828"
+            st.markdown(f"""<div class='kpi-card'>
+                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET LIQUID BALANCE</p>
+                <h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2>
+            </div>""", unsafe_allow_html=True)
+
+        # Spend distribution split chart configuration logic block
+        total_spent = lab_exp + mat_exp if (lab_exp + mat_exp) > 0 else 1
+        lab_p = (lab_exp / total_spent) * 100
+        mat_p = (mat_exp / total_spent) * 100
+        
+        chart_split_code = f"""
+        pie title Operational Outflow Breakdown Split
+            "Labor Outlay (PKR {lab_exp:,.0f})" : {lab_p:.1f}
+            "Material Procurement (PKR {mat_exp:,.0f})" : {mat_p:.1f}
+        """
+        components.html(f"<div style='background:#f8f9fa; border-radius:15px; padding:15px; margin-bottom:25px;'><pre class='mermaid'>{chart_split_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=320)
+
+        # --- FEATURE 2: SMART SITE COST ESTIMATION BUDGET CALCULATOR TOOL ---
+        st.markdown("### 📊 Smart Estimation Budget Tracker ($75 \\times 100$ Sq.Ft Construction Boundary Line)")
+        # Estimated cost parameter tracking values mapping benchmark metrics configuration sequence
+        estimated_budget_benchmark = 3500000 
+        utilization_ratio = (exp / estimated_budget_benchmark) * 100 if exp > 0 else 0
+        
+        col_est1, col_est2 = st.columns([2, 1])
+        with col_est1:
+            st.progress(min(float(utilization_ratio / 100), 1.0))
+            st.markdown(f"**Budget Allocation Spent Consumption Velocity:** `{utilization_ratio:.1f}%` Used of PKR {estimated_budget_benchmark:,.0f} Target Cap Allocation Ceiling.")
+        with col_est2:
+            remaining_variance = estimated_budget_benchmark - exp
+            if remaining_variance >= 0:
+                st.success(f"🟢 Surplus Headroom: PKR {remaining_variance:,.0f}")
+            else:
+                st.error(f"🚨 Deficit Variance Cap: PKR {abs(remaining_variance):,.0f} OVER BUDGET!")
 
     # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
     if "show_form" in st.session_state and is_auth:
         ftype = st.session_state.show_form
         
-        # New Registration Form Implementation inside exact layout sequence logic
         if ftype == "RegisterLabor":
             with st.expander("📝 Register New Labor Profile Document Application", expanded=True):
                 with st.form("labor_profile_form"):
@@ -244,7 +308,17 @@ if menu == "📊 Dashboard":
                             "received_by": d_rec, "pay_method": d_meth
                         }
                         supabase.table('transactions').insert(payload).execute()
-                        st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
+                        st.cache_data.clear()
+                        
+                        # --- FEATURE 3: DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER OUTLET INTERACTION ---
+                        wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
+                        st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Click to Broadcast This Entry Receipt to WhatsApp Instantly</div></a>""", unsafe_allow_html=True)
+                        st.info("Record inserted into database cloud files successfully. Click button above if you wish to push to messaging channels before app reloading refreshes states context views.")
+                        
+                        st.session_state.pop("show_form")
+                        # Delayed rerun context frame setup configuration to preserve visibility of link if required
+                        if st.button("Proceed & Refresh View Dashboard"):
+                            st.rerun()
 
     st.write("##")
     status_df = fetch_project_status()
@@ -288,7 +362,7 @@ if menu == "📊 Dashboard":
     st.video("https://youtu.be/AiA4PkXturU")
 
 
-# --- NEW SECTION: 7. LABOR PROFILES APPLICATION PAGE ---
+# --- LABOR PROFILES APPLICATION PAGE ---
 elif menu == "👷 Labor Profiles Application":
     st.title("👷 Labor Profiles Application Directory")
     st.write("Labor card entries database file records, detailing specialized contracts and ratings metrics configuration.")
@@ -296,7 +370,6 @@ elif menu == "👷 Labor Profiles Application":
     labor_df = fetch_labor_profiles()
     
     if not labor_df.empty:
-        # Search layout query configuration filter segment module logic
         l_search = st.text_input("🔎 Search Profile Directory by Name, CNIC, or Job Skillset Type...")
         if l_search:
             l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
@@ -321,7 +394,6 @@ elif menu == "👷 Labor Profiles Application":
                     st.markdown(f"**📞 Phone:** {row['phone']} | **🪪 CNIC:** {row['cnic']}")
                     st.markdown(f"**💰 Total Contract (Taka):** PKR {row['total_contract_amount']:,.0f}")
                     
-                    # Evaluation stars representation renderer configuration segment logic module block
                     stars = "⭐" * int(row['rating'] if row['rating'] else 5)
                     st.markdown(f"**📊 Performance Rating Evaluation:** {stars}")
                     st.markdown(f"**📝 Complete Detailed Information Dossier (A to Z Data):**")
