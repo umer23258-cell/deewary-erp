@@ -192,7 +192,7 @@ if menu == "📊 Dashboard":
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
-        # --- FEATURE 1: EXECUTIVE KPI CARDS & ANALYTICS VISUAL SPLIT ---
+        # --- EXECUTIVE KPI CARDS & ANALYTICS VISUAL SPLIT ---
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
         with col_kpi1:
             st.markdown(f"""<div class='kpi-card'>
@@ -222,23 +222,6 @@ if menu == "📊 Dashboard":
             "Material Procurement (PKR {mat_exp:,.0f})" : {mat_p:.1f}
         """
         components.html(f"<div style='background:#f8f9fa; border-radius:15px; padding:15px; margin-bottom:25px;'><pre class='mermaid'>{chart_split_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=320)
-
-        # --- FEATURE 2: SMART SITE COST ESTIMATION BUDGET CALCULATOR TOOL ---
-        st.markdown("### 📊 Smart Estimation Budget Tracker ($75 \\times 100$ Sq.Ft Construction Boundary Line)")
-        # Estimated cost parameter tracking values mapping benchmark metrics configuration sequence
-        estimated_budget_benchmark = 3500000 
-        utilization_ratio = (exp / estimated_budget_benchmark) * 100 if exp > 0 else 0
-        
-        col_est1, col_est2 = st.columns([2, 1])
-        with col_est1:
-            st.progress(min(float(utilization_ratio / 100), 1.0))
-            st.markdown(f"**Budget Allocation Spent Consumption Velocity:** `{utilization_ratio:.1f}%` Used of PKR {estimated_budget_benchmark:,.0f} Target Cap Allocation Ceiling.")
-        with col_est2:
-            remaining_variance = estimated_budget_benchmark - exp
-            if remaining_variance >= 0:
-                st.success(f"🟢 Surplus Headroom: PKR {remaining_variance:,.0f}")
-            else:
-                st.error(f"🚨 Deficit Variance Cap: PKR {abs(remaining_variance):,.0f} OVER BUDGET!")
 
     # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
     if "show_form" in st.session_state and is_auth:
@@ -310,13 +293,12 @@ if menu == "📊 Dashboard":
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
                         
-                        # --- FEATURE 3: DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER OUTLET INTERACTION ---
+                        # --- DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER OUTLET INTERACTION ---
                         wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
                         st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Click to Broadcast This Entry Receipt to WhatsApp Instantly</div></a>""", unsafe_allow_html=True)
                         st.info("Record inserted into database cloud files successfully. Click button above if you wish to push to messaging channels before app reloading refreshes states context views.")
                         
                         st.session_state.pop("show_form")
-                        # Delayed rerun context frame setup configuration to preserve visibility of link if required
                         if st.button("Proceed & Refresh View Dashboard"):
                             st.rerun()
 
