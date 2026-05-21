@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, timedelta
 import io
 import urllib.parse
 import streamlit.components.v1 as components
@@ -93,6 +93,24 @@ st.markdown("""
         border-left: 5px solid #FF4B4B;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         margin-bottom: 15px;
+    }
+    .alert-box {
+        background-color: #ffebee;
+        border-left: 6px solid #c62828;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        color: #c62828;
+        font-weight: bold;
+    }
+    .forecast-box {
+        background-color: #e8f5e9;
+        border-left: 6px solid #2e7d32;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        color: #2e7d32;
+        font-weight: bold;
     }
     .sidebar-btn-container { margin-bottom: 10px; }
     @media (max-width: 640px) {
@@ -192,6 +210,41 @@ if menu == "📊 Dashboard":
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
+        # --- NEW CONTEXT BLOCK: CASH FLOW FORECAST & ALERTS ---
+        try:
+            df['date_parsed'] = pd.to_datetime(df['date'])
+            seven_days_ago = datetime.now() - timedelta(days=7)
+            recent_exp_df = df[(df['type'].isin(['Labor', 'Material'])) & (df['date_parsed'] >= seven_days_ago)]
+            total_7_day_exp = recent_exp_df['amount'].sum()
+            daily_burn_rate = total_7_day_exp / 7
+        except:
+            daily_burn_rate = 0
+
+        # High visibility warnings check configuration sequence
+        if net_bal < 50000:
+            st.markdown(f"""
+                <div class="alert-box">
+                    🚨 LOW BALANCE ALERT: Running Liquid Balance is critical (PKR {net_bal:,.0f}). 
+                    Please arrange funds to ensure workflow stability at the construction perimeter line.
+                </div>
+            """, unsafe_allow_html=True)
+        elif daily_burn_rate > 0:
+            days_left = net_bal / daily_burn_rate
+            if days_left <= 5:
+                st.markdown(f"""
+                    <div class="alert-box" style="background-color: #fff3e0; border-left-color: #ff9800; color: #e65100;">
+                        ⚠️ CASH FLOW WARNING: At the current velocity of PKR {daily_burn_rate:,.0f}/day, 
+                        your reserve balance will sustain operations for approximately {days_left:.1f} days only.
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="forecast-box">
+                        📈 CASH FLOW FORECAST: Current Burn Rate is PKR {daily_burn_rate:,.0f}/day. 
+                        Safe operational runway left: ~{days_left:.1f} Days.
+                    </div>
+                """, unsafe_allow_html=True)
+
         # --- EXECUTIVE KPI CARDS ---
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
         with col_kpi1:
