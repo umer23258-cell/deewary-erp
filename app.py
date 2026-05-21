@@ -192,7 +192,7 @@ if menu == "📊 Dashboard":
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
-        # --- EXECUTIVE KPI CARDS & ANALYTICS VISUAL SPLIT ---
+        # --- EXECUTIVE KPI CARDS ---
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
         with col_kpi1:
             st.markdown(f"""<div class='kpi-card'>
@@ -210,18 +210,6 @@ if menu == "📊 Dashboard":
                 <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET LIQUID BALANCE</p>
                 <h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2>
             </div>""", unsafe_allow_html=True)
-
-        # Spend distribution split chart configuration logic block
-        total_spent = lab_exp + mat_exp if (lab_exp + mat_exp) > 0 else 1
-        lab_p = (lab_exp / total_spent) * 100
-        mat_p = (mat_exp / total_spent) * 100
-        
-        chart_split_code = f"""
-        pie title Operational Outflow Breakdown Split
-            "Labor Outlay (PKR {lab_exp:,.0f})" : {lab_p:.1f}
-            "Material Procurement (PKR {mat_exp:,.0f})" : {mat_p:.1f}
-        """
-        components.html(f"<div style='background:#f8f9fa; border-radius:15px; padding:15px; margin-bottom:25px;'><pre class='mermaid'>{chart_split_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=320)
 
     # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
     if "show_form" in st.session_state and is_auth:
@@ -293,7 +281,7 @@ if menu == "📊 Dashboard":
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
                         
-                        # --- DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER OUTLET INTERACTION ---
+                        # --- DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER ---
                         wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
                         st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Click to Broadcast This Entry Receipt to WhatsApp Instantly</div></a>""", unsafe_allow_html=True)
                         st.info("Record inserted into database cloud files successfully. Click button above if you wish to push to messaging channels before app reloading refreshes states context views.")
