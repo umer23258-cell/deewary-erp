@@ -120,10 +120,20 @@ def check_password():
                 st.rerun()
     return False
 
+# --- NEW FUNCTION FOR LABOR PROFILES ---
+@st.cache_data(ttl=30)
+def fetch_labor_profiles():
+    try:
+        res = supabase.table('labor_profiles').select("*").order('id', desc=True).execute()
+        return pd.DataFrame(res.data)
+    except: return pd.DataFrame()
+
+
 # --- 5. SIDEBAR ---
 with st.sidebar:
     st.title("🏗️ DEEWARY ERP")
-    menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "🔍 Search & All Reports"])
+    # Added "👷 Labor Profiles Application" inside the radio menu options
+    menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"])
     st.divider()
     is_auth = check_password()
     
@@ -133,6 +143,8 @@ with st.sidebar:
         if st.button("➕ Income", use_container_width=True): st.session_state.show_form = "Income"
         if st.button("👷 Labor", use_container_width=True): st.session_state.show_form = "Labor"
         if st.button("🏗️ Material", use_container_width=True): st.session_state.show_form = "Material"
+        # New administrative quick action button for registrations
+        if st.button("📝 Register New Labor Profile", use_container_width=True): st.session_state.show_form = "RegisterLabor"
         st.divider()
         if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
         if st.button("Logout"):
@@ -166,39 +178,73 @@ if menu == "📊 Dashboard":
     # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
     if "show_form" in st.session_state and is_auth:
         ftype = st.session_state.show_form
-        with st.expander(f"Register {ftype}", expanded=True):
-            with st.form("quick_form"):
-                d_date = st.date_input("Date", datetime.now())
-                d_name = st.text_input("Title / Name")
-                d_amt = st.number_input("Amount", min_value=0)
-                
-                d_occ, d_rec, d_meth = "", "", "Cash"
-                if ftype in ["Income", "Labor", "Material"]:
-                    col1, col2 = st.columns(2)
-                    d_occ = col1.text_input("Occupation / Job Type")
-                    d_rec = col2.text_input("Received By / Authorized")
-                    d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
-
-                uploaded_photo = None
-                if ftype == "Material":
-                    uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
-                
-                d_det = st.text_area("Notes")
-                
-                if st.form_submit_button("Submit"):
-                    img_url = ""
-                    if uploaded_photo:
-                        f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
-                        supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
-                        img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+        
+        # New Registration Form Implementation inside exact layout sequence logic
+        if ftype == "RegisterLabor":
+            with st.expander("📝 Register New Labor Profile Document Application", expanded=True):
+                with st.form("labor_profile_form"):
+                    l_name = st.text_input("Labor Full Name *")
+                    l_phone = st.text_input("Phone Number")
+                    l_cnic = st.text_input("CNIC Number")
+                    l_occ = st.text_input("Occupation / Skill Type (e.g., Mistry, Plumber)")
+                    l_contract = st.number_input("Total Contract Amount / Taka Amount (PKR)", min_value=0, value=0)
+                    l_rating = st.slider("Rating / Performance evaluation", min_value=1, max_value=5, value=5)
+                    l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
+                    l_details = st.text_area("A to Z Personal Data Notes / Address / References")
                     
-                    payload = {
-                        "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
-                        "detail": d_det, "image_url": img_url, "occupation": d_occ,
-                        "received_by": d_rec, "pay_method": d_meth
-                    }
-                    supabase.table('transactions').insert(payload).execute()
-                    st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
+                    if st.form_submit_button("Save Profile Application"):
+                        if l_name:
+                            img_url = ""
+                            if l_photo:
+                                f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
+                                supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
+                                img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                                
+                            payload = {
+                                "name": l_name, "phone": l_phone, "cnic": l_cnic, "occupation": l_occ,
+                                "total_contract_amount": l_contract, "rating": l_rating,
+                                "photo_url": img_url, "details": l_details
+                            }
+                            supabase.table('labor_profiles').insert(payload).execute()
+                            st.cache_data.clear()
+                            st.session_state.pop("show_form")
+                            st.rerun()
+                        else:
+                            st.error("Labor Full Name is strictly required.")
+        else:
+            with st.expander(f"Register {ftype}", expanded=True):
+                with st.form("quick_form"):
+                    d_date = st.date_input("Date", datetime.now())
+                    d_name = st.text_input("Title / Name")
+                    d_amt = st.number_input("Amount", min_value=0)
+                    
+                    d_occ, d_rec, d_meth = "", "", "Cash"
+                    if ftype in ["Income", "Labor", "Material"]:
+                        col1, col2 = st.columns(2)
+                        d_occ = col1.text_input("Occupation / Job Type")
+                        d_rec = col2.text_input("Received By / Authorized")
+                        d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
+
+                    uploaded_photo = None
+                    if ftype == "Material":
+                        uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
+                    
+                    d_det = st.text_area("Notes")
+                    
+                    if st.form_submit_button("Submit"):
+                        img_url = ""
+                        if uploaded_photo:
+                            f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                            supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                            img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                        
+                        payload = {
+                            "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
+                            "detail": d_det, "image_url": img_url, "occupation": d_occ,
+                            "received_by": d_rec, "pay_method": d_meth
+                        }
+                        supabase.table('transactions').insert(payload).execute()
+                        st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
 
     st.write("##")
     status_df = fetch_project_status()
@@ -241,7 +287,61 @@ if menu == "📊 Dashboard":
     st.divider()
     st.video("https://youtu.be/AiA4PkXturU")
 
-# --- 7. HISTORY PAGES ---
+
+# --- NEW SECTION: 7. LABOR PROFILES APPLICATION PAGE ---
+elif menu == "👷 Labor Profiles Application":
+    st.title("👷 Labor Profiles Application Directory")
+    st.write("Labor card entries database file records, detailing specialized contracts and ratings metrics configuration.")
+    
+    labor_df = fetch_labor_profiles()
+    
+    if not labor_df.empty:
+        # Search layout query configuration filter segment module logic
+        l_search = st.text_input("🔎 Search Profile Directory by Name, CNIC, or Job Skillset Type...")
+        if l_search:
+            l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
+            labor_df = labor_df[l_mask]
+            
+        st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
+        
+        st.write("### 🖼️ Profiles Deep Dive Cards View")
+        for _, row in labor_df.iterrows():
+            with st.container():
+                st.markdown(f"#### 👤 {row['name']} ({row['occupation'] if row['occupation'] else 'General Labor'})")
+                c_img, c_info = st.columns([1, 3])
+                
+                with c_img:
+                    photo_path = row.get('photo_url', '')
+                    if photo_path and str(photo_path) != "nan":
+                        st.image(photo_path, use_container_width=True)
+                    else:
+                        st.info("No Profile Pic uploaded.")
+                        
+                with c_info:
+                    st.markdown(f"**📞 Phone:** {row['phone']} | **🪪 CNIC:** {row['cnic']}")
+                    st.markdown(f"**💰 Total Contract (Taka):** PKR {row['total_contract_amount']:,.0f}")
+                    
+                    # Evaluation stars representation renderer configuration segment logic module block
+                    stars = "⭐" * int(row['rating'] if row['rating'] else 5)
+                    st.markdown(f"**📊 Performance Rating Evaluation:** {stars}")
+                    st.markdown(f"**📝 Complete Detailed Information Dossier (A to Z Data):**")
+                    st.info(row['details'] if row['details'] else "No additional background profile summary logs provided.")
+                
+                st.divider()
+                
+        if is_auth:
+            st.write("### 🛠️ Administrative Operations")
+            l_tid = st.text_input("Enter Profile Row Unique Identity ID to Delete File permanently")
+            if st.button("🗑️ Delete Profile Record", key="del_lab_prof_btn"):
+                if l_tid:
+                    supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
+                    st.cache_data.clear()
+                    st.rerun()
+    else:
+        st.info("No Labor profiles have been provisioned inside the system ledger table tracking logs configuration folder yet.")
+
+
+# --- 8. ORIGINAL HISTORY PAGES LOGIC (As it was) ---
 else:
     st.title(menu)
     if not df.empty:
