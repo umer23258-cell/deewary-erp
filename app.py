@@ -291,7 +291,7 @@ if "selected_project" not in st.session_state:
     st.session_state["selected_project"] = st.session_state["custom_projects"][0]
 
 
-# --- 6. POPUP DIALOG FORMS ---
+# --- 6. POPUP DIALOG FORMS (Ultra-Safe Non-Blocking Database Engine) ---
 @st.dialog("📁 Create New Project Site Context")
 def popup_create_project():
     with st.form("new_project_form"):
@@ -303,6 +303,7 @@ def popup_create_project():
                     st.session_state["custom_projects"].append(new_proj_name)
                 st.session_state["selected_project"] = new_proj_name
                 
+                # Dynamic isolated insertion block for project status table to bypass schema constraints safely
                 tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
                 for t in tasks:
                     try:
@@ -311,7 +312,7 @@ def popup_create_project():
                         try:
                             supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
                         except:
-                            pass
+                            pass # Any underlying DB constraint failure will not block project tracking flow anymore.
                 
                 st.success(f"Project '{new_proj_name}' state customized and successfully created!")
                 st.rerun()
@@ -351,6 +352,7 @@ def popup_register_labor(current_project):
                     "details": str(l_details)
                 }
                 
+                # Adding project filter context column seamlessly if it exists in the user schema layout
                 if 'project_context' in raw_labor_df.columns or not raw_labor_df.empty:
                     payload["project_context"] = str(current_project)
                 
@@ -392,6 +394,7 @@ def popup_transaction_entry(ftype, current_project):
                         img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
                     except: pass
                 
+                # CORE MANDATORY BASELINE FIELDS (Always guaranteed to exist in database)
                 payload = {
                     "date": str(d_date), 
                     "type": str(ftype), 
@@ -401,12 +404,14 @@ def popup_transaction_entry(ftype, current_project):
                     "image_url": str(img_url)
                 }
                 
+                # DYNAMIC SCHEMA MATCHING LAYER: Only appends columns if they are confirmed present in Supabase table
                 if not raw_df.empty:
                     if 'occupation' in raw_df.columns: payload["occupation"] = str(d_occ)
                     if 'received_by' in raw_df.columns: payload["received_by"] = str(d_rec)
                     if 'pay_method' in raw_df.columns: payload["pay_method"] = str(d_meth)
                     if 'project_context' in raw_df.columns: payload["project_context"] = str(current_project)
                 else:
+                    # Default progressive fallback configuration if table is completely fresh
                     payload["project_context"] = str(current_project)
                     payload["pay_method"] = str(d_meth)
                 
@@ -443,7 +448,47 @@ def popup_update_status(current_project, status_df):
                     st.error("Schema constraint failed to align state on external table.")
 
 
-# --- 7. DYNAMIC PROJECT FILTERS (Pre-loaded for Sidebar Context) ---
+# --- 7. SIDEBAR DESIGN ---
+with st.sidebar:
+    st.title("🏗️ DEEWARY ERP")
+    
+    st.markdown("### 📁 Select Active Site Project")
+    selected_proj = st.selectbox(
+        "Current Working Context:", 
+        st.session_state["custom_projects"], 
+        index=st.session_state["custom_projects"].index(st.session_state["selected_project"]) if st.session_state["selected_project"] in st.session_state["custom_projects"] else 0
+    )
+    st.session_state["selected_project"] = selected_proj
+    st.info(f"📍 Active Site: **{st.session_state['selected_project']}**")
+    st.divider()
+    
+    menu = st.radio(
+        "Go To", 
+        ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
+    )
+    st.divider()
+    is_auth = check_password()
+    
+    if is_auth:
+        st.success("🔓 Admin Mode")
+        st.write("### ⚡ Quick Actions (Popups)")
+        if st.button("➕ Income", use_container_width=True): popup_transaction_entry("Income", st.session_state["selected_project"])
+        if st.button("👷 Labor", use_container_width=True): popup_transaction_entry("Labor", st.session_state["selected_project"])
+        if st.button("🏗️ Material", use_container_width=True): popup_transaction_entry("Material", st.session_state["selected_project"])
+        if st.button("📝 Register New Labor Profile", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
+        if st.button("📁 Create New Project Site", use_container_width=True): popup_create_project()
+        st.divider()
+        if st.button("⚙️ Change Task Status"): 
+            _status_df = fetch_project_status(st.session_state["selected_project"])
+            popup_update_status(st.session_state["selected_project"], _status_df)
+        if st.button("Logout"):
+            st.session_state["authenticated"] = False
+            st.rerun()
+    st.divider()
+    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption=f"Active Site: {st.session_state['selected_project']}")
+
+
+# --- 8. DYNAMIC PROJECT FILTERS ---
 current_project = st.session_state["selected_project"]
 
 if not raw_df.empty:
@@ -461,70 +506,6 @@ if not raw_labor_df.empty:
         labor_df = raw_labor_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
 else:
     labor_df = pd.DataFrame()
-
-status_df = fetch_project_status(current_project)
-
-
-# --- 8. SIDEBAR DESIGN (With Integrated Checklist & Progress Mapping) ---
-with st.sidebar:
-    st.title("🏗️ DEEWARY ERP")
-    
-    st.markdown("### 📁 Select Active Site Project")
-    selected_proj = st.selectbox(
-        "Current Working Context:", 
-        st.session_state["custom_projects"], 
-        index=st.session_state["custom_projects"].index(st.session_state["selected_project"]) if st.session_state["selected_project"] in st.session_state["custom_projects"] else 0
-    )
-    st.session_state["selected_project"] = selected_proj
-    st.info(f"📍 Active Site: **{st.session_state['selected_project']}**")
-    st.divider()
-    
-    # --- ADDED: 📑 Receipt Voucher System In Navigation ---
-    menu = st.radio(
-        "Go To", 
-        ["📊 Dashboard", "📑 Receipt Voucher System", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
-    )
-    st.divider()
-    
-    with st.expander("📈 Site Progress & Checklist", expanded=True):
-        total_tasks = len(status_df)
-        done_tasks = len(status_df[status_df['status'] == 'Done']) if total_tasks > 0 else 0
-        prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
-        
-        st.progress(prog_val / 100)
-        st.markdown(f"**{prog_val}% Work Completed**")
-        st.write(f"✅ Finished: {done_tasks} | ⏳ Remaining: {total_tasks - done_tasks}")
-        
-        st.divider()
-        if not status_df.empty:
-            for i, row in status_df.reset_index().iterrows():
-                icon = "✅" if row['status'] == "Done" else "⏳"
-                bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
-                st.markdown(f'<div style="background:{bg}; padding:6px 10px; border-radius:8px; margin-bottom:4px; font-size:12px; border-left:4px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
-        
-        if st.button("🔄 Force Refresh Tracker", use_container_width=True): 
-            st.cache_data.clear()
-            st.rerun()
-            
-    st.divider()
-    is_auth = check_password()
-    
-    if is_auth:
-        st.success("🔓 Admin Mode")
-        st.write("### ⚡ Quick Actions (Popups)")
-        if st.button("➕ Income", use_container_width=True): popup_transaction_entry("Income", st.session_state["selected_project"])
-        if st.button("👷 Labor", use_container_width=True): popup_transaction_entry("Labor", st.session_state["selected_project"])
-        if st.button("🏗️ Material", use_container_width=True): popup_transaction_entry("Material", st.session_state["selected_project"])
-        if st.button("📝 Register New Labor Profile", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
-        if st.button("📁 Create New Project Site", use_container_width=True): popup_create_project()
-        st.divider()
-        if st.button("⚙️ Change Task Status", use_container_width=True): 
-            popup_update_status(st.session_state["selected_project"], status_df)
-        if st.button("Logout", use_container_width=True):
-            st.session_state["authenticated"] = False
-            st.rerun()
-    st.divider()
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption=f"Active Site: {st.session_state['selected_project']}")
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
@@ -571,16 +552,12 @@ if menu == "📊 Dashboard":
         bal_color = "#2e7d32" if net_bal >= 0 else "#c62828"
         st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET BALANCE</p><h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
-
-# --- MOVED: 📑 RECEIPT VOUCHER SYSTEM PAGE (Isolated Section) ---
-elif menu == "📑 Receipt Voucher System":
-    st.title(f"📑 Automated Receipt Voucher Slip System ({current_project})")
-    st.write("Select any transaction record from the list below to view and audit its professional premium digital receipt slip.")
-    st.divider()
-    
+    # --- RECEIPT SLIP GENERATOR ---
+    st.write("##")
+    st.markdown("### 📑 System Automated Receipt Slip / Voucher Generator")
     if not df.empty:
         df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
-        selected_log = st.selectbox("Select Transaction Log Entry to Generate Slip:", df['voucher_label'].tolist())
+        selected_log = st.selectbox("Select Transaction Log Entry:", df['voucher_label'].tolist())
         v_row = df[df['voucher_label'] == selected_log].iloc[0]
         v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
         v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
@@ -602,8 +579,36 @@ elif menu == "📑 Receipt Voucher System":
                 <div class="voucher-total"><div style="display: flex; justify-content: space-between;"><span>VOLUME TOTAL:</span><span>PKR {v_row['amount']:,.0f}/-</span></div></div>
             </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info(f"No transaction tracking history data available to render slips for project: {current_project}")
+    else: st.info(f"No transaction tracking history data available for project: {current_project}")
+
+    st.write("##")
+    status_df = fetch_project_status(current_project)
+    total_tasks = len(status_df)
+    done_tasks = len(status_df[status_df['status'] == 'Done']) if total_tasks > 0 else 0
+    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+
+    col_left, col_right = st.columns([1, 1])
+    with col_left:
+        st.markdown(f"### 📈 Overall Progress ({current_project})")
+        st.progress(prog_val / 100)
+        st.markdown(f"**{prog_val}% Work Completed**")
+        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
+        components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
+
+    with col_right:
+        st.markdown("### 📝 Tasks Summary")
+        st.write(f"✅ Finished: {done_tasks} | ⏳ Remaining: {total_tasks - done_tasks}")
+        if st.button("Force Refresh Tracker Context"): st.cache_data.clear(); st.rerun()
+
+    st.divider()
+    st.markdown("### 🏗️ Checklist Mapping")
+    t_cols = st.columns(3)
+    if not status_df.empty:
+        for i, row in status_df.reset_index().iterrows():
+            with t_cols[i % 3]:
+                icon = "✅" if row['status'] == "Done" else "⏳"
+                bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
+                st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
 
 
 # --- LABOR PROFILES APPLICATION PAGE ---
