@@ -291,156 +291,194 @@ if "selected_project" not in st.session_state:
     st.session_state["selected_project"] = st.session_state["custom_projects"][0]
 
 
-# --- 6. POPUP DIALOG FORMS (dismissible=False added for click lock protection) ---
+# --- 6. POPUP DIALOG FORMS (With Submit + Cancel Side-by-Side Control) ---
 @st.dialog("📁 Create New Project Site Context", dismissible=False)
 def popup_create_project():
-    with st.form("new_project_form"):
-        new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
-        st.write("ℹ️ *Note: Naya project aap ki session state aur dashboard par active ho jayega.*")
-        if st.form_submit_button("Launch Project Context"):
-            if new_proj_name:
-                if new_proj_name not in st.session_state["custom_projects"]:
-                    st.session_state["custom_projects"].append(new_proj_name)
-                st.session_state["selected_project"] = new_proj_name
-                
-                tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-                for t in tasks:
+    new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
+    st.write("ℹ️ *Note: Naya project aap ki session state aur dashboard par active ho jayega.*")
+    
+    st.write("##")
+    btn_col1, btn_col2 = st.columns(2)
+    with btn_col1:
+        submit_btn = st.button("🚀 Launch Project Context", type="primary", use_container_width=True)
+    with btn_col2:
+        cancel_btn = st.button("❌ Cancel", use_container_width=True)
+        
+    if submit_btn:
+        if new_proj_name:
+            if new_proj_name not in st.session_state["custom_projects"]:
+                st.session_state["custom_projects"].append(new_proj_name)
+            st.session_state["selected_project"] = new_proj_name
+            
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            for t in tasks:
+                try:
+                    supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
+                except:
                     try:
-                        supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
+                        supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
                     except:
-                        try:
-                            supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
-                        except:
-                            pass
-                
-                st.success(f"Project '{new_proj_name}' state customized and successfully created!")
-                st.rerun()
-            else: st.error("Project identity descriptor required.")
+                        pass
+            
+            st.success(f"Project '{new_proj_name}' successfully created!")
+            st.rerun()
+        else: st.error("Project identity descriptor required.")
+        
+    if cancel_btn:
+        st.rerun()
 
 @st.dialog("📝 Register New Labor Profile", dismissible=False)
 def popup_register_labor(current_project):
     st.write(f"Adding to project: **{current_project}**")
-    with st.form("labor_profile_form"):
-        l_name = st.text_input("Labor Full Name *")
-        l_phone = st.text_input("Phone Number")
-        l_cnic = st.text_input("CNIC Number")
-        l_occ = st.text_input("Occupation / Skill Type")
-        l_contract = st.number_input("Total Contract Amount (PKR)", min_value=0, value=0)
-        l_rating = st.slider("Rating", min_value=1, max_value=5, value=5)
-        l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
-        l_details = st.text_area("A to Z Personal Data Notes")
+    l_name = st.text_input("Labor Full Name *")
+    l_phone = st.text_input("Phone Number")
+    l_cnic = st.text_input("CNIC Number")
+    l_occ = st.text_input("Occupation / Skill Type")
+    l_contract = st.number_input("Total Contract Amount (PKR)", min_value=0, value=0)
+    l_rating = st.slider("Rating", min_value=1, max_value=5, value=5)
+    l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
+    l_details = st.text_area("A to Z Personal Data Notes")
+    
+    st.write("##")
+    btn_col1, btn_col2 = st.columns(2)
+    with btn_col1:
+        submit_btn = st.button("💾 Save Profile Application", type="primary", use_container_width=True)
+    with btn_col2:
+        cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
-        if st.form_submit_button("Save Profile Application"):
-            if l_name:
-                img_url = ""
-                if l_photo:
-                    try:
-                        f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
-                        supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
-                        img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                    except: pass
-                
-                payload = {
-                    "name": str(l_name), 
-                    "phone": str(l_phone), 
-                    "cnic": str(l_cnic), 
-                    "occupation": str(l_occ),
-                    "total_contract_amount": float(l_contract), 
-                    "rating": int(l_rating),
-                    "photo_url": str(img_url), 
-                    "details": str(l_details)
-                }
-                
-                if 'project_context' in raw_labor_df.columns or not raw_labor_df.empty:
-                    payload["project_context"] = str(current_project)
-                
+    if submit_btn:
+        if l_name:
+            img_url = ""
+            if l_photo:
                 try:
-                    supabase.table('labor_profiles').insert(payload).execute()
-                    st.cache_data.clear()
-                    st.success("Labor profile registered successfully!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Execution Error: {str(e)}")
-            else: st.error("Labor Full Name is required.")
+                    f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
+                    supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
+                    img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                except: pass
+            
+            payload = {
+                "name": str(l_name), 
+                "phone": str(l_phone), 
+                "cnic": str(l_cnic), 
+                "occupation": str(l_occ),
+                "total_contract_amount": float(l_contract), 
+                "rating": int(l_rating),
+                "photo_url": str(img_url), 
+                "details": str(l_details)
+            }
+            
+            if 'project_context' in raw_labor_df.columns or not raw_labor_df.empty:
+                payload["project_context"] = str(current_project)
+            
+            try:
+                supabase.table('labor_profiles').insert(payload).execute()
+                st.cache_data.clear()
+                st.success("Labor profile registered successfully!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Execution Error: {str(e)}")
+        else: st.error("Labor Full Name is required.")
+        
+    if cancel_btn:
+        st.rerun()
 
 @st.dialog("📝 Log Dynamic Transaction Entry", dismissible=False)
 def popup_transaction_entry(ftype, current_project):
     st.write(f"Logging **{ftype}** entry for active project site: **{current_project}**")
-    with st.form("quick_form"):
-        d_date = st.date_input("Date", datetime.now())
-        d_name = st.text_input("Title / Name / Particular *")
-        d_amt = st.number_input("Amount (PKR) *", min_value=0)
+    d_date = st.date_input("Date", datetime.now())
+    d_name = st.text_input("Title / Name / Particular *")
+    d_amt = st.number_input("Amount (PKR) *", min_value=0)
+    
+    col1, col2 = st.columns(2)
+    d_occ = col1.text_input("Occupation / Job Type (If Labor)")
+    d_rec = col2.text_input("Received By / Authorized Person")
+    d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
+    
+    uploaded_photo = None
+    if ftype == "Material": 
+        uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
         
-        col1, col2 = st.columns(2)
-        d_occ = col1.text_input("Occupation / Job Type (If Labor)")
-        d_rec = col2.text_input("Received By / Authorized Person")
-        d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
+    d_det = st.text_area("Notes / Particular Specs")
+    
+    st.write("##")
+    btn_col1, btn_col2 = st.columns(2)
+    with btn_col1:
+        submit_btn = st.button("➕ Submit Transaction", type="primary", use_container_width=True)
+    with btn_col2:
+        cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
-        uploaded_photo = None
-        if ftype == "Material": 
-            uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
-            
-        d_det = st.text_area("Notes / Particular Specs")
-        
-        if st.form_submit_button("Submit Transaction"):
-            if d_name and d_amt > 0:
-                img_url = ""
-                if uploaded_photo:
-                    try:
-                        f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
-                        supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
-                        img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                    except: pass
-                
-                payload = {
-                    "date": str(d_date), 
-                    "type": str(ftype), 
-                    "name": str(d_name), 
-                    "amount": float(d_amt), 
-                    "detail": str(d_det), 
-                    "image_url": str(img_url)
-                }
-                
-                if not raw_df.empty:
-                    if 'occupation' in raw_df.columns: payload["occupation"] = str(d_occ)
-                    if 'received_by' in raw_df.columns: payload["received_by"] = str(d_rec)
-                    if 'pay_method' in raw_df.columns: payload["pay_method"] = str(d_meth)
-                    if 'project_context' in raw_df.columns: payload["project_context"] = str(current_project)
-                else:
-                    payload["project_context"] = str(current_project)
-                    payload["pay_method"] = str(d_meth)
-                
+    if submit_btn:
+        if d_name and d_amt > 0:
+            img_url = ""
+            if uploaded_photo:
                 try:
-                    supabase.table('transactions').insert(payload).execute()
-                    st.cache_data.clear()
-                    st.success("Transaction Log Entry Saved!")
-                    
-                    wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det, current_project)
-                    st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:10px; border-radius:5px; text-align:center; font-weight:bold; margin-top:5px;">📲 Share Via WhatsApp Broadcast</div></a>""", unsafe_allow_html=True)
-                    st.rerun()
-                except Exception as e:
-                    st.error("Database Core Blocked execution. Please verify your table columns match precisely with the payload properties.")
-            else: st.error("Valid Title Name and Amount required.")
+                    f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                    supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                    img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                except: pass
+            
+            payload = {
+                "date": str(d_date), 
+                "type": str(ftype), 
+                "name": str(d_name), 
+                "amount": float(d_amt), 
+                "detail": str(d_det), 
+                "image_url": str(img_url)
+            }
+            
+            if not raw_df.empty:
+                if 'occupation' in raw_df.columns: payload["occupation"] = str(d_occ)
+                if 'received_by' in raw_df.columns: payload["received_by"] = str(d_rec)
+                if 'pay_method' in raw_df.columns: payload["pay_method"] = str(d_meth)
+                if 'project_context' in raw_df.columns: payload["project_context"] = str(current_project)
+            else:
+                payload["project_context"] = str(current_project)
+                payload["pay_method"] = str(d_meth)
+            
+            try:
+                supabase.table('transactions').insert(payload).execute()
+                st.cache_data.clear()
+                st.success("Transaction Log Entry Saved!")
+                
+                wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det, current_project)
+                st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:10px; border-radius:5px; text-align:center; font-weight:bold; margin-top:5px;">📲 Share Via WhatsApp Broadcast</div></a>""", unsafe_allow_html=True)
+                st.rerun()
+            except Exception as e:
+                st.error("Database Core Blocked execution.")
+        else: st.error("Valid Title Name and Amount required.")
+        
+    if cancel_btn:
+        st.rerun()
 
 @st.dialog("🛠️ Update Site Checklist Status", dismissible=False)
 def popup_update_status(current_project, status_df):
-    with st.form("status_form"):
-        task = st.selectbox("Select Task Line Target", status_df['task_name'].tolist())
-        stat = st.radio("Status Milestone Alignment", ["Pending", "Done"], horizontal=True)
-        if st.form_submit_button("Update Task Line"):
+    task = st.selectbox("Select Task Line Target", status_df['task_name'].tolist())
+    stat = st.radio("Status Milestone Alignment", ["Pending", "Done"], horizontal=True)
+    
+    st.write("##")
+    btn_col1, btn_col2 = st.columns(2)
+    with btn_col1:
+        submit_btn = st.button("⚡ Update Task Line", type="primary", use_container_width=True)
+    with btn_col2:
+        cancel_btn = st.button("❌ Cancel", use_container_width=True)
+        
+    if submit_btn:
+        try:
+            supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name").execute()
+            st.cache_data.clear()
+            st.success("Task updated successfully!")
+            st.rerun()
+        except:
             try:
-                supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name").execute()
+                supabase.table('project_status').insert({"task_name": task, "status": stat, "project_context": current_project}).execute()
                 st.cache_data.clear()
-                st.success("Task updated successfully!")
+                st.success("Task aligned successfully!")
                 st.rerun()
-            except:
-                try:
-                    supabase.table('project_status').insert({"task_name": task, "status": stat, "project_context": current_project}).execute()
-                    st.cache_data.clear()
-                    st.success("Task aligned successfully!")
-                    st.rerun()
-                except Exception as e:
-                    st.error("Schema constraint failed to align state on external table.")
+            except Exception as e:
+                st.error("Schema constraint failed to align state.")
+                
+    if cancel_btn:
+        st.rerun()
 
 
 # --- 7. DYNAMIC PROJECT FILTERS ---
