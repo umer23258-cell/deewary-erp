@@ -157,65 +157,134 @@ def export_labor_profile_pdf(labor_row, payments_df):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS (PREMIUM RESPONSIVE DESIGN INTERFACE) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #ffffff; }
-    div[data-testid="stMetric"] {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        padding: 15px 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    /* Google Font Integration */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #fcfdfd;
     }
+    
+    /* Main Layout Responsive Controls */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 1200px !important;
+    }
+    
+    /* Premium Modern Buttons styling */
+    div.stButton > button {
+        background-color: #ffffff;
+        color: #1e1e1e;
+        border: 1px solid #e2e8f0;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        width: 100%;
+    }
+    div.stButton > button:hover {
+        border-color: #FF4B4B;
+        color: #FF4B4B;
+        box-shadow: 0 4px 12px rgba(255, 75, 75, 0.1);
+        transform: translateY(-1px);
+    }
+    div.stButton > button[data-testid="baseButton-primary"] {
+        background: linear-gradient(135deg, #FF4B4B 0%, #e03e3e 100%);
+        color: white;
+        border: none;
+    }
+    div.stButton > button[data-testid="baseButton-primary"]:hover {
+        background: linear-gradient(135deg, #e03e3e 0%, #c62828 100%);
+        color: white;
+        box-shadow: 0 6px 16px rgba(255, 75, 75, 0.25);
+    }
+
+    /* Professional Branding Header Box */
     .header-box {
         text-align: center;
-        background: linear-gradient(135deg, #1e1e1e 0%, #333333 100%);
-        padding: 30px;
-        border-radius: 20px;
-        border-bottom: 5px solid #FF4B4B;
-        margin-bottom: 25px;
+        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        padding: 35px 20px;
+        border-radius: 24px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        border-bottom: 4px solid #FF4B4B;
     }
+    
+    /* Modern Dashboard Cards (Zameen Style Minimalist) */
     .kpi-card {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 15px;
-        border-left: 5px solid #FF4B4B;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        margin-bottom: 15px;
-    }
-    .alert-box {
-        background-color: #ffebee;
-        border-left: 6px solid #c62828;
-        padding: 15px;
-        border-radius: 10px;
+        background: #ffffff;
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 10px 15px -3px rgba(0,0,0,0.03);
         margin-bottom: 20px;
-        color: #c62828;
-        font-weight: bold;
+        transition: transform 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Smart Alerts */
+    .alert-box {
+        background-color: #fef2f2;
+        border-left: 5px solid #ef4444;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        color: #991b1b;
+        font-size: 14px;
+        font-weight: 600;
     }
     .forecast-box {
-        background-color: #e8f5e9;
-        border-left: 6px solid #2e7d32;
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        color: #2e7d32;
-        font-weight: bold;
+        background-color: #f0fdf4;
+        border-left: 5px solid #22c55e;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        color: #166534;
+        font-size: 14px;
+        font-weight: 600;
     }
+    
+    /* Digital Voucher Upgrade */
     .digital-voucher {
-        background-color: #fefefe;
-        border: 2px dashed #94a3b8;
-        padding: 25px;
-        border-radius: 15px;
-        max-width: 550px;
-        margin: 15px auto;
-        font-family: 'Courier New', Courier, monospace;
-        color: #1e2937;
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 30px;
+        border-radius: 24px;
+        max-width: 480px;
+        margin: 20px auto;
+        color: #1f2937;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
     }
-    .voucher-header { text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 12px; margin-bottom: 15px; }
-    .voucher-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-    .voucher-total { font-size: 20px; font-weight: bold; color: #FF4B4B; border-top: 2px dashed #cbd5e1; border-bottom: 2px dashed #cbd5e1; padding: 8px 0; margin-top: 15px; }
+    
+    /* Mobile-First Adaptations (Media Queries) */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .header-box {
+            padding: 25px 15px;
+            border-radius: 16px;
+        }
+        .header-box h1 {
+            font-size: 24px !important;
+        }
+        .kpi-card {
+            padding: 18px;
+            border-radius: 16px;
+        }
+        .kpi-card h2 {
+            font-size: 20px !important;
+        }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -291,7 +360,7 @@ if "selected_project" not in st.session_state:
     st.session_state["selected_project"] = st.session_state["custom_projects"][0]
 
 
-# --- 6. POPUP DIALOG FORMS (With Submit + Cancel Side-by-Side Control) ---
+# --- 6. POPUP DIALOG FORMS (Submit + Cancel Configuration) ---
 @st.dialog("📁 Create New Project Site Context", dismissible=False)
 def popup_create_project():
     new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
@@ -300,7 +369,7 @@ def popup_create_project():
     st.write("##")
     btn_col1, btn_col2 = st.columns(2)
     with btn_col1:
-        submit_btn = st.button("🚀 Launch Project Context", type="primary", use_container_width=True)
+        submit_btn = st.button("🚀 Launch Project", type="primary", use_container_width=True)
     with btn_col2:
         cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
@@ -342,7 +411,7 @@ def popup_register_labor(current_project):
     st.write("##")
     btn_col1, btn_col2 = st.columns(2)
     with btn_col1:
-        submit_btn = st.button("💾 Save Profile Application", type="primary", use_container_width=True)
+        submit_btn = st.button("💾 Save Profile", type="primary", use_container_width=True)
     with btn_col2:
         cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
@@ -403,7 +472,7 @@ def popup_transaction_entry(ftype, current_project):
     st.write("##")
     btn_col1, btn_col2 = st.columns(2)
     with btn_col1:
-        submit_btn = st.button("➕ Submit Transaction", type="primary", use_container_width=True)
+        submit_btn = st.button("➕ Submit Entry", type="primary", use_container_width=True)
     with btn_col2:
         cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
@@ -458,7 +527,7 @@ def popup_update_status(current_project, status_df):
     st.write("##")
     btn_col1, btn_col2 = st.columns(2)
     with btn_col1:
-        submit_btn = st.button("⚡ Update Task Line", type="primary", use_container_width=True)
+        submit_btn = st.button("⚡ Update Status", type="primary", use_container_width=True)
     with btn_col2:
         cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
@@ -503,51 +572,53 @@ else:
 
 # --- 8. SIDEBAR DESIGN ---
 with st.sidebar:
-    st.title("🏗️ DEEWARYN ERP")
+    st.markdown("<h2 style='color:#FF4B4B; font-weight:700; margin-bottom:0;'>🏗️ DEEWARYN ERP</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:11px; color:#64748b; margin-top:0;'>Enterprise Site Manager</p>", unsafe_allow_html=True)
+    st.divider()
     
-    st.markdown("### 📁 Select Active Site Project")
+    st.markdown("### 📁 Active Site Context")
     selected_proj = st.selectbox(
-        "Current Working Context:", 
+        "Current Working Site:", 
         st.session_state["custom_projects"], 
         index=st.session_state["custom_projects"].index(st.session_state["selected_project"]) if st.session_state["selected_project"] in st.session_state["custom_projects"] else 0
     )
     st.session_state["selected_project"] = selected_proj
-    st.info(f"📍 Active Site: **{st.session_state['selected_project']}**")
+    st.info(f"📍 Active: **{st.session_state['selected_project']}**")
     st.divider()
     
-    menu = st.radio(
-        "Go To", 
-        ["📊 Dashboard", "📑 Receipt Voucher System", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
+    menu = st.sidebar.radio(
+        "Navigation Portal", 
+        ["📊 Dashboard", "📑 Receipt Voucher System", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Folder", "🔍 Search & All Reports"]
     )
     st.divider()
     is_auth = check_password()
     
     if is_auth:
-        st.success("🔓 Admin Mode")
-        st.write("### ⚡ Quick Actions (Popups)")
-        if st.button("➕ Income", use_container_width=True): popup_transaction_entry("Income", st.session_state["selected_project"])
-        if st.button("👷 Labor", use_container_width=True): popup_transaction_entry("Labor", st.session_state["selected_project"])
-        if st.button("🏗️ Material", use_container_width=True): popup_transaction_entry("Material", st.session_state["selected_project"])
-        if st.button("📝 Register New Labor Profile", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
-        if st.button("📁 Create New Project Site", use_container_width=True): popup_create_project()
+        st.success("🔓 Admin Mode Active")
+        st.write("### ⚡ Quick Input Actions")
+        if st.button("➕ Income Vitals", use_container_width=True): popup_transaction_entry("Income", st.session_state["selected_project"])
+        if st.button("👷 Labor Ledger", use_container_width=True): popup_transaction_entry("Labor", st.session_state["selected_project"])
+        if st.button("🏗️ Material Entry", use_container_width=True): popup_transaction_entry("Material", st.session_state["selected_project"])
+        if st.button("📝 Register New Labor", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
+        if st.button("📁 New Project Site", use_container_width=True): popup_create_project()
         st.divider()
-        if st.button("⚙️ Change Task Status", use_container_width=True): 
+        if st.button("⚙️ Change Progress Check", use_container_width=True): 
             _status_df = fetch_project_status(st.session_state["selected_project"])
             popup_update_status(st.session_state["selected_project"], _status_df)
-        if st.button("Logout", use_container_width=True):
+        if st.button("Secure Logout", use_container_width=True):
             st.session_state["authenticated"] = False
             st.rerun()
     st.divider()
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption=f"Active Site: {st.session_state['selected_project']}")
+    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption=f"Site: {st.session_state['selected_project']}")
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if menu == "📊 Dashboard":
     st.markdown(f"""
         <div class="header-box">
-            <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARYN.COM</h1>
-            <p style="color: white; letter-spacing: 2px; font-size: 14px; margin-bottom: 10px;">PREMIUM SITE MANAGEMENT: {current_project.upper()}</p>
-            <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+            <h1 style="color: #FF4B4B; margin: 0; font-family: 'Inter', sans-serif; font-weight:700; letter-spacing: 2px; font-size:32px;">DEEWARYN.COM</h1>
+            <p style="color: #94a3b8; letter-spacing: 1px; font-size: 13px; margin: 5px 0 15px 0; font-weight:500;">PREMIUM REAL ESTATE MANAGEMENT • SITE: {current_project.upper()}</p>
+            <div style="background: rgba(255, 75, 75, 0.1); color: #FF4B4B; display: inline-block; padding: 6px 18px; border-radius: 30px; font-weight: 600; font-size: 13px; border: 1px solid rgba(255, 75, 75, 0.2);">
                 C.E.O: SARDAR SAMI ULLAH
             </div>
         </div>
@@ -579,11 +650,11 @@ if menu == "📊 Dashboard":
                 st.markdown(f"""<div class="forecast-box">📈 CASH FLOW FORECAST: Safe runway left for current project: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
 
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>💰 TOTAL INVESTMENT</p><h2 style='color:#2e7d32; margin:5px 0 0 0;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
-    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>📉 EXPENSES OUTFLOW</p><h2 style='color:#c62828; margin:5px 0 0 0;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:13px; font-weight:600; letter-spacing:0.5px;'>💰 TOTAL INVESTMENT</p><h2 style='color:#166534; margin:8px 0 0 0; font-weight:700; font-size:24px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:13px; font-weight:600; letter-spacing:0.5px;'>📉 EXPENSES OUTFLOW</p><h2 style='color:#991b1b; margin:8px 0 0 0; font-weight:700; font-size:24px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
     with col_kpi3: 
-        bal_color = "#2e7d32" if net_bal >= 0 else "#c62828"
-        st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET BALANCE</p><h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
+        bal_color = "#166534" if net_bal >= 0 else "#991b1b"
+        st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:13px; font-weight:600; letter-spacing:0.5px;'>⚖️ NET RUNNING BALANCE</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:700; font-size:24px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
     st.write("##")
     status_df = fetch_project_status(current_project)
@@ -593,56 +664,58 @@ if menu == "📊 Dashboard":
 
     col_left, col_right = st.columns([1, 1])
     with col_left:
-        st.markdown(f"### 📈 Overall Progress ({current_project})")
+        st.markdown(f"### 📈 Construction Progress ({current_project})")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Work Completed**")
-        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
-        components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
+        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff,stroke:none"
+        components.html(f"<div style='background:#f8fafc; border-radius:16px; padding:15px; border:1px solid #e2e8f0;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
     with col_right:
-        st.markdown("### 📝 Tasks Summary")
-        st.write(f"✅ Finished: {done_tasks} | ⏳ Remaining: {total_tasks - done_tasks}")
-        if st.button("Force Refresh Tracker Context", use_container_width=True): st.cache_data.clear(); st.rerun()
+        st.markdown("### 📝 Milestone Checklist Tracker")
+        st.write(f"✅ Finished Nodes: **{done_tasks}** | ⏳ Pending Tasks: **{total_tasks - done_tasks}**")
+        if st.button("Sync & Force Refresh Logs Container", use_container_width=True): st.cache_data.clear(); st.rerun()
 
     st.divider()
-    st.markdown("### 🏗️ Checklist Mapping")
+    st.markdown("### 🏗️ Structural Mapping Overview")
     t_cols = st.columns(3)
     if not status_df.empty:
         for i, row in status_df.reset_index().iterrows():
             with t_cols[i % 3]:
-                icon = "✅" if row['status'] == "Done" else "⏳"
-                bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
-                st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
+                icon = "🟢 Done" if row['status'] == "Done" else "⏳ Pending"
+                bg = "#f0fdf4" if row['status'] == "Done" else "#fff7ed"
+                border_c = "#bbf7d0" if row['status'] == "Done" else "#fed7aa"
+                text_c = "#166534" if row['status'] == "Done" else "#9a3412"
+                st.markdown(f'<div style="background:{bg}; padding:14px; border-radius:14px; margin-bottom:8px; border:1px solid {border_c}; color:{text_c}; font-weight:600; font-size:13px; display:flex; justify-content:space-between;"><span>{row["task_name"]}</span><span style="font-size:11px; opacity:0.8;">{icon}</span></div>', unsafe_allow_html=True)
 
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
-    st.title(f"📑 System Automated Receipt Slip / Voucher Generator ({current_project})")
-    st.write("Kisi bhi transaction log entry ko select karein taake uska official premium digital voucher display ho.")
+    st.title(f"📑 Premium Voucher Generator Module")
+    st.write("Dynamic automated layout matching formal real-estate clearance vouchers.")
     st.divider()
     
     if not df.empty:
         df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
-        selected_log = st.selectbox("Select Transaction Log Entry:", df['voucher_label'].tolist())
+        selected_log = st.selectbox("Choose System Transaction Target Entry:", df['voucher_label'].tolist())
         v_row = df[df['voucher_label'] == selected_log].iloc[0]
         v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
         v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
         
         st.markdown(f"""
             <div class="digital-voucher">
-                <div class="voucher-header">
-                    <h3 style="margin: 0; color: #1e1e1e; letter-spacing: 2px;">DEEWARYN.COM</h3>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #6c757d; font-weight: bold;">OFFICIAL LOGISTIC TRANSACTION VOUCHER</p>
+                <div style="text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: #111827; letter-spacing: 1px; font-weight:700;">DEEWARYN.COM</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 10px; color: #FF4B4B; font-weight: 700; letter-spacing:0.5px;">OFFICIAL REAL-ESTATE TRANSACTION CLEARANCE</p>
                 </div>
-                <div class="voucher-row"><span>Voucher No:</span><b>{v_number}</b></div>
-                <div class="voucher-row"><span>Log Date:</span><span>{v_row['date']}</span></div>
-                <div class="voucher-row"><span>Flow Category:</span><b>{str(v_row['type']).upper()}</b></div>
-                <div class="voucher-row"><span>Particular Name:</span><b>{v_row['name']}</b></div>
-                <div class="voucher-row"><span>Job Designation:</span><span>{v_row.get('occupation', 'N/A') if pd.notna(v_row.get('occupation')) else 'N/A'}</span></div>
-                <div class="voucher-row"><span>Authorized Dispense:</span><span>{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
-                <div class="voucher-row"><span>Payment Channel:</span><span>{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
-                <p style="font-size: 12px; background: #f8f9fa; padding: 8px; border-radius: 5px; font-style: italic; border-left: 3px solid #FF4B4B;">Internal Remarks: {v_row['detail'] if v_row['detail'] else '-'}</p>
-                <div class="voucher-total"><div style="display: flex; justify-content: space-between;"><span>VOLUME TOTAL:</span><span>PKR {v_row['amount']:,.0f}/-</span></div></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B;">{v_number}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;"><span>Execution Log Date:</span><span>{v_row['date']}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;"><span>Ledger Allocation:</span><b>{str(v_row['type']).upper()}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;"><span>Particular Scope:</span><b>{v_row['name']}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;"><span>Designation Spec:</span><span>{v_row.get('occupation', 'N/A') if pd.notna(v_row.get('occupation')) else 'N/A'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;"><span>Disbursed/Authorized:</span><span>{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px;"><span>Channel Pipeline:</span><span>{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
+                <p style="font-size: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; font-style: italic; border-left: 3px solid #FF4B4B; margin-bottom:20px; color:#475569;">Memo Notes: {v_row['detail'] if v_row['detail'] else 'No automated remarks logged.'}</p>
+                <div style="font-size: 18px; font-weight: 700; color: #ffffff; background:#111827; border-radius:12px; padding: 12px; text-align:center;"><span style="font-size:12px; font-weight:400; opacity:0.7; margin-right:10px;">NET TOTAL:</span>PKR {v_row['amount']:,.0f}/-</div>
             </div>
         """, unsafe_allow_html=True)
     else: 
@@ -650,11 +723,11 @@ elif menu == "📑 Receipt Voucher System":
 
 
 # --- LABOR PROFILES APPLICATION PAGE ---
-elif menu == "👷 Labor Profiles Application":
-    st.title(f"👷 Labor Profiles Application ({current_project})")
+elif menu == "♻️ Labor Profiles Folder" or "Labor Profiles" in menu:
+    st.title(f"👷 Labor Force Registry Directory")
     
     if not labor_df.empty:
-        l_search = st.text_input("🔎 Search active profiles folder...")
+        l_search = st.text_input("🔎 Filter Directory Folders...")
         if l_search:
             l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
             labor_df = labor_df[l_mask]
@@ -663,21 +736,21 @@ elif menu == "👷 Labor Profiles Application":
         
         for _, row in labor_df.iterrows():
             with st.container():
-                st.markdown(f"#### 👤 {row['name']} ({row['occupation'] if row['occupation'] else 'General Labor'})")
+                st.markdown(f"<div style='background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-bottom:20px;'>", unsafe_allow_html=True)
+                st.markdown(f"#### 👤 {row['name']} — <span style='color:#FF4B4B;'>{row['occupation'] if row['occupation'] else 'General Force'}</span>", unsafe_allow_html=True)
                 c_img, c_info = st.columns([1, 3])
                 with c_img:
                     photo_path = row.get('photo_url', '')
                     if photo_path and str(photo_path) != "nan": st.image(photo_path, use_container_width=True)
-                    else: st.info("No Pic.")
+                    else: st.info("No Avatar Image.")
                 with c_info:
-                    st.markdown(f"**🪪 CNIC:** {row['cnic']} | **💰 Contract:** PKR {row['total_contract_amount']:,.0f}")
+                    st.markdown(f"**🪪 Identity Pass:** {row['cnic']} | **💰 Total Pool Budget:** PKR {row['total_contract_amount']:,.0f}")
                     
                     stars = "⭐" * int(row['rating'] if row['rating'] else 5)
-                    st.markdown(f"**📊 Performance Rating Evaluation:** {stars}")
+                    st.markdown(f"**📊 Merit Ranking Performance:** {stars}")
+                    st.info(row['details'] if row['details'] else "No metadata profile details added.")
                     
-                    st.info(row['details'] if row['details'] else "No profile notes summary provided.")
-                    
-                    st.markdown("#### 📊 Paid Payments History (Labor History Sync)")
+                    st.markdown("##### 💵 Paid Ledger Pipeline Sync")
                     if not df.empty:
                         prof_name = str(row['name']).lower().strip()
                         def is_name_match(tx_name):
@@ -693,49 +766,51 @@ elif menu == "👷 Labor Profiles Application":
                         if not labor_payments.empty:
                             st.dataframe(labor_payments[['id', 'date', 'pay_method', 'amount', 'detail']], use_container_width=True)
                             total_paid = labor_payments['amount'].sum()
-                            st.metric(label="Total Amount Paid", value=f"PKR {total_paid:,.0f}/-")
+                            st.metric(label="Total Aggregated Clearances", value=f"PKR {total_paid:,.0f}/-")
                         else:
-                            st.warning("⚠️ No payment logs registered under this exact Labor Name inside active project files.")
+                            st.warning("No payment logs linked under this exact structural profile context designation name.")
                             labor_payments = pd.DataFrame()
                     else: labor_payments = pd.DataFrame()
 
                     pdf_data = export_labor_profile_pdf(row, labor_payments)
-                    st.download_button(label="📄 Print & Download Full Profile Report", data=pdf_data, file_name=f"Labor_{str(row['name'])}.pdf", mime="application/pdf", key=f"dl_pdf_{row['id']}")
+                    st.write("##")
+                    st.download_button(label="📄 Print Dossier Ledger Report", data=pdf_data, file_name=f"Labor_{str(row['name'])}.pdf", mime="application/pdf", key=f"dl_pdf_{row['id']}", type="primary")
+                st.markdown("</div>", unsafe_allow_html=True)
                 st.divider()
         if is_auth:
-            l_tid = st.text_input("Enter Profile ID to Delete permanently")
-            if st.button("🗑️ Delete Profile Record"):
+            l_tid = st.text_input("Enter Target Ledger Identity ID to Purge")
+            if st.button("🗑️ Purge Profile Permanently"):
                 if l_tid:
                     supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
                     st.cache_data.clear(); st.rerun()
-    else: st.info(f"No Labor profiles provisioned for project context: {current_project}")
+    else: st.info(f"No active labor logs synced inside: {current_project}")
 
 
 # --- ORIGINAL HISTORY PAGES LOGIC (Project Restricted) ---
 else:
-    st.title(f"{menu} ({current_project})")
+    st.title(f"{menu} Portal")
     if not df.empty:
         if "Income" in menu: f_df = df[df['type'] == 'Income']
         elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
         
-        search = st.text_input("🔎 Search by ID or Name...")
+        search = st.text_input("🔎 Search ledger matrix logs...")
         if search:
             mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
             f_df = f_df[mask]
         
         st.dataframe(f_df, use_container_width=True)
-        st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
+        st.metric("Total Operational Volume Cumulative", f"PKR {f_df['amount'].sum():,.0f}")
         
         if is_auth:
-            tid = st.text_input("Enter ID to Delete")
-            if st.button("🗑️ Delete Entry"):
+            tid = st.text_input("Enter Row Record Reference ID to Drop")
+            if st.button("🗑️ Drop Log Entry"):
                 supabase.table('transactions').delete().eq('id', tid).execute()
                 st.cache_data.clear(); st.rerun()
 
         st.divider()
         c1, c2 = st.columns(2)
-        c1.download_button("📥 Excel", f_df.to_csv().encode('utf-8'), f"{menu}_{current_project}.csv")
-        c2.download_button("📄 PDF Report", export_to_pdf(f_df, menu), f"{menu}_{current_project}.pdf")
-    else: st.info(f"No database ledger records tracked under project site: {current_project}")
+        with c1: st.download_button("📥 Export CSV Excel Data Bundle", f_df.to_csv().encode('utf-8'), f"{menu}_{current_project}.csv", use_container_width=True)
+        with c2: st.download_button("📄 Print Verified PDF Ledger", export_to_pdf(f_df, menu), f"{menu}_{current_project}.pdf", use_container_width=True, type="primary")
+    else: st.info(f"No records tracked inside active project scope pipeline: {current_project}")
