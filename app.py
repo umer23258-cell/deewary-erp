@@ -16,27 +16,39 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- 2. DATA FETCH LOGIC (With Fail-safe Columns) ---
-@st.cache_data(ttl=30)
+# --- 2. DATA FETCH LOGIC (With Strict KeyError Fallbacks) ---
+@st.cache_data(ttl=15)
 def fetch_all_raw_data():
     try:
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
         df_raw = pd.DataFrame(res.data)
         if not df_raw.empty:
-            # Agar puranay columns missing hain to dynamically add karein taake code crash na ho
-            if 'project_context' not in df_raw.columns and 'project' in df_raw.columns:
-                df_raw['project_context'] = df_raw['project']
-            elif 'project_context' not in df_raw.columns:
-                df_raw['project_context'] = "Yousaf Colony"
+            # Safe checking for project context columns
+            if 'project_context' not in df_raw.columns:
+                if 'project' in df_raw.columns:
+                    df_raw['project_context'] = df_raw['project']
+                else:
+                    df_raw['project_context'] = "Yousaf Colony"
         return df_raw
     except: 
         return pd.DataFrame()
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=15)
 def fetch_all_labor_profiles():
     try:
         res = supabase.table('labor_profiles').select("*").order('id', desc=True).execute()
-        return pd.DataFrame(res.data)
+        df_labor = pd.DataFrame(res.data)
+        
+        # 🔥 CRITICAL FIX FOR THE KEYERROR IN SCREENSHOT 4 🔥
+        # Agar labor_profiles ke andar 'project_context' ya 'project' nahi hai to fallback banayein
+        if not df_labor.empty:
+            if 'project_context' not in df_labor.columns:
+                if 'project' in df_labor.columns:
+                    df_labor['project_context'] = df_labor['project']
+                else:
+                    # Agar dono nahi hain to default initialize karein taake line 189 crash na ho
+                    df_labor['project_context'] = "Yousaf Colony"
+        return df_labor
     except: 
         return pd.DataFrame()
 
@@ -57,12 +69,11 @@ def fetch_project_status(project_name):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
 
-# --- ✨ EASTUTE REAL ESTATE PREMIUM DESIGN THEME (CSS INJECTION) ✨ ---
+# --- ✨ EASTUTE MINIMALIST LUXURY DESIGN SYSTEM ✨ ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     
-    /* Clean, High-End Corporate Minimalist Background */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
         background-color: #f4f5f7 !important;
@@ -74,13 +85,11 @@ st.markdown("""
         max-width: 1150px !important;
     }
 
-    /* Crisp Luxury White Sidebar */
     [data-testid="stSidebar"] {
         background-color: #ffffff !important;
         border-right: 1px solid #e5e7eb !important;
     }
     
-    /* Premium Clean Radio Buttons (Navigation) */
     div[data-testid="stSidebarUserContent"] div.stRadio > div { gap: 6px !important; }
     div[data-testid="stSidebarUserContent"] div.stRadio label {
         background-color: #f9fafb;
@@ -92,19 +101,14 @@ st.markdown("""
         border: 1px solid #e5e7eb !important;
         transition: all 0.2s ease !important;
     }
-    div[data-testid="stSidebarUserContent"] div.stRadio label:hover {
-        background-color: #f3f4f6 !important;
-        border-color: #d1d5db !important;
-    }
     div[data-testid="stSidebarUserContent"] div.stRadio label[data-checked="true"] {
-        background-color: #0f172a !important; /* Premium Dark Navy Slate */
+        background-color: #0f172a !important;
         color: #ffffff !important;
         border-color: #0f172a !important;
         font-weight: 600 !important;
     }
     div[data-testid="stSidebarUserContent"] div.stRadio [data-testid="stFiberManualRecord"] { display: none !important; }
     
-    /* Sharp Premium Action Buttons */
     div.stButton > button {
         background: #ffffff;
         color: #0f172a;
@@ -124,11 +128,7 @@ st.markdown("""
         color: white !important;
         border: none !important;
     }
-    div.stButton > button[data-testid="baseButton-primary"]:hover {
-        background: #1e293b !important;
-    }
 
-    /* Eastute Inspired Luxury Header */
     .premium-header {
         background: #ffffff;
         padding: 40px;
@@ -137,7 +137,6 @@ st.markdown("""
         margin-bottom: 30px;
     }
     
-    /* Clean Minimalist Cards */
     .beauty-card {
         background: #ffffff;
         padding: 22px;
@@ -146,7 +145,6 @@ st.markdown("""
         margin-bottom: 15px;
     }
     
-    /* Ultra-Clean Modern Voucher Sheet (Screenshot 3 Fix) */
     .premium-voucher-box {
         background-color: #ffffff; 
         border: 2px dashed #9ca3af; 
@@ -158,7 +156,6 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0,0,0,0.02);
     }
     
-    /* Input Styling Clean-up */
     div[data-testid="stTextInput"] input, div[data-testid="stNumberInput"] input, div[data-testid="stSelectbox"] div {
         border-radius: 8px !important;
         border: 1px solid #d1d5db !important;
@@ -166,7 +163,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. INITIALIZE DATA & SESSSION STATES ---
+# --- 4. DATA INITIALIZATION ---
 raw_df = fetch_all_raw_data()
 raw_labor_df = fetch_all_labor_profiles()
 
@@ -184,11 +181,19 @@ if "selected_project" not in st.session_state:
 
 current_project = st.session_state["selected_project"]
 
-# Filtered Datasets
-df = raw_df[raw_df['project_context'] == current_project] if not raw_df.empty else pd.DataFrame()
-labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project] if not raw_labor_df.empty else pd.DataFrame()
+# --- Safe Dataframe Filtering Architecture ---
+if not raw_df.empty and 'project_context' in raw_df.columns:
+    df = raw_df[raw_df['project_context'] == current_project]
+else:
+    df = pd.DataFrame()
 
-# --- 5. SAFE DATABASE INSERT DIALOG (CRASH PROTECTION ENGINE) ---
+if not raw_labor_df.empty and 'project_context' in raw_labor_df.columns:
+    labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project]
+else:
+    labor_df = pd.DataFrame()
+
+
+# --- 5. SAFE TRANSACTION ENGINE DIALOG ---
 @st.dialog("📝 Log Dynamic Transaction Entry", dismissible=False)
 def popup_transaction_entry(ftype, current_project):
     st.write(f"Add **{ftype}** entry for project: **{current_project}**")
@@ -206,7 +211,6 @@ def popup_transaction_entry(ftype, current_project):
     btn_col1, btn_col2 = st.columns(2)
     if btn_col1.button("➕ Submit Transaction", type="primary", use_container_width=True):
         if d_name and d_amt > 0:
-            # Multi-schema Fallback Payload Architecture to prevent APIError
             payload = {
                 "date": str(d_date), 
                 "type": str(ftype), 
@@ -217,25 +221,23 @@ def popup_transaction_entry(ftype, current_project):
                 "received_by": str(d_rec),
                 "pay_method": str(d_meth),
                 "project_context": str(current_project),
-                "project": str(current_project) # Dual mapping to satisfy any old schema naming constraint
+                "project": str(current_project)
             }
             
-            # Safe Fallback Insert Strategy
             success = False
             try:
-                # Primary execution path
                 supabase.table('transactions').insert(payload).execute()
                 success = True
-            except Exception as e:
-                # Secondary path: Try minimal payload if columns don't exist
+            except:
                 try:
+                    # Backup try: Send fallback basic scheme values if extra columns trigger error
                     minimal_payload = {
                         "date": str(d_date), "type": str(ftype), "name": str(d_name), "amount": float(d_amt), "detail": str(d_det)
                     }
                     supabase.table('transactions').insert(minimal_payload).execute()
                     success = True
                 except:
-                    st.error("Severe Database Schema Mismatch. Please check columns inside Supabase.")
+                    st.error("Supabase dynamic mapping failure. Check columns schema keys inside panel.")
             
             if success:
                 st.cache_data.clear()
@@ -247,7 +249,8 @@ def popup_transaction_entry(ftype, current_project):
     if btn_col2.button("❌ Cancel", use_container_width=True):
         st.rerun()
 
-# --- 6. SIDEBAR SYSTEM ---
+
+# --- 6. SIDEBAR MENU CONTROL ---
 with st.sidebar:
     st.markdown("<h2 style='color:#0f172a; font-weight:800; margin-bottom:0; font-size:22px; letter-spacing:-0.5px;'>DEEWARY.COM</h2>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:10px; color:#6b7280; font-weight:600; margin-top:2px; text-transform:uppercase; letter-spacing:1px;'>Corporate Portal ERP</p>", unsafe_allow_html=True)
@@ -257,15 +260,15 @@ with st.sidebar:
     st.session_state["selected_project"] = selected_proj
     st.divider()
     
-    menu = st.radio("Navigation Portal", ["📊 Dashboard View", "📑 Receipt Voucher System", "💰 Ledger Data Folder"], label_visibility="collapsed")
+    menu = st.radio("Navigation Portal", ["📊 Dashboard View", "📑 Receipt Voucher System", "👷 Labor Ledger History"], label_visibility="collapsed")
     st.divider()
     
-    # Fast Entry Actions
     st.markdown("<p style='font-size:11px; font-weight:700; color:#374151; text-transform:uppercase;'>⚡ Quick Entry Panel</p>", unsafe_allow_html=True)
     if st.button("➕ Log Transaction Entry", use_container_width=True):
         popup_transaction_entry("Expense", current_project)
 
-# --- 7. MAIN RENDER CONTROLLER ---
+
+# --- 7. MAIN INTERFACE RENDERING ---
 if "Dashboard" in menu:
     st.markdown(f"""
         <div class="premium-header">
@@ -274,7 +277,6 @@ if "Dashboard" in menu:
         </div>
     """, unsafe_allow_html=True)
     
-    # Financial Analytics Cards
     inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
     exp = df[df['type'] != 'Income']['amount'].sum() if not df.empty else 0
     net_bal = inc - exp
@@ -291,14 +293,8 @@ if "Dashboard" in menu:
     else:
         st.info("Is active project context ka koi record data available nahi hai.")
 
-# --- ISOLATED VIEW: 📑 EXTREME MINIMALIST RECEIPT VOUCHER SYSTEM (EASTUTE STYLE) ---
-elif "Receipt" in menu:
-    st.markdown("""
-        <div style='text-align:center; padding: 20px 0;'>
-            <h2 style='color:#0f172a; font-weight:800; margin:0;'>📑 Logistic Clearance Voucher</h2>
-            <p style='color:#6b7280; font-size:13px;'>Generate clean, premium receipts mirroring clean modern layout architectural specs.</p>
-        </div>
-    """, unsafe_allow_html=True)
+elif "Voucher" in menu:
+    st.markdown("<div style='text-align:center; padding: 20px 0;'><h2 style='color:#0f172a; font-weight:800; margin:0;'>📑 Logistic Clearance Voucher</h2></div>", unsafe_allow_html=True)
     st.divider()
     
     if not df.empty:
@@ -309,56 +305,26 @@ elif "Receipt" in menu:
         v_prefix = "INC" if v_row['type'] == "Income" else "EXP"
         v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
         
-        # Pure 1:1 Eastute Minimalist Voucher Render Box (Fixes Screenshot 3 formatting flawlessly)
         st.markdown(f"""
             <div class="premium-voucher-box">
                 <div style="text-align: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 25px;">
                     <h2 style="margin: 0; color: #0f172a; font-weight:800; font-size:26px; letter-spacing: 1px;">DEEWARY.COM</h2>
                     <p style="margin: 6px 0 0 0; font-size: 11px; color: #6b7280; font-weight: 600; text-transform:uppercase; letter-spacing:1.5px;">OFFICIAL LOGISTIC TRANSACTION VOUCHER</p>
                 </div>
-                
-                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;">
-                    <span style="color:#6b7280;">Voucher No:</span>
-                    <b style="color:#0f172a; font-weight:700; font-family: monospace; font-size:15px;">{v_number}</b>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;">
-                    <span style="color:#6b7280;">Log Date:</span>
-                    <span style="color:#0f172a; font-weight:600;">{v_row['date']}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;">
-                    <span style="color:#6b7280;">Flow Category:</span>
-                    <b style="color:#0f172a; text-transform: uppercase;">{str(v_row['type'])}</b>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;">
-                    <span style="color:#6b7280;">Particular Name:</span>
-                    <b style="color:#0f172a; font-size: 15px;">{v_row['name']}</b>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;">
-                    <span style="color:#6b7280;">Job Designation:</span>
-                    <span style="color:#0f172a; font-weight:500;">{v_row.get('occupation', '-') if pd.notna(v_row.get('occupation')) else '-'}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;">
-                    <span style="color:#6b7280;">Authorized Dispense:</span>
-                    <span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', '-') if pd.notna(v_row.get('received_by')) else '-'}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px;">
-                    <span style="color:#6b7280;">Payment Channel:</span>
-                    <span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span>
-                </div>
-                
-                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; font-size: 13px; border: 1px solid #e5e7eb; margin-bottom: 30px; color:#4b5563;">
-                    <span style="font-style: italic; font-weight:500;">Internal Remarks:</span> {v_row['detail'] if v_row['detail'] else '-'}
-                </div>
-                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;"><span style="color:#6b7280;">Voucher No:</span><b style="color:#0f172a; font-family: monospace; font-size:15px;">{v_number}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;"><span style="color:#6b7280;">Log Date:</span><span style="color:#0f172a; font-weight:600;">{v_row['date']}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px;"><span style="color:#6b7280;">Particular Name:</span><b style="color:#0f172a; font-size: 15px;">{v_row['name']}</b></div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; font-size: 13px; border: 1px solid #e5e7eb; margin-bottom: 30px; color:#4b5563;">{v_row['detail'] if v_row['detail'] else '-'}</div>
                 <div style="border-top: 2px dashed #9ca3af; padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color:#ef4444; font-weight:800; font-size:16px; text-transform:uppercase; letter-spacing:0.5px;">VOLUME TOTAL:</span>
+                    <span style="color:#ef4444; font-weight:800; font-size:16px;">VOLUME TOTAL:</span>
                     <span style="color:#ef4444; font-weight:800; font-size:22px; font-family: monospace;">PKR {v_row['amount']:,.0f}/-</span>
                 </div>
             </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info("Voucher generate karne ke liye pehle transactions record hona lazmi hain.")
 
-else:
-    st.write("### 💰 Capital Folders Log Entries")
-    st.dataframe(df, use_container_width=True)
+elif "Labor" in menu:
+    st.markdown("### 👷 Labor Force Profiles Registry Ledger")
+    if not labor_df.empty:
+        st.dataframe(labor_df, use_container_width=True)
+    else:
+        st.info("Is site context ke liye koi labor data registered nahi mila.")
