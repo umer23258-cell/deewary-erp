@@ -413,8 +413,6 @@ if menu == "📊 Dashboard":
         st.markdown("### 📈 Overall Progress")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Work Completed**")
-        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
-        components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
     with col_right:
         st.markdown("### 📝 Tasks Summary")
