@@ -66,7 +66,7 @@ def export_to_pdf(dataframe, title):
     return buf
 
 
-# --- NEW: INDIVIDUAL LABOR PROFILE PRINT PDF FUNCTION ---
+# --- INDIVIDUAL LABOR PROFILE PRINT PDF FUNCTION ---
 def export_labor_profile_pdf(labor_row, payments_df):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -79,7 +79,7 @@ def export_labor_profile_pdf(labor_row, payments_df):
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 20))
     
-    # Profile Picture Logic (If available, fetch and add to PDF)
+    # Profile Picture Logic
     photo_url = labor_row.get('photo_url', '')
     if photo_url and str(photo_url) != "nan" and photo_url.startswith("http"):
         try:
@@ -202,8 +202,6 @@ st.markdown("""
         color: #2e7d32;
         font-weight: bold;
     }
-    
-    /* VIP DIGITAL RECEIPT VOUCHER STYLING */
     .digital-voucher {
         background-color: #fefefe;
         border: 2px dashed #94a3b8;
@@ -218,30 +216,35 @@ st.markdown("""
     .voucher-header { text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 12px; margin-bottom: 15px; }
     .voucher-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
     .voucher-total { font-size: 20px; font-weight: bold; color: #FF4B4B; border-top: 2px dashed #cbd5e1; border-bottom: 2px dashed #cbd5e1; padding: 8px 0; margin-top: 15px; }
-    
-    .sidebar-btn-container { margin-bottom: 10px; }
-    @media (max-width: 640px) {
-        .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. LOGIC FUNCTIONS ---
+# --- 4. LOGIC FUNCTIONS WITH PROJECT FILTER ---
 @st.cache_data(ttl=60)
-def fetch_data():
+def fetch_all_raw_data():
     try:
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
-def fetch_project_status():
+@st.cache_data(ttl=30)
+def fetch_all_labor_profiles():
     try:
-        res = supabase.table('project_status').select("*").execute()
-        if not res.data:
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-            return pd.DataFrame([{"task_name": t, "status": "Pending"} for t in tasks])
+        res = supabase.table('labor_profiles').select("*").order('id', desc=True).execute()
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
+
+def fetch_project_status(project_name):
+    try:
+        # Task status ko project specific dynamically render karna
+        res = supabase.table('project_status').select("*").eq('project_context', project_name).execute()
+        if not res.data:
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
+        return pd.DataFrame(res.data)
+    except: 
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+        return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
 
 def check_password():
     if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
@@ -254,16 +257,9 @@ def check_password():
                 st.rerun()
     return False
 
-@st.cache_data(ttl=30)
-def fetch_labor_profiles():
-    try:
-        res = supabase.table('labor_profiles').select("*").order('id', desc=True).execute()
-        return pd.DataFrame(res.data)
-    except: return pd.DataFrame()
-
-# --- HELPER FUNCTION FOR WHATSAPP LINK GENERATION ---
-def generate_whatsapp_link(type_tx, name, amount, detail):
-    base_msg = f"🏗️ *Deewary.com ERP Notification*\n\n"
+def generate_whatsapp_link(type_tx, name, amount, detail, project):
+    base_msg = f"🏗️ *Deewary.com ERP Notification*\n"
+    base_msg += f"• *Project:* {project}\n"
     base_msg += f"• *Type:* {type_tx}\n"
     base_msg += f"• *Name/Item:* {name}\n"
     base_msg += f"• *Amount:* PKR {amount:,.0f}\n"
@@ -274,9 +270,40 @@ def generate_whatsapp_link(type_tx, name, amount, detail):
     return f"https://api.whatsapp.com/send?text={encoded_text}"
 
 
-# --- 5. SIDEBAR ---
+# --- INITIAL DATA LOAD FOR PROJECT SYSTEM ---
+raw_df = fetch_all_raw_data()
+raw_labor_df = fetch_all_labor_profiles()
+
+# Project Master List initialization (Safely scanning columns context)
+existing_projects = ["Yousaf Colony"] # Default fallback
+if not raw_df.empty and 'project_context' in raw_df.columns:
+    proj_list = raw_df['project_context'].dropna().unique().tolist()
+    for p in proj_list:
+        if p and p not in existing_projects: existing_projects.append(p)
+if not raw_labor_df.empty and 'project_context' in raw_labor_df.columns:
+    proj_list_l = raw_labor_df['project_context'].dropna().unique().tolist()
+    for p in proj_list_l:
+        if p and p not in existing_projects: existing_projects.append(p)
+
+if "selected_project" not in st.session_state:
+    st.session_state["selected_project"] = existing_projects[0]
+
+
+# --- 5. SIDEBAR DESIGN ---
 with st.sidebar:
     st.title("🏗️ DEEWARY ERP")
+    
+    # --- ACTIVE PROJECT SWITCHER DROPDOWN ---
+    st.markdown("### 📁 Select Active Site Project")
+    selected_proj = st.selectbox(
+        "Current Working Context:", 
+        existing_projects, 
+        index=existing_projects.index(st.session_state["selected_project"]) if st.session_state["selected_project"] in existing_projects else 0
+    )
+    st.session_state["selected_project"] = selected_proj
+    st.info(f"📍 Active Site: **{st.session_state['selected_project']}**")
+    st.divider()
+    
     menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"])
     st.divider()
     is_auth = check_password()
@@ -288,22 +315,41 @@ with st.sidebar:
         if st.button("👷 Labor", use_container_width=True): st.session_state.show_form = "Labor"
         if st.button("🏗️ Material", use_container_width=True): st.session_state.show_form = "Material"
         if st.button("📝 Register New Labor Profile", use_container_width=True): st.session_state.show_form = "RegisterLabor"
+        if st.button("📁 Create New Project Site", use_container_width=True): st.session_state.show_form = "CreateProject"
         st.divider()
         if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
     st.divider()
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg", caption="Active Site: Yousaf Colony")
 
-df = fetch_data()
+
+# --- FILTER DATA DYNAMICALLY FOR THE SELECTED PROJECT ONLY ---
+current_project = st.session_state["selected_project"]
+
+if not raw_df.empty:
+    if 'project_context' in raw_df.columns:
+        df = raw_df[raw_df['project_context'] == current_project]
+    else:
+        df = raw_df.copy() # Fallback safe check if column missing initially
+else:
+    df = pd.DataFrame()
+
+if not raw_labor_df.empty:
+    if 'project_context' in raw_labor_df.columns:
+        labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project]
+    else:
+        labor_df = raw_labor_df.copy()
+else:
+    labor_df = pd.DataFrame()
+
 
 # --- 6. DASHBOARD INTERFACE ---
 if menu == "📊 Dashboard":
-    st.markdown("""
+    st.markdown(f"""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
-            <p style="color: white; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px;">PREMIUM CONSTRUCTION MANAGEMENT</p>
+            <p style="color: white; letter-spacing: 2px; font-size: 14px; margin-bottom: 10px;">PREMIUM SITE MANAGEMENT: {current_project.upper()}</p>
             <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
                 C.E.O: SARDAR SAMI ULLAH
             </div>
@@ -317,68 +363,36 @@ if menu == "📊 Dashboard":
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
-        # --- NEW CONTEXT BLOCK: CASH FLOW FORECAST & ALERTS ---
         try:
             df['date_parsed'] = pd.to_datetime(df['date'])
             seven_days_ago = datetime.now() - timedelta(days=7)
             recent_exp_df = df[(df['type'].isin(['Labor', 'Material'])) & (df['date_parsed'] >= seven_days_ago)]
             total_7_day_exp = recent_exp_df['amount'].sum()
             daily_burn_rate = total_7_day_exp / 7
-        except:
-            daily_burn_rate = 0
+        except: daily_burn_rate = 0
 
-        # High visibility warnings check configuration sequence
         if net_bal < 50000:
-            st.markdown(f"""
-                <div class="alert-box">
-                    🚨 LOW BALANCE ALERT: Running Liquid Balance is critical (PKR {net_bal:,.0f}). 
-                    Please arrange funds to ensure workflow stability at the construction perimeter line.
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div class="alert-box">🚨 LOW BALANCE ALERT: Running Balance is critical (PKR {net_bal:,.0f}) for {current_project}.</div>""", unsafe_allow_html=True)
         elif daily_burn_rate > 0:
             days_left = net_bal / daily_burn_rate
             if days_left <= 5:
-                st.markdown(f"""
-                    <div class="alert-box" style="background-color: #fff3e0; border-left-color: #ff9800; color: #e65100;">
-                        ⚠️ CASH FLOW WARNING: At the current velocity of PKR {daily_burn_rate:,.0f}/day, 
-                        your reserve balance will sustain operations for approximately {days_left:.1f} days only.
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<div class="alert-box" style="background-color: #fff3e0; border-left-color: #ff9800; color: #e65100;">⚠️ CASH FLOW WARNING: Reserves for {current_project} last ~{days_left:.1f} days only.</div>""", unsafe_allow_html=True)
             else:
-                st.markdown(f"""
-                    <div class="forecast-box">
-                        📈 CASH FLOW FORECAST: Current Burn Rate is PKR {daily_burn_rate:,.0f}/day. 
-                        Safe operational runway left: ~{days_left:.1f} Days.
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<div class="forecast-box">📈 CASH FLOW FORECAST: Safe runway left for current project: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
 
-        # --- EXECUTIVE KPI CARDS ---
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-        with col_kpi1:
-            st.markdown(f"""<div class='kpi-card'>
-                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>💰 TOTAL INVESTMENT RECEIPT</p>
-                <h2 style='color:#2e7d32; margin:5px 0 0 0;'>PKR {inc:,.0f}</h2>
-            </div>""", unsafe_allow_html=True)
-        with col_kpi2:
-            st.markdown(f"""<div class='kpi-card'>
-                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>📉 RUNNING OUTFLOW EXPENSES</p>
-                <h2 style='color:#c62828; margin:5px 0 0 0;'>PKR {exp:,.0f}</h2>
-            </div>""", unsafe_allow_html=True)
-        with col_kpi3:
+        with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>💰 TOTAL INVESTMENT ({current_project})</p><h2 style='color:#2e7d32; margin:5px 0 0 0;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
+        with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>📉 EXPENSES OUTFLOW</p><h2 style='color:#c62828; margin:5px 0 0 0;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
+        with col_kpi3: 
             bal_color = "#2e7d32" if net_bal >= 0 else "#c62828"
-            st.markdown(f"""<div class='kpi-card'>
-                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET LIQUID BALANCE</p>
-                <h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET BALANCE</p><h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
-    # --- INTERACTIVE DIGITAL VOUCHER DESK SECTION ---
+    # --- RECEIPT SLIP GENERATOR ---
     st.write("##")
     st.markdown("### 📑 System Automated Receipt Slip / Voucher Generator")
-    
     if not df.empty:
         df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
-        selected_log = st.selectbox("Select Transaction Log Entry to Generate Parchi:", df['voucher_label'].tolist())
-        
+        selected_log = st.selectbox("Select Transaction Log Entry:", df['voucher_label'].tolist())
         v_row = df[df['voucher_label'] == selected_log].iloc[0]
         v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
         v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
@@ -387,43 +401,49 @@ if menu == "📊 Dashboard":
             <div class="digital-voucher">
                 <div class="voucher-header">
                     <h3 style="margin: 0; color: #1e1e1e; letter-spacing: 2px;">DEEWARY.COM</h3>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #6c757d; font-weight: bold;">OFFICIAL LOGISTIC TRANSACTION VOUCHER</p>
+                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #6c757d; font-weight: bold;">PROJECT SITE VOUCHER: {current_project.upper()}</p>
                 </div>
                 <div class="voucher-row"><span>Voucher No:</span><b>{v_number}</b></div>
                 <div class="voucher-row"><span>Log Date:</span><span>{v_row['date']}</span></div>
-                <div class="voucher-row"><span>Flow Category:</span><span>{str(v_row['type']).upper()}</span></div>
                 <div class="voucher-row"><span>Particular Name:</span><b>{v_row['name']}</b></div>
                 <div class="voucher-row"><span>Payment Channel:</span><span>{v_row['pay_method']}</span></div>
-                <div class="voucher-row" style="margin-top: 10px;"><span style="color: #6c757d; font-size: 12px;">Internal Remarks:</span></div>
-                <p style="font-size: 12px; background: #f8f9fa; padding: 8px; border-radius: 5px; margin: 4px 0; font-style: italic; border-left: 3px solid #FF4B4B;">
-                    {v_row['detail'] if v_row['detail'] else 'No supplementary descriptive notes entered in database rows.'}
-                </p>
-                <div class="voucher-total">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>VOLUME TOTAL:</span>
-                        <span>PKR {v_row['amount']:,.0f}/-</span>
-                    </div>
-                </div>
+                <p style="font-size: 12px; background: #f8f9fa; padding: 8px; border-radius: 5px; font-style: italic; border-left: 3px solid #FF4B4B;">{v_row['detail'] if v_row['detail'] else '-'}</p>
+                <div class="voucher-total"><div style="display: flex; justify-content: space-between;"><span>VOLUME TOTAL:</span><span>PKR {v_row['amount']:,.0f}/-</span></div></div>
             </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info("No transaction tracking history data available to process live verification vouchers.")
+    else: st.info(f"No transaction tracking history data available for project: {current_project}")
 
-    # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
+    # --- SHOW FORMS INCL. PROJECT CREATION ---
     if "show_form" in st.session_state and is_auth:
         ftype = st.session_state.show_form
         
-        if ftype == "RegisterLabor":
-            with st.expander("📝 Register New Labor Profile Document Application", expanded=True):
+        if ftype == "CreateProject":
+            with st.expander("📁 Provision & Launch New Project Site Perimeter", expanded=True):
+                with st.form("new_project_form"):
+                    new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town Phase 1)*").strip()
+                    st.write("ℹ️ *Note: Naya project generate karne se pehle wale ka data delete nahi hoga balkay list mein save ho jaye gha.*")
+                    if st.form_submit_button("Launch New Project Context"):
+                        if new_proj_name:
+                            # Hamy just initialization ke liye aik raw status map dump karna hoga
+                            supabase.table('project_status').insert({"task_name": "Mistry Ka Kam", "status": "Pending", "project_context": new_proj_name}).execute()
+                            st.success(f"Project '{new_proj_name}' initiated successfully! Switching target context...")
+                            st.session_state["selected_project"] = new_proj_name
+                            st.cache_data.clear()
+                            st.session_state.pop("show_form")
+                            st.rerun()
+                        else: st.error("Project identity descriptor required.")
+                        
+        elif ftype == "RegisterLabor":
+            with st.expander(f"📝 Register New Labor Profile under {current_project}", expanded=True):
                 with st.form("labor_profile_form"):
                     l_name = st.text_input("Labor Full Name *")
                     l_phone = st.text_input("Phone Number")
                     l_cnic = st.text_input("CNIC Number")
-                    l_occ = st.text_input("Occupation / Skill Type (e.g., Mistry, Plumber)")
-                    l_contract = st.number_input("Total Contract Amount / Taka Amount (PKR)", min_value=0, value=0)
-                    l_rating = st.slider("Rating / Performance evaluation", min_value=1, max_value=5, value=5)
+                    l_occ = st.text_input("Occupation / Skill Type")
+                    l_contract = st.number_input("Total Contract Amount (PKR)", min_value=0, value=0)
+                    l_rating = st.slider("Rating", min_value=1, max_value=5, value=5)
                     l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
-                    l_details = st.text_area("A to Z Personal Data Notes / Address / References")
+                    l_details = st.text_area("A to Z Personal Data Notes")
                     
                     if st.form_submit_button("Save Profile Application"):
                         if l_name:
@@ -432,39 +452,32 @@ if menu == "📊 Dashboard":
                                 f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
                                 supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
                                 img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                                
+                            # Payload with dynamic project context row flag
                             payload = {
                                 "name": l_name, "phone": l_phone, "cnic": l_cnic, "occupation": l_occ,
                                 "total_contract_amount": l_contract, "rating": l_rating,
-                                "photo_url": img_url, "details": l_details
+                                "photo_url": img_url, "details": l_details, "project_context": current_project
                             }
                             supabase.table('labor_profiles').insert(payload).execute()
-                            st.cache_data.clear()
-                            st.session_state.pop("show_form")
-                            st.rerun()
-                        else:
-                            st.error("Labor Full Name is strictly required.")
+                            st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
+                        else: st.error("Labor Full Name is strictly required.")
         else:
-            with st.expander(f"Register {ftype}", expanded=True):
+            with st.expander(f"Register {ftype} for {current_project}", expanded=True):
                 with st.form("quick_form"):
                     d_date = st.date_input("Date", datetime.now())
                     d_name = st.text_input("Title / Name")
                     d_amt = st.number_input("Amount", min_value=0)
-                    
                     d_occ, d_rec, d_meth = "", "", "Cash"
                     if ftype in ["Income", "Labor", "Material"]:
                         col1, col2 = st.columns(2)
                         d_occ = col1.text_input("Occupation / Job Type")
                         d_rec = col2.text_input("Received By / Authorized")
                         d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
-
                     uploaded_photo = None
-                    if ftype == "Material":
-                        uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
-                    
+                    if ftype == "Material": uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
                     d_det = st.text_area("Notes")
                     
-                    if st.form_submit_button("Submit"):
+                    if st.form_submit_button("Submit Entry"):
                         img_url = ""
                         if uploaded_photo:
                             f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
@@ -474,29 +487,25 @@ if menu == "📊 Dashboard":
                         payload = {
                             "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
                             "detail": d_det, "image_url": img_url, "occupation": d_occ,
-                            "received_by": d_rec, "pay_method": d_meth
+                            "received_by": d_rec, "pay_method": d_meth, "project_context": current_project
                         }
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
                         
-                        # --- DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER ---
-                        wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
-                        st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Click to Broadcast This Entry Receipt to WhatsApp Instantly</div></a>""", unsafe_allow_html=True)
-                        st.info("Record inserted into database cloud files successfully. Click button above if you wish to push to messaging channels before app reloading refreshes states context views.")
-                        
+                        wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det, current_project)
+                        st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Broadcast to WhatsApp</div></a>""", unsafe_allow_html=True)
                         st.session_state.pop("show_form")
-                        if st.button("Proceed & Refresh View Dashboard"):
-                            st.rerun()
+                        if st.button("Proceed & Refresh Dashboard"): st.rerun()
 
     st.write("##")
-    status_df = fetch_project_status()
+    status_df = fetch_project_status(current_project)
     total_tasks = len(status_df)
     done_tasks = len(status_df[status_df['status'] == 'Done'])
     prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
 
     col_left, col_right = st.columns([1, 1])
     with col_left:
-        st.markdown("### 📈 Overall Progress")
+        st.markdown(f"### 📈 Overall Progress ({current_project})")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Work Completed**")
         chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
@@ -504,21 +513,20 @@ if menu == "📊 Dashboard":
 
     with col_right:
         st.markdown("### 📝 Tasks Summary")
-        st.write(f"✅ Finished: {done_tasks}")
-        st.write(f"⏳ Remaining: {total_tasks - done_tasks}")
-        if st.button("Refresh Data"): st.cache_data.clear(); st.rerun()
+        st.write(f"✅ Finished: {done_tasks} | ⏳ Remaining: {total_tasks - done_tasks}")
+        if st.button("Force Refresh Tracker Context"): st.cache_data.clear(); st.rerun()
 
     if "show_status_form" in st.session_state and is_auth:
-        with st.expander("🛠️ Admin: Update Site Status", expanded=True):
+        with st.expander(f"🛠️ Update Site Status: {current_project}", expanded=True):
             with st.form("status_form"):
                 task = st.selectbox("Select Task", status_df['task_name'].tolist())
                 stat = st.radio("Status", ["Pending", "Done"], horizontal=True)
-                if st.form_submit_button("Update"):
-                    supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
+                if st.form_submit_button("Update Task Line"):
+                    supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name,project_context").execute()
                     st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
 
     st.divider()
-    st.markdown("### 🏗️ Checklist")
+    st.markdown("### 🏗️ Checklist Mapping")
     t_cols = st.columns(3)
     for i, row in status_df.iterrows():
         with t_cols[i % 3]:
@@ -526,56 +534,34 @@ if menu == "📊 Dashboard":
             bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
             st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
 
-    st.divider()
-    st.video("https://youtu.be/AiA4PkXturU")
-
 
 # --- LABOR PROFILES APPLICATION PAGE ---
 elif menu == "👷 Labor Profiles Application":
-    st.title("👷 Labor Profiles Application Directory")
-    st.write("Labor card entries database file records, detailing specialized contracts and ratings metrics configuration.")
-    
-    labor_df = fetch_labor_profiles()
+    st.title(f"👷 Labor Profiles Application ({current_project})")
     
     if not labor_df.empty:
-        l_search = st.text_input("🔎 Search Profile Directory by Name, CNIC, or Job Skillset Type...")
+        l_search = st.text_input("🔎 Search active profiles folder...")
         if l_search:
             l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
             labor_df = labor_df[l_mask]
             
         st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
         
-        st.write("### 🖼️ Profiles Deep Dive Cards View")
         for _, row in labor_df.iterrows():
             with st.container():
                 st.markdown(f"#### 👤 {row['name']} ({row['occupation'] if row['occupation'] else 'General Labor'})")
                 c_img, c_info = st.columns([1, 3])
-                
                 with c_img:
                     photo_path = row.get('photo_url', '')
-                    if photo_path and str(photo_path) != "nan":
-                        st.image(photo_path, use_container_width=True)
-                    else:
-                        st.info("No Profile Pic uploaded.")
-                        
+                    if photo_path and str(photo_path) != "nan": st.image(photo_path, use_container_width=True)
+                    else: st.info("No Pic.")
                 with c_info:
-                    st.markdown(f"**📞 Phone:** {row['phone']} | **🪪 CNIC:** {row['cnic']}")
-                    st.markdown(f"**💰 Total Contract (Taka):** PKR {row['total_contract_amount']:,.0f}")
+                    st.markdown(f"**🪪 CNIC:** {row['cnic']} | **💰 Contract:** PKR {row['total_contract_amount']:,.0f}")
+                    st.info(row['details'] if row['details'] else "No profile notes summary provided.")
                     
-                    stars = "⭐" * int(row['rating'] if row['rating'] else 5)
-                    st.markdown(f"**📊 Performance Rating Evaluation:** {stars}")
-                    st.markdown(f"**📝 Complete Detailed Information Dossier (A to Z Data):**")
-                    st.info(row['details'] if row['details'] else "No additional background profile summary logs provided.")
-                    
-                    # --- AUTOMATIC PAYMENT LEDGER LINKING BLOCK ---
-                    st.markdown("#### 📊 Paid Payments History Ledger (Labor History Sync)")
-                    
+                    st.markdown("#### 📊 Paid Payments History (Labor History Sync)")
                     if not df.empty:
-                        # --- SMART FUZZY / PARTIAL NAME MATCHING ---
-                        # Lowercase and clean names for a robust cross-check validation
                         prof_name = str(row['name']).lower().strip()
-                        
-                        # Filter 'Labor' entries where profile name is inside history name, or vice versa
                         def is_name_match(tx_name):
                             tx_name_clean = str(tx_name).lower().strip()
                             return (prof_name in tx_name_clean) or (tx_name_clean in prof_name)
@@ -584,48 +570,32 @@ elif menu == "👷 Labor Profiles Application":
                         if not labor_tx.empty:
                             match_mask = labor_tx['name'].apply(is_name_match)
                             labor_payments = labor_tx[match_mask]
-                        else:
-                            labor_payments = pd.DataFrame()
+                        else: labor_payments = pd.DataFrame()
                         
                         if not labor_payments.empty:
                             st.dataframe(labor_payments[['id', 'date', 'pay_method', 'amount', 'detail']], use_container_width=True)
-                            
                             total_paid = labor_payments['amount'].sum()
-                            st.metric(label=f"Total Amount Paid to {row['name']}", value=f"PKR {total_paid:,.0f}/-")
+                            st.metric(label="Total Amount Paid", value=f"PKR {total_paid:,.0f}/-")
                         else:
-                            st.warning(f"⚠️ No payment logs registered under '{row['name']}' inside History files yet.")
+                            st.warning("⚠️ No payment logs registered under this exact Labor Name inside active project files.")
                             labor_payments = pd.DataFrame()
-                    else:
-                        st.info("General Transaction History database folder logs empty.")
-                        labor_payments = pd.DataFrame()
+                    else: labor_payments = pd.DataFrame()
 
-                    # --- INDIVIDUAL PROFILE PDF DOWNLOAD PRINT BUTTON ---
                     pdf_data = export_labor_profile_pdf(row, labor_payments)
-                    st.download_button(
-                        label=f"📄 Print & Download Full Profile Report ({row['name']})",
-                        data=pdf_data,
-                        file_name=f"Labor_Profile_{str(row['name']).replace(' ', '_')}.pdf",
-                        mime="application/pdf",
-                        key=f"dl_pdf_{row['id']}"
-                    )
-                
+                    st.download_button(label="📄 Print & Download Full Profile Report", data=pdf_data, file_name=f"Labor_{str(row['name'])}.pdf", mime="application/pdf", key=f"dl_pdf_{row['id']}")
                 st.divider()
-                
         if is_auth:
-            st.write("### 🛠️ Administrative Operations")
-            l_tid = st.text_input("Enter Profile Row Unique Identity ID to Delete File permanently")
-            if st.button("🗑️ Delete Profile Record", key="del_lab_prof_btn"):
+            l_tid = st.text_input("Enter Profile ID to Delete permanently")
+            if st.button("🗑️ Delete Profile Record"):
                 if l_tid:
                     supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
-                    st.cache_data.clear()
-                    st.rerun()
-    else:
-        st.info("No Labor profiles have been provisioned inside the system ledger table tracking logs configuration folder yet.")
+                    st.cache_data.clear(); st.rerun()
+    else: st.info(f"No Labor profiles provisioned for project context: {current_project}")
 
 
-# --- 8. ORIGINAL HISTORY PAGES LOGIC (With Smart Search) ---
+# --- ORIGINAL HISTORY PAGES LOGIC (Project Restricted) ---
 else:
-    st.title(menu)
+    st.title(f"{menu} ({current_project})")
     if not df.empty:
         if "Income" in menu: f_df = df[df['type'] == 'Income']
         elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
@@ -638,23 +608,16 @@ else:
             f_df = f_df[mask]
         
         st.dataframe(f_df, use_container_width=True)
-        
-        if search and not f_df.empty and 'image_url' in f_df.columns:
-            st.markdown("### 🖼️ Result Detail & Photo")
-            for _, row in f_df.iterrows():
-                if row['image_url'] and str(row['image_url']) != "nan":
-                    with st.expander(f"👁️ View Photo: ID {row['id']} - {row['name']}", expanded=True):
-                        st.image(row['image_url'], use_container_width=True)
-
         st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
         
         if is_auth:
             tid = st.text_input("Enter ID to Delete")
-            if st.button("🗑️ Delete"):
+            if st.button("🗑️ Delete Entry"):
                 supabase.table('transactions').delete().eq('id', tid).execute()
                 st.cache_data.clear(); st.rerun()
 
         st.divider()
         c1, c2 = st.columns(2)
-        c1.download_button("📥 Excel", f_df.to_csv().encode('utf-8'), f"{menu}.csv")
-        c2.download_button("📄 PDF Report", export_to_pdf(f_df, menu), f"{menu}.pdf")
+        c1.download_button("📥 Excel", f_df.to_csv().encode('utf-8'), f"{menu}_{current_project}.csv")
+        c2.download_button("📄 PDF Report", export_to_pdf(f_df, menu), f"{menu}_{current_project}.pdf")
+    else: st.info(f"No database ledger records tracked under project site: {current_project}")
