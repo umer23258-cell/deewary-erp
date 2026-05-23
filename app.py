@@ -570,20 +570,31 @@ elif menu == "👷 Labor Profiles Application":
                     # --- AUTOMATIC PAYMENT LEDGER LINKING BLOCK ---
                     st.markdown("#### 📊 Paid Payments History Ledger (Labor History Sync)")
                     
-                    # Transactions history data se is labor ke naam par payments track karna
                     if not df.empty:
-                        # 'Labor' type transactions ko banday ke specific name par match karna
-                        labor_payments = df[(df['type'] == 'Labor') & (df['name'].astype(str).str.lower() == str(row['name']).lower())]
+                        # --- SMART FUZZY / PARTIAL NAME MATCHING ---
+                        # Lowercase and clean names for a robust cross-check validation
+                        prof_name = str(row['name']).lower().strip()
+                        
+                        # Filter 'Labor' entries where profile name is inside history name, or vice versa
+                        def is_name_match(tx_name):
+                            tx_name_clean = str(tx_name).lower().strip()
+                            return (prof_name in tx_name_clean) or (tx_name_clean in prof_name)
+                        
+                        labor_tx = df[df['type'] == 'Labor']
+                        if not labor_tx.empty:
+                            match_mask = labor_tx['name'].apply(is_name_match)
+                            labor_payments = labor_tx[match_mask]
+                        else:
+                            labor_payments = pd.DataFrame()
                         
                         if not labor_payments.empty:
-                            # Dynamic Statement Matrix grid view table show karna
                             st.dataframe(labor_payments[['id', 'date', 'pay_method', 'amount', 'detail']], use_container_width=True)
                             
                             total_paid = labor_payments['amount'].sum()
                             st.metric(label=f"Total Amount Paid to {row['name']}", value=f"PKR {total_paid:,.0f}/-")
                         else:
-                            st.warning("⚠️ No payment logs registered under this exact Labor Name inside History files yet.")
-                            labor_payments = pd.DataFrame() # Blank init for PDF generator block logic safety
+                            st.warning(f"⚠️ No payment logs registered under '{row['name']}' inside History files yet.")
+                            labor_payments = pd.DataFrame()
                     else:
                         st.info("General Transaction History database folder logs empty.")
                         labor_payments = pd.DataFrame()
@@ -612,7 +623,7 @@ elif menu == "👷 Labor Profiles Application":
         st.info("No Labor profiles have been provisioned inside the system ledger table tracking logs configuration folder yet.")
 
 
-# --- 8. ORIGINAL HISTORY PAGES LOGIC (As it was) ---
+# --- 8. ORIGINAL HISTORY PAGES LOGIC (With Smart Search) ---
 else:
     st.title(menu)
     if not df.empty:
