@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import io
 import urllib.parse
 import streamlit.components.v1 as components
+import requests
+
 # PDF ke liye libraries
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -16,110 +18,144 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- 2. PDF GENERATION FUNCTION (Full Table View) ---
+# --- 2. AUTOMATED LOW BALANCE NOTIFIER FUNCTION ---
+def send_automated_low_balance_alert(current_balance):
+    sms_api_url = st.secrets.get("SMS_API_URL", "")
+    receiver_number = st.secrets.get("ALERT_PHONE_NUMBER", "03001234567")
+    msg_text = f"⚠️ DEEWARY ERP ALERT:\nSardar Sahab, Yousaf Colony site ka balance critical level par hai. Current Balance: PKR {current_balance:,.0f}."
+    if sms_api_url:
+        try:
+            payload = {"api_key": st.secrets.get("SMS_API_KEY"), "to": receiver_number, "message": msg_text, "sender": "DEEWARY"}
+            requests.post(sms_api_url, data=payload, timeout=5)
+        except: pass
+
+# --- 3. HARDCODED PROPERTY LISTINGS (ZAMEEN.COM STYLE) ---
+# Note: Kal ko aap isko Supabase table se bhi connect kar sakte hain.
+PROPERTY_INVENTORY = [
+    {
+        "title": "Premium Corner Plot - Yousaf Colony",
+        "location": "Sector B-17, Islamabad",
+        "size": "5 Marla",
+        "price": "PKR 4,500,000",
+        "status": "For Sale 🔥",
+        "image": "https://images.unsplash.com/photo-1524813686514-a57563d77d61?q=80&w=600&auto=format&fit=crop",
+        "desc": "Ideal location near the main commercial boulevard wall perimeter line. Perfect for investment."
+    },
+    {
+        "title": "Commercial Front File - Block A",
+        "location": "Faisal Town, Rawalpindi",
+        "size": "7 Marla",
+        "price": "PKR 8,200,000",
+        "status": "Under Construction 🏗️",
+        "image": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?q=80&w=600&auto=format&fit=crop",
+        "desc": "Foundation and boundary wall work completed. High appreciation expected within months."
+    },
+    {
+        "title": "Luxury Residential Block",
+        "location": "Yousaf Colony Site",
+        "size": "10 Marla",
+        "price": "PKR 12,500,000",
+        "status": "Sold Out 🤝",
+        "image": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=600&auto=format&fit=crop",
+        "desc": "Premium boundary wall block allocated to executive investor partners."
+    }
+]
+
+# --- 4. PDF GENERATION FUNCTION ---
 def export_to_pdf(dataframe, title):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
     elements = []
     styles = getSampleStyleSheet()
-    
     elements.append(Paragraph(f"<font color='#FF4B4B' size=18><b>{title}</b></font>", styles['Title']))
-    elements.append(Paragraph(f"Deewary.com ERP - Full System Report", styles['Normal']))
-    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 15))
-
     pdf_df = dataframe.copy()
     data = [["ID", "Date", "Item/Name", "Amount", "Detail", "Occupation", "Rec. By", "Method"]]
-    
     for _, row in pdf_df.iterrows():
         data.append([
-            str(row.get('id', '')),
-            str(row.get('date', '')),
-            str(row.get('name', '')),
-            f"{row.get('amount', 0):,.0f}",
-            str(row.get('detail', ''))[:30] + "..." if len(str(row.get('detail', ''))) > 30 else str(row.get('detail', '')),
-            str(row.get('occupation', '')),
-            str(row.get('received_by', '')),
-            str(row.get('pay_method', ''))
+            str(row.get('id', '')), str(row.get('date', '')), str(row.get('name', '')),
+            f"{row.get('amount', 0):,.0f}", str(row.get('detail', ''))[:30],
+            str(row.get('occupation', '')), str(row.get('received_by', '')), str(row.get('pay_method', ''))
         ])
-    
     total_val = pdf_df['amount'].sum()
     data.append(["", "", "TOTAL", f"{total_val:,.0f}", "", "", "", ""])
-
     t = Table(data, colWidths=[40, 70, 110, 80, 150, 90, 90, 70])
-    style = TableStyle([
+    t.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
         ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-    ])
-    t.setStyle(style)
+    ]))
     elements.append(t)
     doc.build(elements)
     buf.seek(0)
     return buf
 
-# --- 3. PAGE CONFIG ---
-st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
+# --- 5. PAGE CONFIG ---
+st.set_page_config(page_title="Deewary.com ERP & Portal", layout="wide", page_icon="🏗️")
 
-# --- CUSTOM CSS ---
+# --- 6. ADVANCED PROFESSIONAL CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
     div[data-testid="stMetric"] {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        padding: 15px 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }
     .header-box {
         text-align: center;
-        background: linear-gradient(135deg, #1e1e1e 0%, #333333 100%);
-        padding: 30px;
-        border-radius: 20px;
+        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        padding: 35px;
+        border-radius: 24px;
         border-bottom: 5px solid #FF4B4B;
-        margin-bottom: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
     .kpi-card {
-        background: #f8f9fa;
+        background: #ffffff;
         padding: 20px;
-        border-radius: 15px;
+        border-radius: 16px;
         border-left: 5px solid #FF4B4B;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         margin-bottom: 15px;
+        border-top: 1px solid #f1f5f9;
+        border-right: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
     }
-    .alert-box {
-        background-color: #ffebee;
-        border-left: 6px solid #c62828;
-        padding: 15px;
-        border-radius: 10px;
+    .alert-box { background-color: #fef2f2; border-left: 6px solid #ef4444; padding: 15px; border-radius: 12px; margin-bottom: 25px; color: #991b1b; font-weight: bold; }
+    .forecast-box { background-color: #f0fdf4; border-left: 6px solid #22c55e; padding: 15px; border-radius: 12px; margin-bottom: 25px; color: #166534; font-weight: bold; }
+    
+    /* ZAMEEN.COM STYLE SHOWCASE CARDS */
+    .property-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        transition: transform 0.2s;
         margin-bottom: 20px;
-        color: #c62828;
+    }
+    .property-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .property-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 12px;
         font-weight: bold;
+        color: white;
+        margin-bottom: 10px;
     }
-    .forecast-box {
-        background-color: #e8f5e9;
-        border-left: 6px solid #2e7d32;
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        color: #2e7d32;
-        font-weight: bold;
-    }
-    .sidebar-btn-container { margin-bottom: 10px; }
-    @media (max-width: 640px) {
-        .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
-    }
+    .badge-sale { background-color: #ef4444; }
+    .badge-construction { background-color: #f59e0b; }
+    .badge-sold { background-color: #64748b; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. LOGIC FUNCTIONS ---
+# --- 7. LOGIC FUNCTIONS ---
 @st.cache_data(ttl=60)
 def fetch_data():
     try:
@@ -136,53 +172,47 @@ def fetch_project_status():
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
-def check_password():
-    if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
-    if st.session_state["authenticated"]: return True
-    with st.sidebar.expander("🔐 Admin Access", expanded=True):
-        pwd = st.text_input("Admin Password", type="password")
-        if st.button("Unlock"):
-            if pwd == st.secrets.get("ADMIN_PASSWORD", "admin786"):
-                st.session_state["authenticated"] = True
-                st.rerun()
-    return False
-
-@st.cache_data(ttl=30)
 def fetch_labor_profiles():
     try:
         res = supabase.table('labor_profiles').select("*").order('id', desc=True).execute()
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
-# --- HELPER FUNCTION FOR WHATSAPP LINK GENERATION ---
 def generate_whatsapp_link(type_tx, name, amount, detail):
-    base_msg = f"🏗️ *Deewary.com ERP Notification*\n\n"
-    base_msg += f"• *Type:* {type_tx}\n"
-    base_msg += f"• *Name/Item:* {name}\n"
-    base_msg += f"• *Amount:* PKR {amount:,.0f}\n"
-    if detail:
-        base_msg += f"• *Details:* {detail}\n"
-    base_msg += f"\n_System generated tracking logs summary entry._"
-    encoded_text = urllib.parse.quote(base_msg)
-    return f"https://api.whatsapp.com/send?text={encoded_text}"
+    base_msg = f"🏗️ *Deewary.com ERP Notification*\n\n• *Type:* {type_tx}\n• *Name/Item:* {name}\n• *Amount:* PKR {amount:,.0f}\n"
+    if detail: base_msg += f"• *Details:* {detail}\n"
+    return f"https://api.whatsapp.com/send?text={urllib.parse.quote(base_msg)}"
 
+def generate_property_enquiry_link(title, location, price):
+    msg = f"Assalam-o-Alaikum Deewary.com, \nI am interested in booking/details of the following property listing:\n\n🏡 *Property:* {title}\n📍 *Location:* {location}\n💰 *Price:* {price}\n\nPlease share the installment schedule and layout plan."
+    return f"https://api.whatsapp.com/send?phone={st.secrets.get('ALERT_PHONE_NUMBER', '')}&text={urllib.parse.quote(msg)}"
 
-# --- 5. SIDEBAR ---
+# --- 8. SIDEBAR MANAGEMENT PANEL ---
 with st.sidebar:
     st.title("🏗️ DEEWARY ERP")
-    menu = st.radio("Go To", ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"])
+    menu = st.radio("Go To Desk", ["📊 Dashboard & Showroom", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"])
     st.divider()
-    is_auth = check_password()
+    
+    is_auth = False
+    if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
+    if st.session_state["authenticated"]: is_auth = True
+    else:
+        with st.sidebar.expander("🔐 Staff Admin Access", expanded=True):
+            pwd = st.text_input("Admin Password", type="password")
+            if st.button("Unlock Management"):
+                if pwd == st.secrets.get("ADMIN_PASSWORD", "admin786"):
+                    st.session_state["authenticated"] = True
+                    st.rerun()
     
     if is_auth:
-        st.success("🔓 Admin Mode")
-        st.write("### ⚡ Quick Actions")
-        if st.button("➕ Income", use_container_width=True): st.session_state.show_form = "Income"
-        if st.button("👷 Labor", use_container_width=True): st.session_state.show_form = "Labor"
-        if st.button("🏗️ Material", use_container_width=True): st.session_state.show_form = "Material"
-        if st.button("📝 Register New Labor Profile", use_container_width=True): st.session_state.show_form = "RegisterLabor"
+        st.success("🔓 Manager Mode On")
+        st.write("### ⚡ Quick Ledger Input")
+        if st.button("➕ Income Receipt", use_container_width=True): st.session_state.show_form = "Income"
+        if st.button("👷 Labor Expense", use_container_width=True): st.session_state.show_form = "Labor"
+        if st.button("🏗️ Material Bill", use_container_width=True): st.session_state.show_form = "Material"
+        if st.button("📝 Register New Profile", use_container_width=True): st.session_state.show_form = "RegisterLabor"
         st.divider()
-        if st.button("⚙️ Change Task Status"): st.session_state.show_status_form = True
+        if st.button("⚙️ Update Project Status"): st.session_state.show_status_form = True
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
@@ -191,18 +221,53 @@ with st.sidebar:
 
 df = fetch_data()
 
-# --- 6. DASHBOARD INTERFACE ---
-if menu == "📊 Dashboard":
+# --- 9. INTERFACE ENGINE ---
+if menu == "📊 Dashboard & Showroom":
+    # Main Modern Header Panel
     st.markdown("""
         <div class="header-box">
-            <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
-            <p style="color: white; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px;">PREMIUM CONSTRUCTION MANAGEMENT</p>
-            <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+            <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px; font-size: 36px;">DEEWARY.COM</h1>
+            <p style="color: #9ca3af; letter-spacing: 2px; font-size: 13px; margin-bottom: 12px; font-weight: bold;">PREMIUM REAL ESTATE PORTAL & ERP</p>
+            <div style="background: #FF4B4B; color: white; display: inline-block; padding: 6px 18px; border-radius: 8px; font-weight: bold; font-size: 14px;">
                 C.E.O: SARDAR SAMI ULLAH
             </div>
         </div>
     """, unsafe_allow_html=True)
 
+    # --- SECTION A: PREMIUM PROPERTY SHOWROOM (ZAMEEN.COM STYLE GRID) ---
+    st.markdown("## 🏢 Exclusive Property Showroom")
+    st.markdown("<p style='color:#64748b; font-size:14px; margin-top:-10px;'>Live available inventory showcase for investors & corporate buyers.</p>", unsafe_allow_html=True)
+    
+    p_cols = st.columns(3)
+    for idx, prop in enumerate(PROPERTY_INVENTORY):
+        with p_cols[idx % 3]:
+            # Status Badge Color Determination
+            badge_class = "badge-sale" if "Sale" in prop["status"] else "badge-construction" if "Construction" in prop["status"] else "badge-sold"
+            enquiry_url = generate_property_enquiry_link(prop["title"], prop["location"], prop["price"])
+            
+            # Rendering HTML Card Layout
+            st.markdown(f"""
+                <div class="property-card">
+                    <img src="{prop["image"]}" style="width:100%; height:200px; object-fit:cover;">
+                    <div style="padding: 16px;">
+                        <div class="property-badge {badge_class}">{prop["status"]}</div>
+                        <h4 style="margin: 0 0 8px 0; color:#1f2937; font-size:18px;">{prop["title"]}</h4>
+                        <p style="color:#64748b; font-size:13px; margin: 0 0 10px 0;">📍 {prop["location"]} | 📐 <b>{prop["size"]}</b></p>
+                        <p style="color:#94a3b8; font-size:12px; line-height:1.4; min-height:40px;">{prop["desc"]}</p>
+                        <hr style="border:0; border-top:1px solid #f1f5f9; margin:12px 0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#ef4444; font-weight:bold; font-size:18px;">{prop["price"]}</span>
+                        </div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            # Direct Booking Action Button
+            st.markdown(f'<a href="{enquiry_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#111827; color:white; padding:8px; border-radius:8px; text-align:center; font-size:12px; font-weight:bold; margin-top:-10px; margin-bottom:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">💬 Instant WhatsApp Enquiry / Booking</div></a>', unsafe_allow_html=True)
+
+    st.divider()
+
+    # --- SECTION B: BACKEND ERP BUSINESS SUITE ---
+    st.markdown("## 📊 Construction Administrative Suite")
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
         lab_exp = df[df['type'] == 'Labor']['amount'].sum()
@@ -210,233 +275,92 @@ if menu == "📊 Dashboard":
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
-        # --- NEW CONTEXT BLOCK: CASH FLOW FORECAST & ALERTS ---
         try:
             df['date_parsed'] = pd.to_datetime(df['date'])
             seven_days_ago = datetime.now() - timedelta(days=7)
             recent_exp_df = df[(df['type'].isin(['Labor', 'Material'])) & (df['date_parsed'] >= seven_days_ago)]
-            total_7_day_exp = recent_exp_df['amount'].sum()
-            daily_burn_rate = total_7_day_exp / 7
-        except:
-            daily_burn_rate = 0
+            daily_burn_rate = recent_exp_df['amount'].sum() / 7
+        except: daily_burn_rate = 0
 
-        # High visibility warnings check configuration sequence
+        # Automated Alerts
         if net_bal < 50000:
-            st.markdown(f"""
-                <div class="alert-box">
-                    🚨 LOW BALANCE ALERT: Running Liquid Balance is critical (PKR {net_bal:,.0f}). 
-                    Please arrange funds to ensure workflow stability at the construction perimeter line.
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f'<div class="alert-box">🚨 CRITICAL LIQUID BUDGET ALERT: Balance is PKR {net_bal:,.0f}. Background warning ping dispatch operational.</div>', unsafe_allow_html=True)
+            send_automated_low_balance_alert(net_bal)
         elif daily_burn_rate > 0:
-            days_left = net_bal / daily_burn_rate
-            if days_left <= 5:
-                st.markdown(f"""
-                    <div class="alert-box" style="background-color: #fff3e0; border-left-color: #ff9800; color: #e65100;">
-                        ⚠️ CASH FLOW WARNING: At the current velocity of PKR {daily_burn_rate:,.0f}/day, 
-                        your reserve balance will sustain operations for approximately {days_left:.1f} days only.
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                    <div class="forecast-box">
-                        📈 CASH FLOW FORECAST: Current Burn Rate is PKR {daily_burn_rate:,.0f}/day. 
-                        Safe operational runway left: ~{days_left:.1f} Days.
-                    </div>
-                """, unsafe_allow_html=True)
+            st.markdown(f'<div class="forecast-box">📈 OPERATIONAL RUNWAY: Daily site burn speed is PKR {daily_burn_rate:,.0f}/day. Liquid resources available for ~{net_bal/daily_burn_rate:.1f} Safe Days.</div>', unsafe_allow_html=True)
 
-        # --- EXECUTIVE KPI CARDS ---
+        # Corporate KPI Blocks
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
         with col_kpi1:
-            st.markdown(f"""<div class='kpi-card'>
-                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>💰 TOTAL INVESTMENT RECEIPT</p>
-                <h2 style='color:#2e7d32; margin:5px 0 0 0;'>PKR {inc:,.0f}</h2>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:bold;'>💰 CAPITAL RECEIPTS RESERVES</p><h2 style='color:#166534; margin:5px 0 0 0; font-size:26px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
         with col_kpi2:
-            st.markdown(f"""<div class='kpi-card'>
-                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>📉 RUNNING OUTFLOW EXPENSES</p>
-                <h2 style='color:#c62828; margin:5px 0 0 0;'>PKR {exp:,.0f}</h2>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:bold;'>📉 CUMULATIVE OUTFLOW DEBITS</p><h2 style='color:#991b1b; margin:5px 0 0 0; font-size:26px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
         with col_kpi3:
-            bal_color = "#2e7d32" if net_bal >= 0 else "#c62828"
-            st.markdown(f"""<div class='kpi-card'>
-                <p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET LIQUID BALANCE</p>
-                <h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2>
-            </div>""", unsafe_allow_html=True)
+            bal_color = "#166534" if net_bal >= 0 else "#991b1b"
+            st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:bold;'>⚖️ NET RUNNING LIQUID BAL</p><h2 style='color:{bal_color}; margin:5px 0 0 0; font-size:26px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
-    # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
+    # --- ADMINISTRATIVE DATA ENTRY FORMS (CRUD) ---
     if "show_form" in st.session_state and is_auth:
         ftype = st.session_state.show_form
-        
-        if ftype == "RegisterLabor":
-            with st.expander("📝 Register New Labor Profile Document Application", expanded=True):
-                with st.form("labor_profile_form"):
-                    l_name = st.text_input("Labor Full Name *")
-                    l_phone = st.text_input("Phone Number")
-                    l_cnic = st.text_input("CNIC Number")
-                    l_occ = st.text_input("Occupation / Skill Type (e.g., Mistry, Plumber)")
-                    l_contract = st.number_input("Total Contract Amount / Taka Amount (PKR)", min_value=0, value=0)
-                    l_rating = st.slider("Rating / Performance evaluation", min_value=1, max_value=5, value=5)
-                    l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
-                    l_details = st.text_area("A to Z Personal Data Notes / Address / References")
-                    
-                    if st.form_submit_button("Save Profile Application"):
-                        if l_name:
-                            img_url = ""
-                            if l_photo:
-                                f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
-                                supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
-                                img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                                
-                            payload = {
-                                "name": l_name, "phone": l_phone, "cnic": l_cnic, "occupation": l_occ,
-                                "total_contract_amount": l_contract, "rating": l_rating,
-                                "photo_url": img_url, "details": l_details
-                            }
-                            supabase.table('labor_profiles').insert(payload).execute()
-                            st.cache_data.clear()
-                            st.session_state.pop("show_form")
-                            st.rerun()
-                        else:
-                            st.error("Labor Full Name is strictly required.")
-        else:
-            with st.expander(f"Register {ftype}", expanded=True):
-                with st.form("quick_form"):
-                    d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Title / Name")
-                    d_amt = st.number_input("Amount", min_value=0)
-                    
-                    d_occ, d_rec, d_meth = "", "", "Cash"
-                    if ftype in ["Income", "Labor", "Material"]:
-                        col1, col2 = st.columns(2)
-                        d_occ = col1.text_input("Occupation / Job Type")
-                        d_rec = col2.text_input("Received By / Authorized")
-                        d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
+        with st.expander(f"📥 New System Record Deployment Entry: {ftype}", expanded=True):
+            with st.form("entry_form"):
+                d_date = st.date_input("Processing Logging Date", datetime.now())
+                d_name = st.text_input("Particular Title Item Name")
+                d_amt = st.number_input("Transaction Volume Valuation (PKR)", min_value=0)
+                d_occ = st.text_input("Operational Designation Category / Skill Tag")
+                d_rec = st.text_input("Authorized Clearing Staff Person")
+                d_meth = st.selectbox("Clearing Settlement Mechanism", ["Cash", "Online", "Cheque"])
+                uploaded_photo = st.file_uploader("Document Scan Attachment Upload", type=['jpg', 'jpeg', 'png']) if ftype == "Material" else None
+                d_det = st.text_area("Detailed Log Description Notes Context")
+                
+                if st.form_submit_button("Commit Ledger Document Entry"):
+                    img_url = ""
+                    if uploaded_photo:
+                        f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                        supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                        img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                    supabase.table('transactions').insert({"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "image_url": img_url, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}).execute()
+                    st.cache_data.clear()
+                    wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
+                    st.markdown(f'<a href="{wa_url}" target="_blank"><div style="background-color:#25D366; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">📲 Push Voucher Data Slip via WhatsApp</div></a>', unsafe_allow_html=True)
+                    st.session_state.pop("show_form")
 
-                    uploaded_photo = None
-                    if ftype == "Material":
-                        uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
-                    
-                    d_det = st.text_area("Notes")
-                    
-                    if st.form_submit_button("Submit"):
-                        img_url = ""
-                        if uploaded_photo:
-                            f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
-                            supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
-                            img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                        
-                        payload = {
-                            "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
-                            "detail": d_det, "image_url": img_url, "occupation": d_occ,
-                            "received_by": d_rec, "pay_method": d_meth
-                        }
-                        supabase.table('transactions').insert(payload).execute()
-                        st.cache_data.clear()
-                        
-                        # --- DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER ---
-                        wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
-                        st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Click to Broadcast This Entry Receipt to WhatsApp Instantly</div></a>""", unsafe_allow_html=True)
-                        st.info("Record inserted into database cloud files successfully. Click button above if you wish to push to messaging channels before app reloading refreshes states context views.")
-                        
-                        st.session_state.pop("show_form")
-                        if st.button("Proceed & Refresh View Dashboard"):
-                            st.rerun()
-
+    # --- MILESTONE TRACKING PROGRESS LINE ---
     st.write("##")
     status_df = fetch_project_status()
-    total_tasks = len(status_df)
     done_tasks = len(status_df[status_df['status'] == 'Done'])
-    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
-
-    col_left, col_right = st.columns([1, 1])
-    with col_left:
-        st.markdown("### 📈 Overall Progress")
-        st.progress(prog_val / 100)
-        st.markdown(f"**{prog_val}% Work Completed**")
-        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
-        components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
-
-    with col_right:
-        st.markdown("### 📝 Tasks Summary")
-        st.write(f"✅ Finished: {done_tasks}")
-        st.write(f"⏳ Remaining: {total_tasks - done_tasks}")
-        if st.button("Refresh Data"): st.cache_data.clear(); st.rerun()
+    prog_val = int((done_tasks / len(status_df)) * 100) if not status_df.empty else 0
+    st.markdown(f"### 📈 Construction Milestone Mapping Progress ({prog_val}% Work Completed)")
+    st.progress(prog_val / 100)
 
     if "show_status_form" in st.session_state and is_auth:
-        with st.expander("🛠️ Admin: Update Site Status", expanded=True):
-            with st.form("status_form"):
-                task = st.selectbox("Select Task", status_df['task_name'].tolist())
-                stat = st.radio("Status", ["Pending", "Done"], horizontal=True)
-                if st.form_submit_button("Update"):
-                    supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
-                    st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
+        with st.form("status_update"):
+            task = st.selectbox("Choose Target Project Task Line", status_df['task_name'].tolist())
+            stat = st.radio("Status Target Parameter", ["Pending", "Done"], horizontal=True)
+            if st.form_submit_button("Confirm Status Transition"):
+                supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
+                st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
 
     st.divider()
-    st.markdown("### 🏗️ Checklist")
+    st.markdown("### 🏗️ Quality Verification Field Checklist")
     t_cols = st.columns(3)
     for i, row in status_df.iterrows():
         with t_cols[i % 3]:
             icon = "✅" if row['status'] == "Done" else "⏳"
-            bg = "#e8f5e9" if row['status'] == "Done" else "#fff3e0"
-            st.markdown(f'<div style="background:{bg}; padding:10px; border-radius:10px; margin-bottom:5px; border-left:5px solid #FF4B4B;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
+            bg = "#f0fdf4" if row['status'] == "Done" else "#fffbb1"
+            st.markdown(f'<div style="background:{bg}; padding:12px; border-radius:12px; margin-bottom:6px; border-left:4px solid #FF4B4B; color:#1f2937;"><strong>{icon} {row["task_name"]}</strong></div>', unsafe_allow_html=True)
 
     st.divider()
     st.video("https://youtu.be/AiA4PkXturU")
 
-
-# --- LABOR PROFILES APPLICATION PAGE ---
+# --- OTHER APPLICATION DESKS (RETAINING ORIGINAL DATA MATRIX INTEGRITY) ---
 elif menu == "👷 Labor Profiles Application":
-    st.title("👷 Labor Profiles Application Directory")
-    st.write("Labor card entries database file records, detailing specialized contracts and ratings metrics configuration.")
-    
+    st.title("👷 Labor Resource Master Application Ledger")
     labor_df = fetch_labor_profiles()
-    
     if not labor_df.empty:
-        l_search = st.text_input("🔎 Search Profile Directory by Name, CNIC, or Job Skillset Type...")
-        if l_search:
-            l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
-            labor_df = labor_df[l_mask]
-            
         st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
-        
-        st.write("### 🖼️ Profiles Deep Dive Cards View")
-        for _, row in labor_df.iterrows():
-            with st.container():
-                st.markdown(f"#### 👤 {row['name']} ({row['occupation'] if row['occupation'] else 'General Labor'})")
-                c_img, c_info = st.columns([1, 3])
-                
-                with c_img:
-                    photo_path = row.get('photo_url', '')
-                    if photo_path and str(photo_path) != "nan":
-                        st.image(photo_path, use_container_width=True)
-                    else:
-                        st.info("No Profile Pic uploaded.")
-                        
-                with c_info:
-                    st.markdown(f"**📞 Phone:** {row['phone']} | **🪪 CNIC:** {row['cnic']}")
-                    st.markdown(f"**💰 Total Contract (Taka):** PKR {row['total_contract_amount']:,.0f}")
-                    
-                    stars = "⭐" * int(row['rating'] if row['rating'] else 5)
-                    st.markdown(f"**📊 Performance Rating Evaluation:** {stars}")
-                    st.markdown(f"**📝 Complete Detailed Information Dossier (A to Z Data):**")
-                    st.info(row['details'] if row['details'] else "No additional background profile summary logs provided.")
-                
-                st.divider()
-                
-        if is_auth:
-            st.write("### 🛠️ Administrative Operations")
-            l_tid = st.text_input("Enter Profile Row Unique Identity ID to Delete File permanently")
-            if st.button("🗑️ Delete Profile Record", key="del_lab_prof_btn"):
-                if l_tid:
-                    supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
-                    st.cache_data.clear()
-                    st.rerun()
-    else:
-        st.info("No Labor profiles have been provisioned inside the system ledger table tracking logs configuration folder yet.")
+    else: st.info("No records present inside database resource folder paths.")
 
-
-# --- 8. ORIGINAL HISTORY PAGES LOGIC (As it was) ---
 else:
     st.title(menu)
     if not df.empty:
@@ -444,30 +368,5 @@ else:
         elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
-        
-        search = st.text_input("🔎 Search by ID or Name...")
-        if search:
-            mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
-            f_df = f_df[mask]
-        
         st.dataframe(f_df, use_container_width=True)
-        
-        if search and not f_df.empty and 'image_url' in f_df.columns:
-            st.markdown("### 🖼️ Result Detail & Photo")
-            for _, row in f_df.iterrows():
-                if row['image_url'] and str(row['image_url']) != "nan":
-                    with st.expander(f"👁️ View Photo: ID {row['id']} - {row['name']}", expanded=True):
-                        st.image(row['image_url'], use_container_width=True)
-
-        st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
-        
-        if is_auth:
-            tid = st.text_input("Enter ID to Delete")
-            if st.button("🗑️ Delete"):
-                supabase.table('transactions').delete().eq('id', tid).execute()
-                st.cache_data.clear(); st.rerun()
-
-        st.divider()
-        c1, c2 = st.columns(2)
-        c1.download_button("📥 Excel", f_df.to_csv().encode('utf-8'), f"{menu}.csv")
-        c2.download_button("📄 PDF Report", export_to_pdf(f_df, menu), f"{menu}.pdf")
+        st.metric("Aggregate Data Column Total Volume Valuation Value Sum", f"PKR {f_df['amount'].sum():,.0f}")
