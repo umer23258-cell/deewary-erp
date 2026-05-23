@@ -290,17 +290,109 @@ if not raw_df.empty and 'project_context' in raw_df.columns:
 if "selected_project" not in st.session_state:
     st.session_state["selected_project"] = st.session_state["custom_projects"][0]
 
+# --- 6. POPUP POPAL DIALOG FORMS DEFINITIONS ---
+@st.dialog("📁 Create New Project Site Context")
+def popup_create_project():
+    with st.form("new_project_form"):
+        new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
+        st.write("ℹ️ *Note: Naya project database setup list mein save ho jayega.*")
+        if st.form_submit_button("Launch Project Context"):
+            if new_proj_name:
+                if new_proj_name not in st.session_state["custom_projects"]:
+                    st.session_state["custom_projects"].append(new_proj_name)
+                st.session_state["selected_project"] = new_proj_name
+                st.success(f"Project '{new_proj_name}' state contextualized!")
+                st.rerun()
+            else: st.error("Project identity descriptor required.")
 
-# --- 6. NAVIGATION MANAGER FOR QUICK BUTTONS ---
-# Initialize radio index tracker
-if "current_page" not in st.session_state:
-    st.session_state["current_page"] = "📊 Dashboard"
+@st.dialog("📝 Register New Labor Profile")
+def popup_register_labor(current_project):
+    st.write(f"Adding to project: **{current_project}**")
+    with st.form("labor_profile_form"):
+        l_name = st.text_input("Labor Full Name *")
+        l_phone = st.text_input("Phone Number")
+        l_cnic = st.text_input("CNIC Number")
+        l_occ = st.text_input("Occupation / Skill Type")
+        l_contract = st.number_input("Total Contract Amount (PKR)", min_value=0, value=0)
+        l_rating = st.slider("Rating", min_value=1, max_value=5, value=5)
+        l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
+        l_details = st.text_area("A to Z Personal Data Notes")
+        
+        if st.form_submit_button("Save Profile Application"):
+            if l_name:
+                img_url = ""
+                if l_photo:
+                    f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
+                    supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
+                    img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                
+                payload = {
+                    "name": l_name, "phone": l_phone, "cnic": l_cnic, "occupation": l_occ,
+                    "total_contract_amount": l_contract, "rating": l_rating,
+                    "photo_url": img_url, "details": l_details, "project_context": current_project
+                }
+                supabase.table('labor_profiles').insert(payload).execute()
+                st.cache_data.clear()
+                st.success("Labor profile registered successfully!")
+                st.rerun()
+            else: st.error("Labor Full Name is required.")
 
-# Helper function to auto-switch screen focus to Dashboard form
-def redirect_to_form(form_type):
-    st.session_state.show_form = form_type
-    st.session_state["current_page"] = "📊 Dashboard"
-    st.rerun()
+@st.dialog("📝 Log Dynamic Transaction Entry")
+def popup_transaction_entry(ftype, current_project):
+    st.write(f"Logging **{ftype}** entry for active project site: **{current_project}**")
+    with st.form("quick_form"):
+        d_date = st.date_input("Date", datetime.now())
+        d_name = st.text_input("Title / Name / Particular")
+        d_amt = st.number_input("Amount (PKR)", min_value=0)
+        d_occ, d_rec, d_meth = "", "", "Cash"
+        
+        col1, col2 = st.columns(2)
+        d_occ = col1.text_input("Occupation / Job Type")
+        d_rec = col2.text_input("Received By / Authorized")
+        d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
+        
+        uploaded_photo = None
+        if ftype == "Material": 
+            uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
+            
+        d_det = st.text_area("Notes / Particular Specs")
+        
+        if st.form_submit_button("Submit Transaction"):
+            if d_name and d_amt > 0:
+                img_url = ""
+                if uploaded_photo:
+                    f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                    supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                    img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+                
+                payload = {
+                    "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
+                    "detail": d_det, "image_url": img_url, "occupation": d_occ,
+                    "received_by": d_rec, "pay_method": d_meth, "project_context": current_project
+                }
+                supabase.table('transactions').insert(payload).execute()
+                st.cache_data.clear()
+                
+                # Dynamic generation link display
+                wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det, current_project)
+                st.success("Entry Saved successfully!")
+                st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:10px; border-radius:5px; text-align:center; font-weight:bold; margin-top:5px;">📲 Share Via WhatsApp Broadcast</div></a>""", unsafe_allow_html=True)
+                if st.button("Close Window & Refresh Sheet"):
+                    st.rerun()
+            else: st.error("Valid Title and Amount required.")
+
+@st.dialog("🛠️ Update Site Checklist Status")
+def popup_update_status(current_project, status_df):
+    with st.form("status_form"):
+        task = st.selectbox("Select Task Line Target", status_df['task_name'].tolist())
+        stat = st.radio("Status Milestone Alignment", ["Pending", "Done"], horizontal=True)
+        if st.form_submit_button("Update Task Line"):
+            try:
+                supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name").execute()
+            except: pass
+            st.cache_data.clear()
+            st.success("Task updated!")
+            st.rerun()
 
 
 # --- 7. SIDEBAR DESIGN ---
@@ -317,33 +409,26 @@ with st.sidebar:
     st.info(f"📍 Active Site: **{st.session_state['selected_project']}**")
     st.divider()
     
-    # Dynamic list for radio menu controlled by session state
-    menu_options = ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
-    
     menu = st.radio(
         "Go To", 
-        menu_options, 
-        index=menu_options.index(st.session_state["current_page"]) if st.session_state["current_page"] in menu_options else 0,
-        key="navigation_radio"
+        ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
     )
-    st.session_state["current_page"] = menu # Save manual clicks
     st.divider()
     is_auth = check_password()
     
     if is_auth:
         st.success("🔓 Admin Mode")
-        st.write("### ⚡ Quick Actions")
-        # Direct redirect and execution triggers fixed here
-        if st.button("➕ Income", use_container_width=True): redirect_to_form("Income")
-        if st.button("👷 Labor", use_container_width=True): redirect_to_form("Labor")
-        if st.button("🏗️ Material", use_container_width=True): redirect_to_form("Material")
-        if st.button("📝 Register New Labor Profile", use_container_width=True): redirect_to_form("RegisterLabor")
-        if st.button("📁 Create New Project Site", use_container_width=True): redirect_to_form("CreateProject")
+        st.write("### ⚡ Quick Actions (Popups)")
+        # Triggering the advanced Popups dynamically instantly anywhere!
+        if st.button("➕ Income", use_container_width=True): popup_transaction_entry("Income", st.session_state["selected_project"])
+        if st.button("👷 Labor", use_container_width=True): popup_transaction_entry("Labor", st.session_state["selected_project"])
+        if st.button("🏗️ Material", use_container_width=True): popup_transaction_entry("Material", st.session_state["selected_project"])
+        if st.button("📝 Register New Labor Profile", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
+        if st.button("📁 Create New Project Site", use_container_width=True): popup_create_project()
         st.divider()
         if st.button("⚙️ Change Task Status"): 
-            st.session_state.show_status_form = True
-            st.session_state["current_page"] = "📊 Dashboard"
-            st.rerun()
+            _status_df = fetch_project_status(st.session_state["selected_project"])
+            popup_update_status(st.session_state["selected_project"], _status_df)
         if st.button("Logout"):
             st.session_state["authenticated"] = False
             st.rerun()
@@ -371,8 +456,8 @@ else:
     labor_df = pd.DataFrame()
 
 
-# --- 9. RENDER PAGES ---
-if st.session_state["current_page"] == "📊 Dashboard":
+# --- 9. RENDER ACTIVE MAIN PAGE ---
+if menu == "📊 Dashboard":
     st.markdown(f"""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
@@ -382,89 +467,6 @@ if st.session_state["current_page"] == "📊 Dashboard":
             </div>
         </div>
     """, unsafe_allow_html=True)
-
-    # --- FORMS MANAGEMENT HANDLING (Renders immediately at top when triggered) ---
-    if "show_form" in st.session_state and is_auth:
-        ftype = st.session_state.show_form
-        
-        if ftype == "CreateProject":
-            with st.expander("📁 Launch New Project Site Perimeter", expanded=True):
-                with st.form("new_project_form"):
-                    new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
-                    st.write("ℹ️ *Note: Naya project yahan banne ke baad dropdown list mein shamil ho jayega.*")
-                    if st.form_submit_button("Launch New Project Context"):
-                        if new_proj_name:
-                            if new_proj_name not in st.session_state["custom_projects"]:
-                                st.session_state["custom_projects"].append(new_proj_name)
-                            st.session_state["selected_project"] = new_proj_name
-                            st.success(f"Project '{new_proj_name}' state contextualized!")
-                            st.session_state.pop("show_form")
-                            st.rerun()
-                        else: st.error("Project identity descriptor required.")
-                        
-        elif ftype == "RegisterLabor":
-            with st.expander(f"📝 Register New Labor Profile under {current_project}", expanded=True):
-                with st.form("labor_profile_form"):
-                    l_name = st.text_input("Labor Full Name *")
-                    l_phone = st.text_input("Phone Number")
-                    l_cnic = st.text_input("CNIC Number")
-                    l_occ = st.text_input("Occupation / Skill Type")
-                    l_contract = st.number_input("Total Contract Amount (PKR)", min_value=0, value=0)
-                    l_rating = st.slider("Rating", min_value=1, max_value=5, value=5)
-                    l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
-                    l_details = st.text_area("A to Z Personal Data Notes")
-                    
-                    if st.form_submit_button("Save Profile Application"):
-                        if l_name:
-                            img_url = ""
-                            if l_photo:
-                                f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
-                                supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
-                                img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                            
-                            payload = {
-                                "name": l_name, "phone": l_phone, "cnic": l_cnic, "occupation": l_occ,
-                                "total_contract_amount": l_contract, "rating": l_rating,
-                                "photo_url": img_url, "details": l_details, "project_context": current_project
-                            }
-                            supabase.table('labor_profiles').insert(payload).execute()
-                            st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
-                        else: st.error("Labor Full Name is required.")
-        else:
-            with st.expander(f"📝 Register New {ftype} Log Entry for {current_project}", expanded=True):
-                with st.form("quick_form"):
-                    d_date = st.date_input("Date", datetime.now())
-                    d_name = st.text_input("Title / Name")
-                    d_amt = st.number_input("Amount", min_value=0)
-                    d_occ, d_rec, d_meth = "", "", "Cash"
-                    if ftype in ["Income", "Labor", "Material"]:
-                        col1, col2 = st.columns(2)
-                        d_occ = col1.text_input("Occupation / Job Type")
-                        d_rec = col2.text_input("Received By / Authorized")
-                        d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
-                    uploaded_photo = None
-                    if ftype == "Material": uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
-                    d_det = st.text_area("Notes")
-                    
-                    if st.form_submit_button("Submit Entry"):
-                        img_url = ""
-                        if uploaded_photo:
-                            f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
-                            supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
-                            img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                        
-                        payload = {
-                            "date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, 
-                            "detail": d_det, "image_url": img_url, "occupation": d_occ,
-                            "received_by": d_rec, "pay_method": d_meth, "project_context": current_project
-                        }
-                        supabase.table('transactions').insert(payload).execute()
-                        st.cache_data.clear()
-                        
-                        wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det, current_project)
-                        st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Broadcast to WhatsApp</div></a>""", unsafe_allow_html=True)
-                        st.session_state.pop("show_form")
-                        if st.button("Proceed & Refresh Dashboard"): st.rerun()
 
     inc, lab_exp, mat_exp, exp, net_bal = 0, 0, 0, 0, 0
     if not df.empty:
@@ -543,18 +545,6 @@ if st.session_state["current_page"] == "📊 Dashboard":
         st.write(f"✅ Finished: {done_tasks} | ⏳ Remaining: {total_tasks - done_tasks}")
         if st.button("Force Refresh Tracker Context"): st.cache_data.clear(); st.rerun()
 
-    if "show_status_form" in st.session_state and is_auth:
-        with st.expander(f"🛠️ Update Site Status: {current_project}", expanded=True):
-            with st.form("status_form"):
-                task = st.selectbox("Select Task", status_df['task_name'].tolist())
-                stat = st.radio("Status", ["Pending", "Done"], horizontal=True)
-                if st.form_submit_button("Update Task Line"):
-                    try:
-                        supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name").execute()
-                    except:
-                        st.warning("Project configuration saved locally.")
-                    st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
-
     st.divider()
     st.markdown("### 🏗️ Checklist Mapping")
     t_cols = st.columns(3)
@@ -567,7 +557,7 @@ if st.session_state["current_page"] == "📊 Dashboard":
 
 
 # --- LABOR PROFILES APPLICATION PAGE ---
-elif st.session_state["current_page"] == "👷 Labor Profiles Application":
+elif menu == "👷 Labor Profiles Application":
     st.title(f"👷 Labor Profiles Application ({current_project})")
     
     if not labor_df.empty:
@@ -630,11 +620,11 @@ elif st.session_state["current_page"] == "👷 Labor Profiles Application":
 
 # --- ORIGINAL HISTORY PAGES LOGIC (Project Restricted) ---
 else:
-    st.title(f"{st.session_state['current_page']} ({current_project})")
+    st.title(f"{menu} ({current_project})")
     if not df.empty:
-        if "Income" in st.session_state["current_page"]: f_df = df[df['type'] == 'Income']
-        elif "Labor" in st.session_state["current_page"]: f_df = df[df['type'] == 'Labor']
-        elif "Material" in st.session_state["current_page"]: f_df = df[df['type'] == 'Material']
+        if "Income" in menu: f_df = df[df['type'] == 'Income']
+        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
+        elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
         
         search = st.text_input("🔎 Search by ID or Name...")
@@ -653,6 +643,6 @@ else:
 
         st.divider()
         c1, c2 = st.columns(2)
-        c1.download_button("📥 Excel", f_df.to_csv().encode('utf-8'), f"{st.session_state['current_page']}_{current_project}.csv")
-        c2.download_button("📄 PDF Report", export_to_pdf(f_df, st.session_state["current_page"]), f"{st.session_state['current_page']}_{current_project}.pdf")
+        c1.download_button("📥 Excel", f_df.to_csv().encode('utf-8'), f"{menu}_{current_project}.csv")
+        c2.download_button("📄 PDF Report", export_to_pdf(f_df, menu), f"{menu}_{current_project}.pdf")
     else: st.info(f"No database ledger records tracked under project site: {current_project}")
