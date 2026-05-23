@@ -25,7 +25,7 @@ def export_to_pdf(dataframe, title):
     styles = getSampleStyleSheet()
     
     elements.append(Paragraph(f"<font color='#FF4B4B' size=18><b>{title}</b></font>", styles['Title']))
-    elements.append(Paragraph(f"Deewary.com ERP - Full System Report", styles['Normal']))
+    elements.append(Paragraph(f"Deewaryn.com ERP - Full System Report", styles['Normal']))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 15))
 
@@ -74,7 +74,7 @@ def export_labor_profile_pdf(labor_row, payments_df):
     styles = getSampleStyleSheet()
     
     # Header
-    elements.append(Paragraph(f"<font color='#1e1e1e' size=22><b>DEEWARY.COM ERP</b></font>", styles['Title']))
+    elements.append(Paragraph(f"<font color='#1e1e1e' size=22><b>DEEWARYN.COM ERP</b></font>", styles['Title']))
     elements.append(Paragraph(f"<font color='#FF4B4B' size=14><b>LABOR PROFILE DOSSIER & LEDGER REPORT</b></font>", styles['Normal']))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 20))
@@ -155,7 +155,7 @@ def export_labor_profile_pdf(labor_row, payments_df):
 
 
 # --- 3. PAGE CONFIG ---
-st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
+st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -262,7 +262,7 @@ def check_password():
     return False
 
 def generate_whatsapp_link(type_tx, name, amount, detail, project):
-    base_msg = f"🏗️ *Deewary.com ERP Notification*\n"
+    base_msg = f"🏗️ *Deewaryn.com ERP Notification*\n"
     base_msg += f"• *Project:* {project}\n"
     base_msg += f"• *Type:* {type_tx}\n"
     base_msg += f"• *Name/Item:* {name}\n"
@@ -503,7 +503,7 @@ else:
 
 # --- 8. SIDEBAR DESIGN ---
 with st.sidebar:
-    st.title("🏗️ DEEWARY ERP")
+    st.title("🏗️ DEEWARYN ERP")
     
     st.markdown("### 📁 Select Active Site Project")
     selected_proj = st.selectbox(
@@ -545,7 +545,7 @@ with st.sidebar:
 if menu == "📊 Dashboard":
     st.markdown(f"""
         <div class="header-box">
-            <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARY.COM</h1>
+            <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px;">DEEWARYN.COM</h1>
             <p style="color: white; letter-spacing: 2px; font-size: 14px; margin-bottom: 10px;">PREMIUM SITE MANAGEMENT: {current_project.upper()}</p>
             <div style="background: #FF4B4B; color: white; display: inline-block; padding: 5px 15px; border-radius: 5px; font-weight: bold; font-size: 14px;">
                 C.E.O: SARDAR SAMI ULLAH
@@ -631,7 +631,7 @@ elif menu == "📑 Receipt Voucher System":
         st.markdown(f"""
             <div class="digital-voucher">
                 <div class="voucher-header">
-                    <h3 style="margin: 0; color: #1e1e1e; letter-spacing: 2px;">DEEWARY.COM</h3>
+                    <h3 style="margin: 0; color: #1e1e1e; letter-spacing: 2px;">DEEWARYN.COM</h3>
                     <p style="margin: 4px 0 0 0; font-size: 11px; color: #6c757d; font-weight: bold;">OFFICIAL LOGISTIC TRANSACTION VOUCHER</p>
                 </div>
                 <div class="voucher-row"><span>Voucher No:</span><b>{v_number}</b></div>
