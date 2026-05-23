@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 import io
 import urllib.parse
 import streamlit.components.v1 as components
-
+import requests  # Image fetch karne ke liye
 # PDF ke liye libraries
 from reportlab.lib.pagesizes import letter, landscape
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 
@@ -64,6 +64,95 @@ def export_to_pdf(dataframe, title):
     doc.build(elements)
     buf.seek(0)
     return buf
+
+
+# --- NEW: INDIVIDUAL LABOR PROFILE PRINT PDF FUNCTION ---
+def export_labor_profile_pdf(labor_row, payments_df):
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Header
+    elements.append(Paragraph(f"<font color='#1e1e1e' size=22><b>DEEWARY.COM ERP</b></font>", styles['Title']))
+    elements.append(Paragraph(f"<font color='#FF4B4B' size=14><b>LABOR PROFILE DOSSIER & LEDGER REPORT</b></font>", styles['Normal']))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Profile Picture Logic (If available, fetch and add to PDF)
+    photo_url = labor_row.get('photo_url', '')
+    if photo_url and str(photo_url) != "nan" and photo_url.startswith("http"):
+        try:
+            img_data = requests.get(photo_url).content
+            img_buf = io.BytesIO(img_data)
+            img = Image(img_buf, width=100, height=100)
+            img.hAlign = 'LEFT'
+            elements.append(img)
+            elements.append(Spacer(1, 15))
+        except:
+            elements.append(Paragraph("<i>[Profile Image Attached in Cloud File]</i>", styles['Normal']))
+            elements.append(Spacer(1, 10))
+
+    # Personal Details Table
+    det_data = [
+        [Paragraph("<b>Full Name:</b>", styles['Normal']), Paragraph(str(labor_row['name']), styles['Normal'])],
+        [Paragraph("<b>Occupation / Skill:</b>", styles['Normal']), Paragraph(str(labor_row['occupation'] if labor_row['occupation'] else 'General Labor'), styles['Normal'])],
+        [Paragraph("<b>Phone Number:</b>", styles['Normal']), Paragraph(str(labor_row['phone']), styles['Normal'])],
+        [Paragraph("<b>CNIC Number:</b>", styles['Normal']), Paragraph(str(labor_row['cnic']), styles['Normal'])],
+        [Paragraph("<b>Total Contract (Taka):</b>", styles['Normal']), Paragraph(f"PKR {labor_row['total_contract_amount']:,.0f}", styles['Normal'])],
+        [Paragraph("<b>Personal Details / Notes:</b>", styles['Normal']), Paragraph(str(labor_row['details'] if labor_row['details'] else 'N/A'), styles['Normal'])],
+    ]
+    det_table = Table(det_data, colWidths=[150, 350])
+    det_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor("#f8f9fa")),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    elements.append(det_table)
+    elements.append(Spacer(1, 20))
+    
+    # Payments History Table Section
+    elements.append(Paragraph("<font color='#1e1e1e' size=12><b>💵 STATEMENT OF PAID PAYMENTS HISTORY</b></font>", styles['Heading2']))
+    elements.append(Spacer(1, 5))
+    
+    pay_data = [["ID", "Date", "Payment Channel / Method", "Amount (PKR)", "Remarks / Details"]]
+    if not payments_df.empty:
+        for _, p in payments_df.iterrows():
+            pay_data.append([
+                str(p.get('id', '')),
+                str(p.get('date', '')),
+                str(p.get('pay_method', 'Cash')),
+                f"{p.get('amount', 0):,.0f}",
+                str(p.get('detail', ''))
+            ])
+        total_p = payments_df['amount'].sum()
+        pay_data.append(["", "", "TOTAL PAID AMOUNT:", f"{total_p:,.0f}", ""])
+    else:
+        pay_data.append(["-", "-", "No active transaction logs.", "0", "-"])
+        
+    pay_table = Table(pay_data, colWidths=[40, 80, 150, 100, 150])
+    pay_style = [
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.lightgrey),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]
+    if not payments_df.empty:
+        pay_style.extend([
+            ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
+            ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ])
+    pay_table.setStyle(TableStyle(pay_style))
+    elements.append(pay_table)
+    
+    doc.build(elements)
+    buf.seek(0)
+    return buf
+
 
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP", layout="wide", page_icon="🏗️")
@@ -228,7 +317,7 @@ if menu == "📊 Dashboard":
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
-        # --- CASH FLOW FORECAST & ALERTS ---
+        # --- NEW CONTEXT BLOCK: CASH FLOW FORECAST & ALERTS ---
         try:
             df['date_parsed'] = pd.to_datetime(df['date'])
             seven_days_ago = datetime.now() - timedelta(days=7)
@@ -238,6 +327,7 @@ if menu == "📊 Dashboard":
         except:
             daily_burn_rate = 0
 
+        # High visibility warnings check configuration sequence
         if net_bal < 50000:
             st.markdown(f"""
                 <div class="alert-box">
@@ -303,8 +393,6 @@ if menu == "📊 Dashboard":
                 <div class="voucher-row"><span>Log Date:</span><span>{v_row['date']}</span></div>
                 <div class="voucher-row"><span>Flow Category:</span><span>{str(v_row['type']).upper()}</span></div>
                 <div class="voucher-row"><span>Particular Name:</span><b>{v_row['name']}</b></div>
-                <div class="voucher-row"><span>Job Designation:</span><span>{v_row['occupation'] if v_row['occupation'] else 'General/Unassigned'}</span></div>
-                <div class="voucher-row"><span>Authorized Dispense:</span><span>{v_row['received_by'] if v_row['received_by'] else 'Management Desk'}</span></div>
                 <div class="voucher-row"><span>Payment Channel:</span><span>{v_row['pay_method']}</span></div>
                 <div class="voucher-row" style="margin-top: 10px;"><span style="color: #6c757d; font-size: 12px;">Internal Remarks:</span></div>
                 <p style="font-size: 12px; background: #f8f9fa; padding: 8px; border-radius: 5px; margin: 4px 0; font-style: italic; border-left: 3px solid #FF4B4B;">
@@ -316,15 +404,12 @@ if menu == "📊 Dashboard":
                         <span>PKR {v_row['amount']:,.0f}/-</span>
                     </div>
                 </div>
-                <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #94a3b8; line-height: 1.4;">
-                    🔒 Security Track Token Verified<br>Deewary Web Cloud Architecture Service V2.0
-                </div>
             </div>
         """, unsafe_allow_html=True)
     else:
         st.info("No transaction tracking history data available to process live verification vouchers.")
 
-    # --- SHOW FORMS ---
+    # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
     if "show_form" in st.session_state and is_auth:
         ftype = st.session_state.show_form
         
@@ -394,9 +479,10 @@ if menu == "📊 Dashboard":
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
                         
+                        # --- DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER ---
                         wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
                         st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Click to Broadcast This Entry Receipt to WhatsApp Instantly</div></a>""", unsafe_allow_html=True)
-                        st.info("Record inserted into database cloud files successfully.")
+                        st.info("Record inserted into database cloud files successfully. Click button above if you wish to push to messaging channels before app reloading refreshes states context views.")
                         
                         st.session_state.pop("show_form")
                         if st.button("Proceed & Refresh View Dashboard"):
@@ -413,6 +499,8 @@ if menu == "📊 Dashboard":
         st.markdown("### 📈 Overall Progress")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Work Completed**")
+        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff"
+        components.html(f"<div style='background:#f8f9fa; border-radius:10px; padding:10px;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
     with col_right:
         st.markdown("### 📝 Tasks Summary")
@@ -460,17 +548,7 @@ elif menu == "👷 Labor Profiles Application":
         st.write("### 🖼️ Profiles Deep Dive Cards View")
         for _, row in labor_df.iterrows():
             with st.container():
-                labor_name = row['name']
-                paid_amount = 0
-                
-                if not df.empty:
-                    labor_txs = df[(df['type'] == 'Labor') & (df['name'].str.strip().str.lower() == str(labor_name).strip().str.lower())]
-                    paid_amount = labor_txs['amount'].sum()
-                
-                contract_amount = row['total_contract_amount'] if row['total_contract_amount'] else 0
-                remaining_balance = contract_amount - paid_amount
-                
-                st.markdown(f"#### 👤 {labor_name} ({row['occupation'] if row['occupation'] else 'General Labor'})")
+                st.markdown(f"#### 👤 {row['name']} ({row['occupation'] if row['occupation'] else 'General Labor'})")
                 c_img, c_info = st.columns([1, 3])
                 
                 with c_img:
@@ -482,19 +560,43 @@ elif menu == "👷 Labor Profiles Application":
                         
                 with c_info:
                     st.markdown(f"**📞 Phone:** {row['phone']} | **🪪 CNIC:** {row['cnic']}")
+                    st.markdown(f"**💰 Total Contract (Taka):** PKR {row['total_contract_amount']:,.0f}")
                     
-                    col_l1, col_l2, col_l3 = st.columns(3)
-                    col_l1.markdown(f"<div style='background-color:#f1f5f9; padding:10px; border-radius:8px; text-align:center;'>📜 Total Contract<br><b style='color:#1e2937; font-size:16px;'>PKR {contract_amount:,.0f}</b></div>", unsafe_allow_html=True)
-                    col_l2.markdown(f"<div style='background-color:#e8f5e9; padding:10px; border-radius:8px; text-align:center;'>✅ Total Paid Out<br><b style='color:#2e7d32; font-size:16px;'>PKR {paid_amount:,.0f}</b></div>", unsafe_allow_html=True)
-                    
-                    bal_style = "color:#c62828;" if remaining_balance <= 0 and contract_amount > 0 else "color:#ff9800;" if remaining_balance > 0 else "color:#1e2937;"
-                    col_l3.markdown(f"<div style='background-color:#fff3e0; padding:10px; border-radius:8px; text-align:center;'>⏳ Baqaya Balance<br><b style='{bal_style} font-size:16px;'>PKR {remaining_balance:,.0f}</b></div>", unsafe_allow_html=True)
-                    
-                    st.write("")
                     stars = "⭐" * int(row['rating'] if row['rating'] else 5)
                     st.markdown(f"**📊 Performance Rating Evaluation:** {stars}")
-                    st.markdown("**📝 Complete Detailed Information Dossier (A to Z Data):**")
+                    st.markdown(f"**📝 Complete Detailed Information Dossier (A to Z Data):**")
                     st.info(row['details'] if row['details'] else "No additional background profile summary logs provided.")
+                    
+                    # --- AUTOMATIC PAYMENT LEDGER LINKING BLOCK ---
+                    st.markdown("#### 📊 Paid Payments History Ledger (Labor History Sync)")
+                    
+                    # Transactions history data se is labor ke naam par payments track karna
+                    if not df.empty:
+                        # 'Labor' type transactions ko banday ke specific name par match karna
+                        labor_payments = df[(df['type'] == 'Labor') & (df['name'].astype(str).str.lower() == str(row['name']).lower())]
+                        
+                        if not labor_payments.empty:
+                            # Dynamic Statement Matrix grid view table show karna
+                            st.dataframe(labor_payments[['id', 'date', 'pay_method', 'amount', 'detail']], use_container_width=True)
+                            
+                            total_paid = labor_payments['amount'].sum()
+                            st.metric(label=f"Total Amount Paid to {row['name']}", value=f"PKR {total_paid:,.0f}/-")
+                        else:
+                            st.warning("⚠️ No payment logs registered under this exact Labor Name inside History files yet.")
+                            labor_payments = pd.DataFrame() # Blank init for PDF generator block logic safety
+                    else:
+                        st.info("General Transaction History database folder logs empty.")
+                        labor_payments = pd.DataFrame()
+
+                    # --- INDIVIDUAL PROFILE PDF DOWNLOAD PRINT BUTTON ---
+                    pdf_data = export_labor_profile_pdf(row, labor_payments)
+                    st.download_button(
+                        label=f"📄 Print & Download Full Profile Report ({row['name']})",
+                        data=pdf_data,
+                        file_name=f"Labor_Profile_{str(row['name']).replace(' ', '_')}.pdf",
+                        mime="application/pdf",
+                        key=f"dl_pdf_{row['id']}"
+                    )
                 
                 st.divider()
                 
@@ -510,7 +612,7 @@ elif menu == "👷 Labor Profiles Application":
         st.info("No Labor profiles have been provisioned inside the system ledger table tracking logs configuration folder yet.")
 
 
-# --- 8. ORIGINAL HISTORY PAGES LOGIC ---
+# --- 8. ORIGINAL HISTORY PAGES LOGIC (As it was) ---
 else:
     st.title(menu)
     if not df.empty:
