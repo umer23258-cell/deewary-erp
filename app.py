@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import io
 import urllib.parse
 import streamlit.components.v1 as components
+
 # PDF ke liye libraries
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -112,6 +113,23 @@ st.markdown("""
         color: #2e7d32;
         font-weight: bold;
     }
+    
+    /* VIP DIGITAL RECEIPT VOUCHER STYLING */
+    .digital-voucher {
+        background-color: #fefefe;
+        border: 2px dashed #94a3b8;
+        padding: 25px;
+        border-radius: 15px;
+        max-width: 550px;
+        margin: 15px auto;
+        font-family: 'Courier New', Courier, monospace;
+        color: #1e2937;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    }
+    .voucher-header { text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 12px; margin-bottom: 15px; }
+    .voucher-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .voucher-total { font-size: 20px; font-weight: bold; color: #FF4B4B; border-top: 2px dashed #cbd5e1; border-bottom: 2px dashed #cbd5e1; padding: 8px 0; margin-top: 15px; }
+    
     .sidebar-btn-container { margin-bottom: 10px; }
     @media (max-width: 640px) {
         .stButton > button { width: 100%; border-radius: 10px; height: 3.5em; }
@@ -264,6 +282,49 @@ if menu == "📊 Dashboard":
                 <h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2>
             </div>""", unsafe_allow_html=True)
 
+    # --- INTERACTIVE DIGITAL VOUCHER DESK SECTION ---
+    st.write("##")
+    st.markdown("### 📑 System Automated Receipt Slip / Voucher Generator")
+    
+    if not df.empty:
+        df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
+        selected_log = st.selectbox("Select Transaction Log Entry to Generate Parchi:", df['voucher_label'].tolist())
+        
+        v_row = df[df['voucher_label'] == selected_log].iloc[0]
+        v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
+        v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
+        
+        st.markdown(f"""
+            <div class="digital-voucher">
+                <div class="voucher-header">
+                    <h3 style="margin: 0; color: #1e1e1e; letter-spacing: 2px;">DEEWARY.COM</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #6c757d; font-weight: bold;">OFFICIAL LOGISTIC TRANSACTION VOUCHER</p>
+                </div>
+                <div class="voucher-row"><span>Voucher No:</span><b>{v_number}</b></div>
+                <div class="voucher-row"><span>Log Date:</span><span>{v_row['date']}</span></div>
+                <div class="voucher-row"><span>Flow Category:</span><span>{str(v_row['type']).upper()}</span></div>
+                <div class="voucher-row"><span>Particular Name:</span><b>{v_row['name']}</b></div>
+                <div class="voucher-row"><span>Job Designation:</span><span>{v_row['occupation'] if v_row['occupation'] else 'General/Unassigned'}</span></div>
+                <div class="voucher-row"><span>Authorized Dispense:</span><span>{v_row['received_by'] if v_row['received_by'] else 'Management Desk'}</span></div>
+                <div class="voucher-row"><span>Payment Channel:</span><span>{v_row['pay_method']}</span></div>
+                <div class="voucher-row" style="margin-top: 10px;"><span style="color: #6c757d; font-size: 12px;">Internal Remarks:</span></div>
+                <p style="font-size: 12px; background: #f8f9fa; padding: 8px; border-radius: 5px; margin: 4px 0; font-style: italic; border-left: 3px solid #FF4B4B;">
+                    {v_row['detail'] if v_row['detail'] else 'No supplementary descriptive notes entered in database rows.'}
+                </p>
+                <div class="voucher-total">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>VOLUME TOTAL:</span>
+                        <span>PKR {v_row['amount']:,.0f}/-</span>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #94a3b8; line-height: 1.4;">
+                    🔒 Security Track Token Verified<br>Deewary Web Cloud Architecture Service V2.0
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.info("No transaction tracking history data available to process live verification vouchers.")
+
     # --- SHOW FORMS (When buttons in Sidebar are clicked) ---
     if "show_form" in st.session_state and is_auth:
         ftype = st.session_state.show_form
@@ -334,7 +395,6 @@ if menu == "📊 Dashboard":
                         supabase.table('transactions').insert(payload).execute()
                         st.cache_data.clear()
                         
-                        # --- DYNAMIC AUTOMATED WHATSAPP NOTIFICATION TRIGGER ---
                         wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
                         st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-top:10px;">📲 Click to Broadcast This Entry Receipt to WhatsApp Instantly</div></a>""", unsafe_allow_html=True)
                         st.info("Record inserted into database cloud files successfully. Click button above if you wish to push to messaging channels before app reloading refreshes states context views.")
@@ -385,7 +445,7 @@ if menu == "📊 Dashboard":
     st.video("https://youtu.be/AiA4PkXturU")
 
 
-# --- LABOR PROFILES APPLICATION PAGE ---
+# --- LABOR PROFILES APPLICATION PAGE (With Real-Time Ledger Reconciliation) ---
 elif menu == "👷 Labor Profiles Application":
     st.title("👷 Labor Profiles Application Directory")
     st.write("Labor card entries database file records, detailing specialized contracts and ratings metrics configuration.")
@@ -398,12 +458,25 @@ elif menu == "👷 Labor Profiles Application":
             l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
             labor_df = labor_df[l_mask]
             
+        # Ek asan reference table view
         st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
         
         st.write("### 🖼️ Profiles Deep Dive Cards View")
         for _, row in labor_df.iterrows():
             with st.container():
-                st.markdown(f"#### 👤 {row['name']} ({row['occupation'] if row['occupation'] else 'General Labor'})")
+                # AUTOMATIC RECONCILIATION LOGIC FOR PAID AMOUNT
+                labor_name = row['name']
+                paid_amount = 0
+                
+                # Transactions history me se is labor ka sara 'Labor' expense filter kar ke sum karein
+                if not df.empty:
+                    labor_txs = df[(df['type'] == 'Labor') & (df['name'].str.strip().str.lower() == str(labor_name).strip().str.lower())]
+                    paid_amount = labor_txs['amount'].sum()
+                
+                contract_amount = row['total_contract_amount'] if row['total_contract_amount'] else 0
+                remaining_balance = contract_amount - paid_amount
+                
+                st.markdown(f"#### 👤 {labor_name} ({row['occupation'] if row['occupation'] else 'General Labor'})")
                 c_img, c_info = st.columns([1, 3])
                 
                 with c_img:
@@ -415,59 +488,16 @@ elif menu == "👷 Labor Profiles Application":
                         
                 with c_info:
                     st.markdown(f"**📞 Phone:** {row['phone']} | **🪪 CNIC:** {row['cnic']}")
-                    st.markdown(f"**💰 Total Contract (Taka):** PKR {row['total_contract_amount']:,.0f}")
                     
+                    # VIP Ledger Insights Row
+                    col_l1, col_l2, col_l3 = st.columns(3)
+                    col_l1.markdown(f"<div style='background-color:#f1f5f9; padding:10px; border-radius:8px; text-align:center;'>📜 Total Contract<br><b style='color:#1e2937; font-size:16px;'>PKR {contract_amount:,.0f}</b></div>", unsafe_allow_html=True)
+                    col_l2.markdown(f"<div style='background-color:#e8f5e9; padding:10px; border-radius:8px; text-align:center;'>✅ Total Paid Out<br><b style='color:#2e7d32; font-size:16px;'>PKR {paid_amount:,.0f}</b></div>", unsafe_allow_html=True)
+                    
+                    # Remaining balance ka color automatically design hoga (Red warning if overpaid/pending)
+                    bal_style = "color:#c62828;" if remaining_balance <= 0 and contract_amount > 0 else "color:#ff9800;" if remaining_balance > 0 else "color:#1e2937;"
+                    col_l3.markdown(f"<div style='background-color:#fff3e0; padding:10px; border-radius:8px; text-align:center;'>⏳ Baqaya Balance<br><b style='{bal_style} font-size:16px;'>PKR {remaining_balance:,.0f}</b></div>", unsafe_allow_html=True)
+                    
+                    st.write("")
                     stars = "⭐" * int(row['rating'] if row['rating'] else 5)
-                    st.markdown(f"**📊 Performance Rating Evaluation:** {stars}")
-                    st.markdown(f"**📝 Complete Detailed Information Dossier (A to Z Data):**")
-                    st.info(row['details'] if row['details'] else "No additional background profile summary logs provided.")
-                
-                st.divider()
-                
-        if is_auth:
-            st.write("### 🛠️ Administrative Operations")
-            l_tid = st.text_input("Enter Profile Row Unique Identity ID to Delete File permanently")
-            if st.button("🗑️ Delete Profile Record", key="del_lab_prof_btn"):
-                if l_tid:
-                    supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
-                    st.cache_data.clear()
-                    st.rerun()
-    else:
-        st.info("No Labor profiles have been provisioned inside the system ledger table tracking logs configuration folder yet.")
-
-
-# --- 8. ORIGINAL HISTORY PAGES LOGIC (As it was) ---
-else:
-    st.title(menu)
-    if not df.empty:
-        if "Income" in menu: f_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: f_df = df[df['type'] == 'Material']
-        else: f_df = df.copy()
-        
-        search = st.text_input("🔎 Search by ID or Name...")
-        if search:
-            mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
-            f_df = f_df[mask]
-        
-        st.dataframe(f_df, use_container_width=True)
-        
-        if search and not f_df.empty and 'image_url' in f_df.columns:
-            st.markdown("### 🖼️ Result Detail & Photo")
-            for _, row in f_df.iterrows():
-                if row['image_url'] and str(row['image_url']) != "nan":
-                    with st.expander(f"👁️ View Photo: ID {row['id']} - {row['name']}", expanded=True):
-                        st.image(row['image_url'], use_container_width=True)
-
-        st.metric("Total PKR", f"{f_df['amount'].sum():,.0f}")
-        
-        if is_auth:
-            tid = st.text_input("Enter ID to Delete")
-            if st.button("🗑️ Delete"):
-                supabase.table('transactions').delete().eq('id', tid).execute()
-                st.cache_data.clear(); st.rerun()
-
-        st.divider()
-        c1, c2 = st.columns(2)
-        c1.download_button("📥 Excel", f_df.to_csv().encode('utf-8'), f"{menu}.csv")
-        c2.download_button("📄 PDF Report", export_to_pdf(f_df, menu), f"{menu}.pdf")
+                    st.markdown(f"**📊 Performance Rating Evaluation:**
