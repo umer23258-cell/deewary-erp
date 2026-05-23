@@ -479,13 +479,13 @@ with st.sidebar:
     st.info(f"📍 Active Site: **{st.session_state['selected_project']}**")
     st.divider()
     
+    # --- ADDED: 📑 Receipt Voucher System In Navigation ---
     menu = st.radio(
         "Go To", 
-        ["📊 Dashboard", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
+        ["📊 Dashboard", "📑 Receipt Voucher System", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
     )
     st.divider()
     
-    # --- MOVED: CHECKLIST & PROGRESS SECTION (Inside Sidebar Expander) ---
     with st.expander("📈 Site Progress & Checklist", expanded=True):
         total_tasks = len(status_df)
         done_tasks = len(status_df[status_df['status'] == 'Done']) if total_tasks > 0 else 0
@@ -571,12 +571,16 @@ if menu == "📊 Dashboard":
         bal_color = "#2e7d32" if net_bal >= 0 else "#c62828"
         st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET BALANCE</p><h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
-    # --- RECEIPT SLIP GENERATOR ---
-    st.write("##")
-    st.markdown("### 📑 System Automated Receipt Slip / Voucher Generator")
+
+# --- MOVED: 📑 RECEIPT VOUCHER SYSTEM PAGE (Isolated Section) ---
+elif menu == "📑 Receipt Voucher System":
+    st.title(f"📑 Automated Receipt Voucher Slip System ({current_project})")
+    st.write("Select any transaction record from the list below to view and audit its professional premium digital receipt slip.")
+    st.divider()
+    
     if not df.empty:
         df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
-        selected_log = st.selectbox("Select Transaction Log Entry:", df['voucher_label'].tolist())
+        selected_log = st.selectbox("Select Transaction Log Entry to Generate Slip:", df['voucher_label'].tolist())
         v_row = df[df['voucher_label'] == selected_log].iloc[0]
         v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
         v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
@@ -598,7 +602,8 @@ if menu == "📊 Dashboard":
                 <div class="voucher-total"><div style="display: flex; justify-content: space-between;"><span>VOLUME TOTAL:</span><span>PKR {v_row['amount']:,.0f}/-</span></div></div>
             </div>
         """, unsafe_allow_html=True)
-    else: st.info(f"No transaction tracking history data available for project: {current_project}")
+    else:
+        st.info(f"No transaction tracking history data available to render slips for project: {current_project}")
 
 
 # --- LABOR PROFILES APPLICATION PAGE ---
