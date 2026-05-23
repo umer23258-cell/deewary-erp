@@ -291,8 +291,8 @@ if "selected_project" not in st.session_state:
     st.session_state["selected_project"] = st.session_state["custom_projects"][0]
 
 
-# --- 6. POPUP DIALOG FORMS ---
-@st.dialog("📁 Create New Project Site Context")
+# --- 6. POPUP DIALOG FORMS (dismissible=False added for click lock protection) ---
+@st.dialog("📁 Create New Project Site Context", dismissible=False)
 def popup_create_project():
     with st.form("new_project_form"):
         new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
@@ -317,7 +317,7 @@ def popup_create_project():
                 st.rerun()
             else: st.error("Project identity descriptor required.")
 
-@st.dialog("📝 Register New Labor Profile")
+@st.dialog("📝 Register New Labor Profile", dismissible=False)
 def popup_register_labor(current_project):
     st.write(f"Adding to project: **{current_project}**")
     with st.form("labor_profile_form"):
@@ -363,7 +363,7 @@ def popup_register_labor(current_project):
                     st.error(f"Execution Error: {str(e)}")
             else: st.error("Labor Full Name is required.")
 
-@st.dialog("📝 Log Dynamic Transaction Entry")
+@st.dialog("📝 Log Dynamic Transaction Entry", dismissible=False)
 def popup_transaction_entry(ftype, current_project):
     st.write(f"Logging **{ftype}** entry for active project site: **{current_project}**")
     with st.form("quick_form"):
@@ -422,7 +422,7 @@ def popup_transaction_entry(ftype, current_project):
                     st.error("Database Core Blocked execution. Please verify your table columns match precisely with the payload properties.")
             else: st.error("Valid Title Name and Amount required.")
 
-@st.dialog("🛠️ Update Site Checklist Status")
+@st.dialog("🛠️ Update Site Checklist Status", dismissible=False)
 def popup_update_status(current_project, status_df):
     with st.form("status_form"):
         task = st.selectbox("Select Task Line Target", status_df['task_name'].tolist())
@@ -477,7 +477,6 @@ with st.sidebar:
     st.info(f"📍 Active Site: **{st.session_state['selected_project']}**")
     st.divider()
     
-    # --- HERE: Receipt System Shifted to Sidebar Menu Navigation Only ---
     menu = st.radio(
         "Go To", 
         ["📊 Dashboard", "📑 Receipt Voucher System", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"]
@@ -548,7 +547,6 @@ if menu == "📊 Dashboard":
         bal_color = "#2e7d32" if net_bal >= 0 else "#c62828"
         st.markdown(f"<div class='kpi-card'><p style='color:#6c757d; margin:0; font-size:14px; font-weight:bold;'>⚖️ NET BALANCE</p><h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
-    # --- PROGRESS & CHECKLIST (Clean Desktop Full Width Grid Layout) ---
     st.write("##")
     status_df = fetch_project_status(current_project)
     total_tasks = len(status_df)
