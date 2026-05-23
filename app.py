@@ -29,8 +29,7 @@ def send_automated_low_balance_alert(current_balance):
             requests.post(sms_api_url, data=payload, timeout=5)
         except: pass
 
-# --- 3. HARDCODED PROPERTY LISTINGS (ZAMEEN.COM STYLE) ---
-# Note: Kal ko aap isko Supabase table se bhi connect kar sakte hain.
+# --- 3. HARDCODED PROPERTY LISTINGS (ZAMEEN STYLE INTEGRITY) ---
 PROPERTY_INVENTORY = [
     {
         "title": "Premium Corner Plot - Yousaf Colony",
@@ -49,15 +48,6 @@ PROPERTY_INVENTORY = [
         "status": "Under Construction 🏗️",
         "image": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?q=80&w=600&auto=format&fit=crop",
         "desc": "Foundation and boundary wall work completed. High appreciation expected within months."
-    },
-    {
-        "title": "Luxury Residential Block",
-        "location": "Yousaf Colony Site",
-        "size": "10 Marla",
-        "price": "PKR 12,500,000",
-        "status": "Sold Out 🤝",
-        "image": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=600&auto=format&fit=crop",
-        "desc": "Premium boundary wall block allocated to executive investor partners."
     }
 ]
 
@@ -95,7 +85,7 @@ def export_to_pdf(dataframe, title):
 # --- 5. PAGE CONFIG ---
 st.set_page_config(page_title="Deewary.com ERP & Portal", layout="wide", page_icon="🏗️")
 
-# --- 6. ADVANCED PROFESSIONAL CSS ---
+# --- 6. ELITE CORE UI CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
@@ -113,45 +103,34 @@ st.markdown("""
         border-radius: 24px;
         border-bottom: 5px solid #FF4B4B;
         margin-bottom: 30px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
     .kpi-card {
-        background: #ffffff;
-        padding: 20px;
-        border-radius: 16px;
-        border-left: 5px solid #FF4B4B;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        margin-bottom: 15px;
-        border-top: 1px solid #f1f5f9;
-        border-right: 1px solid #f1f5f9;
-        border-bottom: 1px solid #f1f5f9;
+        background: #ffffff; padding: 20px; border-radius: 16px; border-left: 5px solid #FF4B4B;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 15px;
+        border-top: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
     }
     .alert-box { background-color: #fef2f2; border-left: 6px solid #ef4444; padding: 15px; border-radius: 12px; margin-bottom: 25px; color: #991b1b; font-weight: bold; }
     .forecast-box { background-color: #f0fdf4; border-left: 6px solid #22c55e; padding: 15px; border-radius: 12px; margin-bottom: 25px; color: #166534; font-weight: bold; }
     
-    /* ZAMEEN.COM STYLE SHOWCASE CARDS */
-    .property-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
+    /* VOUCHER RECEIPT CASH SLIP FORMATTING */
+    .digital-voucher {
+        background-color: #fafafa;
+        border: 2px dashed #cbd5e1;
+        padding: 25px;
         border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        transition: transform 0.2s;
-        margin-bottom: 20px;
+        max-width: 550px;
+        margin: 15px auto;
+        font-family: 'Courier New', Courier, monospace;
+        color: #1e2937;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.02);
     }
-    .property-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    .property-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: bold;
-        color: white;
-        margin-bottom: 10px;
-    }
-    .badge-sale { background-color: #ef4444; }
-    .badge-construction { background-color: #f59e0b; }
-    .badge-sold { background-color: #64748b; }
+    .voucher-header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
+    .voucher-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .voucher-total { font-size: 20px; font-weight: bold; color: #FF4B4B; border-top: 2px dashed #cbd5e1; border-bottom: 2px dashed #cbd5e1; padding: 8px 0; margin-top: 15px; }
+    
+    .property-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .property-badge { display: inline-block; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; color: white; margin-bottom: 10px; }
+    .badge-sale { background-color: #ef4444; } .badge-construction { background-color: #f59e0b; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -184,10 +163,10 @@ def generate_whatsapp_link(type_tx, name, amount, detail):
     return f"https://api.whatsapp.com/send?text={urllib.parse.quote(base_msg)}"
 
 def generate_property_enquiry_link(title, location, price):
-    msg = f"Assalam-o-Alaikum Deewary.com, \nI am interested in booking/details of the following property listing:\n\n🏡 *Property:* {title}\n📍 *Location:* {location}\n💰 *Price:* {price}\n\nPlease share the installment schedule and layout plan."
+    msg = f"Assalam-o-Alaikum Deewary.com, \nI am interested in booking/details of:\n🏡 *Property:* {title}\n📍 *Location:* {location}\n💰 *Price:* {price}"
     return f"https://api.whatsapp.com/send?phone={st.secrets.get('ALERT_PHONE_NUMBER', '')}&text={urllib.parse.quote(msg)}"
 
-# --- 8. SIDEBAR MANAGEMENT PANEL ---
+# --- 8. SIDEBAR CONTROL CENTER ---
 with st.sidebar:
     st.title("🏗️ DEEWARY ERP")
     menu = st.radio("Go To Desk", ["📊 Dashboard & Showroom", "💰 Income History", "👷 Labor History", "🏗️ Material History", "👷 Labor Profiles Application", "🔍 Search & All Reports"])
@@ -223,7 +202,7 @@ df = fetch_data()
 
 # --- 9. INTERFACE ENGINE ---
 if menu == "📊 Dashboard & Showroom":
-    # Main Modern Header Panel
+    # Premium Header Desk
     st.markdown("""
         <div class="header-box">
             <h1 style="color: #FF4B4B; margin: 0; font-family: 'Arial Black'; letter-spacing: 3px; font-size: 36px;">DEEWARY.COM</h1>
@@ -234,39 +213,28 @@ if menu == "📊 Dashboard & Showroom":
         </div>
     """, unsafe_allow_html=True)
 
-    # --- SECTION A: PREMIUM PROPERTY SHOWROOM (ZAMEEN.COM STYLE GRID) ---
+    # PROPERTY SHOWROOM 
     st.markdown("## 🏢 Exclusive Property Showroom")
-    st.markdown("<p style='color:#64748b; font-size:14px; margin-top:-10px;'>Live available inventory showcase for investors & corporate buyers.</p>", unsafe_allow_html=True)
-    
-    p_cols = st.columns(3)
+    p_cols = st.columns(2)
     for idx, prop in enumerate(PROPERTY_INVENTORY):
-        with p_cols[idx % 3]:
-            # Status Badge Color Determination
-            badge_class = "badge-sale" if "Sale" in prop["status"] else "badge-construction" if "Construction" in prop["status"] else "badge-sold"
+        with p_cols[idx % 2]:
+            badge_class = "badge-sale" if "Sale" in prop["status"] else "badge-construction"
             enquiry_url = generate_property_enquiry_link(prop["title"], prop["location"], prop["price"])
-            
-            # Rendering HTML Card Layout
             st.markdown(f"""
                 <div class="property-card">
-                    <img src="{prop["image"]}" style="width:100%; height:200px; object-fit:cover;">
-                    <div style="padding: 16px;">
+                    <img src="{prop["image"]}" style="width:100%; height:180px; object-fit:cover;">
+                    <div style="padding:15px;">
                         <div class="property-badge {badge_class}">{prop["status"]}</div>
-                        <h4 style="margin: 0 0 8px 0; color:#1f2937; font-size:18px;">{prop["title"]}</h4>
-                        <p style="color:#64748b; font-size:13px; margin: 0 0 10px 0;">📍 {prop["location"]} | 📐 <b>{prop["size"]}</b></p>
-                        <p style="color:#94a3b8; font-size:12px; line-height:1.4; min-height:40px;">{prop["desc"]}</p>
-                        <hr style="border:0; border-top:1px solid #f1f5f9; margin:12px 0;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:#ef4444; font-weight:bold; font-size:18px;">{prop["price"]}</span>
-                        </div>
+                        <h4 style="margin:0 0 5px 0; color:#1f2937;">{prop["title"]}</h4>
+                        <p style="color:#64748b; font-size:12px; margin:0 0 10px 0;">📍 {prop["location"]} | 📐 {prop["size"]}</p>
+                        <span style="color:#ef4444; font-weight:bold; font-size:16px;">{prop["price"]}</span>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
-            # Direct Booking Action Button
-            st.markdown(f'<a href="{enquiry_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#111827; color:white; padding:8px; border-radius:8px; text-align:center; font-size:12px; font-weight:bold; margin-top:-10px; margin-bottom:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">💬 Instant WhatsApp Enquiry / Booking</div></a>', unsafe_allow_html=True)
 
     st.divider()
 
-    # --- SECTION B: BACKEND ERP BUSINESS SUITE ---
+    # BUSINESS OUTFLOW ENGINE
     st.markdown("## 📊 Construction Administrative Suite")
     if not df.empty:
         inc = df[df['type'] == 'Income']['amount'].sum()
@@ -282,67 +250,93 @@ if menu == "📊 Dashboard & Showroom":
             daily_burn_rate = recent_exp_df['amount'].sum() / 7
         except: daily_burn_rate = 0
 
-        # Automated Alerts
         if net_bal < 50000:
-            st.markdown(f'<div class="alert-box">🚨 CRITICAL LIQUID BUDGET ALERT: Balance is PKR {net_bal:,.0f}. Background warning ping dispatch operational.</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="alert-box">🚨 CRITICAL BUDGET ALERT: Balance is PKR {net_bal:,.0f}.</div>', unsafe_allow_html=True)
             send_automated_low_balance_alert(net_bal)
         elif daily_burn_rate > 0:
-            st.markdown(f'<div class="forecast-box">📈 OPERATIONAL RUNWAY: Daily site burn speed is PKR {daily_burn_rate:,.0f}/day. Liquid resources available for ~{net_bal/daily_burn_rate:.1f} Safe Days.</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="forecast-box">📈 OPERATIONAL RUNWAY: Resource burn speed is PKR {daily_burn_rate:,.0f}/day. Left runtime: ~{net_bal/daily_burn_rate:.1f} Safe Days.</div>', unsafe_allow_html=True)
 
-        # Corporate KPI Blocks
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-        with col_kpi1:
-            st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:bold;'>💰 CAPITAL RECEIPTS RESERVES</p><h2 style='color:#166534; margin:5px 0 0 0; font-size:26px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
-        with col_kpi2:
-            st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:bold;'>📉 CUMULATIVE OUTFLOW DEBITS</p><h2 style='color:#991b1b; margin:5px 0 0 0; font-size:26px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
+        with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px;'>💰 CAPITAL RECEIPTS</p><h2 style='color:#166534; margin:5px 0 0 0;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
+        with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px;'>📉 CUMULATIVE DEBITS</p><h2 style='color:#991b1b; margin:5px 0 0 0;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
         with col_kpi3:
             bal_color = "#166534" if net_bal >= 0 else "#991b1b"
-            st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:bold;'>⚖️ NET RUNNING LIQUID BAL</p><h2 style='color:{bal_color}; margin:5px 0 0 0; font-size:26px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px;'>⚖️ NET LIQUID BAL</p><h2 style='color:{bal_color}; margin:5px 0 0 0;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
-    # --- ADMINISTRATIVE DATA ENTRY FORMS (CRUD) ---
+    # --- SECTION C: INTERACTIVE DIGITAL VOUCHER DESK (NEW FEATURE) ---
+    st.write("##")
+    st.markdown("### 📑 Live Digital Receipt / Voucher Generator")
+    st.markdown("<p style='color:#64748b; font-size:13px; margin-top:-10px;'>Select any recent entry block below to compute its dynamic verification receipt voucher.</p>", unsafe_allow_html=True)
+    
+    if not df.empty:
+        # Dynamic drop selector item arrays
+        df['select_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
+        selected_voucher_label = st.selectbox("Select Transaction Log Entry", df['select_label'].tolist())
+        
+        selected_row = df[df['select_label'] == selected_voucher_label].iloc[0]
+        v_type_prefix = "INC" if selected_row['type'] == "Income" else "LAB" if selected_row['type'] == "Labor" else "MAT"
+        voucher_number = f"DW-{v_type_prefix}-{1000 + int(selected_row['id'])}"
+        
+        # HTML Render Structure inside interactive dashboard pane
+        st.markdown(f"""
+            <div class="digital-voucher">
+                <div class="voucher-header">
+                    <h3 style="margin:0; font-family:'Helvetica Neue',Arial; color:#111827; letter-spacing:2px;">DEEWARY.COM</h3>
+                    <p style="margin:5px 0 0 0; font-size:11px; color:#64748b;">OFFICIAL VOUCHER RECEIPT CERTIFICATE</p>
+                </div>
+                <div class="voucher-row"><span>Voucher No:</span><b>{voucher_number}</b></div>
+                <div class="voucher-row"><span>Logging Date:</span><span>{selected_row['date']}</span></div>
+                <div class="voucher-row"><span>Category Type:</span><span>{str(selected_row['type']).upper()}</span></div>
+                <div class="voucher-row"><span>Particular Name:</span><b>{selected_row['name']}</b></div>
+                <div class="voucher-row"><span>Job Designation:</span><span>{selected_row['occupation'] if selected_row['occupation'] else 'N/A'}</span></div>
+                <div class="voucher-row"><span>Clearing Agent:</span><span>{selected_row['received_by'] if selected_row['received_by'] else 'Authorized Desk'}</span></div>
+                <div class="voucher-row"><span>Settlement Mode:</span><span>{selected_row['pay_method']}</span></div>
+                <div class="voucher-row" style="margin-top:10px;"><span style="font-size:12px; color:#64748b;">Description Notes:</span></div>
+                <p style="font-size:12px; background:#f1f5f9; padding:8px; border-radius:6px; margin:4px 0; font-style:italic;">{selected_row['detail'] if selected_row['detail'] else 'No additional parameters logged inside security file paths.'}</p>
+                <div class="voucher-total">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>SETTLED VOLUME:</span>
+                        <span>PKR {selected_row['amount']:,.0f}/-</span>
+                    </div>
+                </div>
+                <div style="margin-top:20px; text-align:center; font-size:10px; color:#94a3b8;">
+                    🔒 System Generated Digital Slips Record V2.0<br>Deewary Premium ERP Perimeter Logs
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    else: st.info("No logs present to process voucher print operations.")
+
+    # CRUD Form Inputs
     if "show_form" in st.session_state and is_auth:
         ftype = st.session_state.show_form
-        with st.expander(f"📥 New System Record Deployment Entry: {ftype}", expanded=True):
+        with st.expander(f"📥 New Deployment Entry: {ftype}", expanded=True):
             with st.form("entry_form"):
-                d_date = st.date_input("Processing Logging Date", datetime.now())
-                d_name = st.text_input("Particular Title Item Name")
-                d_amt = st.number_input("Transaction Volume Valuation (PKR)", min_value=0)
-                d_occ = st.text_input("Operational Designation Category / Skill Tag")
-                d_rec = st.text_input("Authorized Clearing Staff Person")
-                d_meth = st.selectbox("Clearing Settlement Mechanism", ["Cash", "Online", "Cheque"])
-                uploaded_photo = st.file_uploader("Document Scan Attachment Upload", type=['jpg', 'jpeg', 'png']) if ftype == "Material" else None
-                d_det = st.text_area("Detailed Log Description Notes Context")
-                
-                if st.form_submit_button("Commit Ledger Document Entry"):
+                d_date = st.date_input("Date", datetime.now())
+                d_name = st.text_input("Particular Title")
+                d_amt = st.number_input("Valuation Amount (PKR)", min_value=0)
+                d_occ = st.text_input("Designation Skill Tag")
+                d_rec = st.text_input("Clearing Staff Person")
+                d_meth = st.selectbox("Method", ["Cash", "Online", "Cheque"])
+                uploaded_photo = st.file_uploader("Scan Attachment", type=['jpg', 'jpeg', 'png']) if ftype == "Material" else None
+                d_det = st.text_area("Log Description")
+                if st.form_submit_button("Commit Ledger Entry"):
                     img_url = ""
                     if uploaded_photo:
                         f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
                         supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
                         img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
                     supabase.table('transactions').insert({"date": str(d_date), "type": ftype, "name": d_name, "amount": d_amt, "detail": d_det, "image_url": img_url, "occupation": d_occ, "received_by": d_rec, "pay_method": d_meth}).execute()
-                    st.cache_data.clear()
-                    wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det)
-                    st.markdown(f'<a href="{wa_url}" target="_blank"><div style="background-color:#25D366; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">📲 Push Voucher Data Slip via WhatsApp</div></a>', unsafe_allow_html=True)
-                    st.session_state.pop("show_form")
+                    st.cache_data.clear(); st.session_state.pop("show_form"); st.rerun()
 
-    # --- MILESTONE TRACKING PROGRESS LINE ---
+    # CHECKLIST MILESTONES
     st.write("##")
     status_df = fetch_project_status()
     done_tasks = len(status_df[status_df['status'] == 'Done'])
     prog_val = int((done_tasks / len(status_df)) * 100) if not status_df.empty else 0
-    st.markdown(f"### 📈 Construction Milestone Mapping Progress ({prog_val}% Work Completed)")
+    st.markdown(f"### 📈 Milestone Progress Runway ({prog_val}% Completed)")
     st.progress(prog_val / 100)
 
-    if "show_status_form" in st.session_state and is_auth:
-        with st.form("status_update"):
-            task = st.selectbox("Choose Target Project Task Line", status_df['task_name'].tolist())
-            stat = st.radio("Status Target Parameter", ["Pending", "Done"], horizontal=True)
-            if st.form_submit_button("Confirm Status Transition"):
-                supabase.table('project_status').upsert({"task_name": task, "status": stat}).execute()
-                st.cache_data.clear(); st.session_state.show_status_form = False; st.rerun()
-
     st.divider()
-    st.markdown("### 🏗️ Quality Verification Field Checklist")
     t_cols = st.columns(3)
     for i, row in status_df.iterrows():
         with t_cols[i % 3]:
@@ -353,13 +347,12 @@ if menu == "📊 Dashboard & Showroom":
     st.divider()
     st.video("https://youtu.be/AiA4PkXturU")
 
-# --- OTHER APPLICATION DESKS (RETAINING ORIGINAL DATA MATRIX INTEGRITY) ---
+# PRESERVE INTEGRITY OF ALL OTHER REVENUE VIEWS
 elif menu == "👷 Labor Profiles Application":
-    st.title("👷 Labor Resource Master Application Ledger")
+    st.title("👷 Labor Master Ledger Applications")
     labor_df = fetch_labor_profiles()
-    if not labor_df.empty:
-        st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
-    else: st.info("No records present inside database resource folder paths.")
+    if not labor_df.empty: st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
+    else: st.info("No records inside folders data servers path.")
 
 else:
     st.title(menu)
@@ -369,4 +362,4 @@ else:
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
         else: f_df = df.copy()
         st.dataframe(f_df, use_container_width=True)
-        st.metric("Aggregate Data Column Total Volume Valuation Value Sum", f"PKR {f_df['amount'].sum():,.0f}")
+        st.metric("Aggregate Data Total Column Volume", f"PKR {f_df['amount'].sum():,.0f}")
