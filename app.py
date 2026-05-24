@@ -158,12 +158,11 @@ def export_labor_profile_pdf(labor_row, payments_df):
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
-# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
     <style>
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
-        background-image: url("[url=https://ibb.co/DJzxbG2][img]https://i.ibb.co/fgqhS8w/deewaryn-com-logo.jpg[/img][/url]");
+        background-image: url("https://i.ibb.co/fgqhS8w/deewaryn-com-logo.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -177,6 +176,14 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.85); 
         z-index: 0;
     }
+    
+    /* Ensure content is above the overlay */
+    .main > div {
+        position: relative;
+        z-index: 1;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
     /* Baki ki aapki purani CSS yahan aayegi... */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
