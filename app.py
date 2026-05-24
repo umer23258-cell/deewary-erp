@@ -160,22 +160,29 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
     <style>
-    /* ... aapka baaki CSS ... */
+   /* Background Image Setup */
+[data-testid="stAppViewContainer"] {
+    background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
 
-    /* Naya Background Image Code */
-    [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-    
-    /* Panel transparency settings */
-    .stApp {
-        background-color: rgba(255, 255, 255, 0.8) !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+/* Ye "Overlay" hai jo image ko thoda dhundla kar dega taake text dikhe */
+[data-testid="stAppViewContainer"]::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.7); /* 70% white opacity */
+    z-index: -1;
+}
+
+/* Cards aur tables ka solid background */
+.block-container {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 20px;
+    padding: 2rem !important;
+}
 
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
