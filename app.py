@@ -160,24 +160,25 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
     <style>
-
- st.markdown("""
-    <style>
-st.markdown("""
-    <style>
-    /* ... aapka baaki CSS ... */
-
-    /* Naya Background Image Code */
+    /* Background Image setup */
     [data-testid="stAppViewContainer"] {
         background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
-    
-    /* Panel transparency settings */
+
+    /* Overlay for readability */
     .stApp {
-        background-color: rgba(255, 255, 255, 0.8) !important;
+        background: rgba(248, 250, 252, 0.85);
+    }
+
+    /* Cards container */
+    .block-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 25px;
+        padding: 2rem !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
     </style>
 """, unsafe_allow_html=True)
