@@ -161,31 +161,37 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 # --- LUXURY BRANDED CSS WITH BACKGROUND ---
 st.markdown("""
     <style>
-    /* Background Image setup */
+    /* 1. Background Image ko Blur aur Fix karna */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
+        background-image: url("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
 
-    /* Reading area overlay for better text contrast */
-    .stApp {
-        background: rgba(248, 250, 252, 0.85);
+    /* 2. Glassmorphism effect: Cards ko halka transparent aur frosted glass jaisa banana */
+    .block-container {
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 30px !important;
+        padding: 3rem !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
     }
 
-    /* Cards and container styling */
-    .block-container {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 25px;
-        padding: 2rem !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    /* 3. Cards ko aur pyara banane ke liye (KPI cards) */
+    .kpi-card {
+        background: rgba(255, 255, 255, 0.6) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
     }
-    
-    /* Plus Jakarta Sans font import (optional, as used in your original code) */
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-    
-    html, body, [data-testid="stAppViewContainer"] {
+
+    /* 4. Text ka color aur font set karna */
+    h1, h2, h3, p {
+        color: #1e293b !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     </style>
