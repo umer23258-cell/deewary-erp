@@ -158,185 +158,22 @@ def export_labor_profile_pdf(labor_row, payments_df):
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-    
-    /* App-wide Typography Override */
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        background-color: #f8fafc !important;
-    }
-    
-    /* Clean layout alignment padding */
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 1250px !important;
+/* Background Image Injection */
+    [data-testid="stAppViewContainer"] {
+        background-image: url("https://i.ibb.co/68v1r5W/image-49c1b9.jpg");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
     }
 
-    /* Sidebar Glassmorphism Customization */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff !important;
-        border-right: 1px solid #e2e8f0 !important;
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02) !important;
-    }
-    
-    /* Luxury Radio Button Menu Customization */
-    div[data-testid="stSidebarUserContent"] div.stRadio > div {
-        gap: 6px !important;
-    }
-    div[data-testid="stSidebarUserContent"] div.stRadio label {
-        background-color: #f1f5f9;
-        padding: 12px 16px !important;
-        border-radius: 12px !important;
-        color: #334155 !important;
-        font-weight: 500 !important;
-        font-size: 13.5px !important;
-        border: 1px solid transparent !important;
-        transition: all 0.2s ease-in-out !important;
-        margin-bottom: 2px;
-        cursor: pointer;
-    }
-    div[data-testid="stSidebarUserContent"] div.stRadio label:hover {
-        background-color: #e2e8f0 !important;
-        color: #0f172a !important;
-    }
-    div[data-testid="stSidebarUserContent"] div.stRadio label[data-checked="true"] {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
-        color: #ffffff !important;
-        font-weight: 600 !important;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important;
-    }
-    div[data-testid="stSidebarUserContent"] div.stRadio label [data-testid="stMarkdownContainer"] p {
-        color: inherit !important;
-    }
-    
-    /* Hide Default Streamlit Radio Circle Icons entirely */
-    div[data-testid="stSidebarUserContent"] div.stRadio [data-testid="stFiberManualRecord"] {
-        display: none !important;
-    }
-    
-    /* Bespoke Input Buttons Styling */
-    div.stButton > button {
-        background: #ffffff;
-        color: #0f172a;
-        border: 1px solid #cbd5e1;
-        padding: 12px 24px;
-        border-radius: 14px;
-        font-weight: 600;
-        font-size: 14px;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        width: 100%;
-    }
-    div.stButton > button:hover {
-        border-color: #FF4B4B;
-        color: #FF4B4B;
-        box-shadow: 0 4px 14px rgba(255, 75, 75, 0.08);
-        transform: translateY(-1px);
-    }
-    div.stButton > button[data-testid="baseButton-primary"] {
-        background: linear-gradient(135deg, #FF4B4B 0%, #dc2626 100%);
-        color: white !important;
-        border: none !important;
-    }
-    div.stButton > button[data-testid="baseButton-primary"]:hover {
-        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-        box-shadow: 0 6px 20px rgba(220, 38, 38, 0.25);
-    }
-
-    /* Branded Dashboard Headbox Layout */
-    .header-box {
-        text-align: center;
-        background: #ffffff;
-        padding: 40px 20px;
-        border-radius: 28px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 10px 15px -3px rgba(0, 0, 0, 0.02);
-        margin-bottom: 30px;
-        border: 1px solid #f1f5f9;
-        position: relative;
-    }
-    .header-box::before {
-        content: '';
+    /* Content ko readable banane ke liye overlay */
+    [data-testid="stAppViewContainer"]::before {
+        content: "";
         position: absolute;
-        top: 0; left: 0; right: 0; height: 5px;
-        background: linear-gradient(90deg, #FF4B4B, #dc2626);
-        border-radius: 28px 28px 0 0;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.85); /* White overlay for readability */
+        z-index: 0;
     }
-    
-    /* Modern Premium Real-Estate KPI Panels */
-    .kpi-card {
-        background: #ffffff;
-        padding: 26px;
-        border-radius: 22px;
-        border: 1px solid #f1f5f9;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
-        margin-bottom: 20px;
-        transition: all 0.25s ease;
-    }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.04);
-    }
-    
-    /* Custom Alerts Configuration */
-    .alert-box {
-        background-color: #fff5f5;
-        border-left: 5px solid #ef4444;
-        padding: 18px;
-        border-radius: 14px;
-        margin-bottom: 25px;
-        color: #991b1b;
-        font-size: 14px;
-        font-weight: 600;
-        border: 1px solid #fee2e2;
-    }
-    .forecast-box {
-        background-color: #f0fdf4;
-        border-left: 5px solid #22c55e;
-        padding: 18px;
-        border-radius: 14px;
-        margin-bottom: 25px;
-        color: #166534;
-        font-size: 14px;
-        font-weight: 600;
-        border: 1px solid #dcfce7;
-    }
-    
-    /* Elegant Clean Voucher Block */
-    .digital-voucher {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        padding: 35px;
-        border-radius: 28px;
-        max-width: 500px;
-        margin: 20px auto;
-        color: #0f172a;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.06);
-    }
-    
-    /* Mobile Layout Breakpoint Automation */
-    @media (max-width: 768px) {
-        .block-container {
-            padding-left: 0.8rem !important;
-            padding-right: 0.8rem !important;
-        }
-        .header-box {
-            padding: 30px 15px;
-            border-radius: 20px;
-        }
-        .kpi-card {
-            padding: 20px;
-            border-radius: 18px;
-        }
-        div[data-testid="stSidebarUserContent"] div.stRadio label {
-            padding: 14px 16px !important;
-            font-size: 14px !important;
-        }
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 
 # --- 4. DATA FETCH LOGIC ---
