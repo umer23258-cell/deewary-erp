@@ -163,7 +163,7 @@ st.markdown("""
     <style>
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.ibb.co/68v1r5W/image-49c1b9.jpg");
+        background-image: url("https://ibb.co/DJzxbG2");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
