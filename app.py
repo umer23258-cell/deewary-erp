@@ -160,29 +160,28 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
     <style>
-   /* Background Image Setup */
-[data-testid="stAppViewContainer"] {
-    background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-}
+<style>
+    /* 1. Background Image ko Blur aur fixed karna */
+    [data-testid="stAppViewContainer"] {
+        background-image: url("YAHAN_APNI_IMAGE_KA_URL_DALEN");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
 
-/* Ye "Overlay" hai jo image ko thoda dhundla kar dega taake text dikhe */
-[data-testid="stAppViewContainer"]::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.7); /* 70% white opacity */
-    z-index: -1;
-}
+    /* 2. Pure app ke upar ek halki layer taake text readable ho */
+    .stApp {
+        background: rgba(248, 250, 252, 0.85); /* Light white overlay */
+    }
 
-/* Cards aur tables ka solid background */
-.block-container {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border-radius: 20px;
-    padding: 2rem !important;
-}
+    /* 3. Cards aur main container ko aur zyada solid aur clear banana */
+    .block-container {
+        background: rgba(255, 255, 255, 0.95); /* Yahan .95 solid hai */
+        border-radius: 25px;
+        padding: 2rem !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+</style>
 
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
