@@ -161,27 +161,24 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 st.markdown("""
     <style>
 <style>
-    /* 1. Background Image ko Blur aur fixed karna */
+ st.markdown("""
+    <style>
+    /* ... aapka baaki CSS ... */
+
+    /* Naya Background Image Code */
     [data-testid="stAppViewContainer"] {
-        background-image: url("YAHAN_APNI_IMAGE_KA_URL_DALEN");
+        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
-
-    /* 2. Pure app ke upar ek halki layer taake text readable ho */
+    
+    /* Panel transparency settings */
     .stApp {
-        background: rgba(248, 250, 252, 0.85); /* Light white overlay */
+        background-color: rgba(255, 255, 255, 0.8) !important;
     }
-
-    /* 3. Cards aur main container ko aur zyada solid aur clear banana */
-    .block-container {
-        background: rgba(255, 255, 255, 0.95); /* Yahan .95 solid hai */
-        border-radius: 25px;
-        padding: 2rem !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-</style>
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
