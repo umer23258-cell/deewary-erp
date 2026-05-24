@@ -532,20 +532,40 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # --- لکژری اور پریمیم ہیڈر ڈیزائن (اپڈیٹڈ) ---
+    # --- لکژری اور پریمیم ہیڈر ڈیزائن مع آفیشل واٹس ایپ لنک ---
     st.markdown(f"""
         <div style="background: linear-gradient(135deg, #1e1e24 0%, #0f172a 100%); padding: 35px; border-radius: 24px; box-shadow: 0 12px 30px rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
                 <div>
                     <h1 style="color: #ffffff; margin: 0; font-weight: 900; letter-spacing: -1px; font-size: 52px; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h1>
                     <p style="color: #94a3b8; letter-spacing: 1px; font-size: 14px; margin: 6px 0 0 0; font-weight: 600; text-transform: uppercase;">PREMIUM CORPORATE ENTERPRISE FRAMEWORK</p>
-                    <p style="color: #FF4B4B; margin: 4px 0 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">📍 SITE CONTEXT: {current_project.upper()}</p>
+                    <div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="background: #FF4B4B; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(255,75,75,0.3);">ACTIVE PROJECT LABEL</span>
+                        <span style="color: #ffffff; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">📍 SITE: {current_project.upper()}</span>
+                    </div>
                 </div>
-                <div style="background: linear-gradient(90deg, #d4af37 0%, #aa7c11 100%); padding: 14px 28px; border-radius: 16px; border: 1px solid #ffe082; box-shadow: 0 4px 15px rgba(212,175,55,0.25); text-align: center;">
-                    <span style="color: #000000; display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8;">Executive Management</span>
-                    <span style="color: #000000; font-size: 20px; font-weight: 900; letter-spacing: -0.5px;">C.E.O: SARDAR SAMI ULLAH</span>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+                    <div style="background: linear-gradient(90deg, #d4af37 0%, #aa7c11 100%); padding: 12px 24px; border-radius: 16px; border: 1px solid #ffe082; box-shadow: 0 4px 15px rgba(212,175,55,0.25); text-align: center;">
+                        <span style="color: #000000; display: block; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8;">Executive Management</span>
+                        <span style="color: #000000; font-size: 18px; font-weight: 900; letter-spacing: -0.5px;">C.E.O: SARDAR SAMI ULLAH</span>
+                    </div>
+                    <a href="https://wa.me/923115190118" target="_blank" style="text-decoration: none; display: flex; align-items: center; gap: 8px; background: #25D366; color: white; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 13px; box-shadow: 0 4px 12px rgba(37,211,102,0.3); transition: transform 0.2s;">
+                        <span>📲 Official WhatsApp Line: 03115190118</span>
+                    </a>
                 </div>
             </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # --- ABOUT US / COMPANY PROFILE SECTION (ویب سائٹ لک) ---
+    st.markdown("""
+        <div style="background: #ffffff; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 25px;">
+            <h3 style="color: #0f172a; margin-top: 0; font-weight: 800; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+                🏢 About Our Enterprise
+            </h3>
+            <p style="color: #475569; font-size: 14.5px; line-height: 1.6; margin: 8px 0 0 0;">
+                <b>Deewaryn.com</b> is an elite, modern, and high-fidelity construction infrastructure firm dedicated to transforming architectural blueprints into magnificent realities. Managed under the apex vision of <b>Sardar Sami Ullah</b>, our real-time ERP cloud terminal ensures full corporate visibility, unmatched resource mapping, asset management efficiency, and data clearance metrics across all premium active building sites. We construct futures with premium grade-A engineering standards.
+            </p>
         </div>
     """, unsafe_allow_html=True)
 
