@@ -163,6 +163,8 @@ st.markdown("""
 
  st.markdown("""
     <style>
+st.markdown("""
+    <style>
     /* ... aapka baaki CSS ... */
 
     /* Naya Background Image Code */
