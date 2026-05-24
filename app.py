@@ -162,7 +162,7 @@ st.markdown("""
 <style>
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://ibb.co/PGvWV1z7");
+        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
