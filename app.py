@@ -162,7 +162,7 @@ st.markdown("""
 <style>
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://ibb.co/DJzxbG2/deewaryn-com-logo.jpg");
+        background-image: url("https://ibb.co/PGvWV1z7");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
