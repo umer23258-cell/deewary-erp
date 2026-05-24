@@ -161,7 +161,7 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 # --- LUXURY BRANDED CSS WITH BACKGROUND ---
 st.markdown("""
     <style>
-    /* 1. Background Image ko Blur aur Fix karna */
+    /* 1. Background image ko poori screen par fit karna */
     [data-testid="stAppViewContainer"] {
         background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
         background-size: cover;
@@ -169,30 +169,22 @@ st.markdown("""
         background-attachment: fixed;
     }
 
-    /* 2. Glassmorphism effect: Cards ko halka transparent aur frosted glass jaisa banana */
+    /* 2. Main interface (cards) ko glass-like transparent banana */
     .block-container {
-        background: rgba(255, 255, 255, 0.7) !important;
-        backdrop-filter: blur(15px) !important;
-        -webkit-backdrop-filter: blur(15px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        border-radius: 30px !important;
-        padding: 3rem !important;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
-    }
-
-    /* 3. Cards ko aur pyara banane ke liye (KPI cards) */
-    .kpi-card {
+        /* background mein 60% opacity di hai taake peeche se image nazar aaye */
         background: rgba(255, 255, 255, 0.6) !important;
+        /* Blur effect taake text readable rahe */
         backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        border-radius: 20px !important;
-        padding: 20px !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-radius: 30px !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        padding: 2rem !important;
     }
 
-    /* 4. Text ka color aur font set karna */
-    h1, h2, h3, p {
-        color: #1e293b !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    /* 3. Saare text ko white background par dark color dena taake parhne mein dikkat na ho */
+    h1, h2, h3, p, div, span {
+        color: #0f172a !important;
+        font-weight: 500;
     }
     </style>
 """, unsafe_allow_html=True)
