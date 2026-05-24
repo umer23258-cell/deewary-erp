@@ -159,51 +159,185 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
-<style>
-    /* Background Image Injection */
-    [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.ibb.co/fgqhS8w/deewaryn-com-logo.jpg");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-
-    /* Content readability overlay */
-    [data-testid="stAppViewContainer"]::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.85); 
-        z-index: 0;
-    }
-
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
-
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    /* App-wide Typography Override */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
+        background-color: #f8fafc !important;
+    }
+    
+    /* Clean layout alignment padding */
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 1250px !important;
     }
 
-    /* Styled Voucher Container */
-    .digital-voucher {
+    /* Sidebar Glassmorphism Customization */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff !important;
+        border-right: 1px solid #e2e8f0 !important;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02) !important;
+    }
+    
+    /* Luxury Radio Button Menu Customization */
+    div[data-testid="stSidebarUserContent"] div.stRadio > div {
+        gap: 6px !important;
+    }
+    div[data-testid="stSidebarUserContent"] div.stRadio label {
+        background-color: #f1f5f9;
+        padding: 12px 16px !important;
+        border-radius: 12px !important;
+        color: #334155 !important;
+        font-weight: 500 !important;
+        font-size: 13.5px !important;
+        border: 1px solid transparent !important;
+        transition: all 0.2s ease-in-out !important;
+        margin-bottom: 2px;
+        cursor: pointer;
+    }
+    div[data-testid="stSidebarUserContent"] div.stRadio label:hover {
+        background-color: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
+    div[data-testid="stSidebarUserContent"] div.stRadio label[data-checked="true"] {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important;
+    }
+    div[data-testid="stSidebarUserContent"] div.stRadio label [data-testid="stMarkdownContainer"] p {
+        color: inherit !important;
+    }
+    
+    /* Hide Default Streamlit Radio Circle Icons entirely */
+    div[data-testid="stSidebarUserContent"] div.stRadio [data-testid="stFiberManualRecord"] {
+        display: none !important;
+    }
+    
+    /* Bespoke Input Buttons Styling */
+    div.stButton > button {
         background: #ffffff;
-        padding: 30px;
-        border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
-        max-width: 600px;
-        margin: 20px auto;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+        padding: 12px 24px;
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        width: 100%;
+    }
+    div.stButton > button:hover {
+        border-color: #FF4B4B;
+        color: #FF4B4B;
+        box-shadow: 0 4px 14px rgba(255, 75, 75, 0.08);
+        transform: translateY(-1px);
+    }
+    div.stButton > button[data-testid="baseButton-primary"] {
+        background: linear-gradient(135deg, #FF4B4B 0%, #dc2626 100%);
+        color: white !important;
+        border: none !important;
+    }
+    div.stButton > button[data-testid="baseButton-primary"]:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        box-shadow: 0 6px 20px rgba(220, 38, 38, 0.25);
     }
 
-    /* KPI Card Enhancement */
+    /* Branded Dashboard Headbox Layout */
+    .header-box {
+        text-align: center;
+        background: #ffffff;
+        padding: 40px 20px;
+        border-radius: 28px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 10px 15px -3px rgba(0, 0, 0, 0.02);
+        margin-bottom: 30px;
+        border: 1px solid #f1f5f9;
+        position: relative;
+    }
+    .header-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 5px;
+        background: linear-gradient(90deg, #FF4B4B, #dc2626);
+        border-radius: 28px 28px 0 0;
+    }
+    
+    /* Modern Premium Real-Estate KPI Panels */
     .kpi-card {
         background: #ffffff;
-        padding: 24px;
-        border-radius: 20px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        padding: 26px;
+        border-radius: 22px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        margin-bottom: 20px;
+        transition: all 0.25s ease;
     }
-</style>
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    /* Custom Alerts Configuration */
+    .alert-box {
+        background-color: #fff5f5;
+        border-left: 5px solid #ef4444;
+        padding: 18px;
+        border-radius: 14px;
+        margin-bottom: 25px;
+        color: #991b1b;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid #fee2e2;
+    }
+    .forecast-box {
+        background-color: #f0fdf4;
+        border-left: 5px solid #22c55e;
+        padding: 18px;
+        border-radius: 14px;
+        margin-bottom: 25px;
+        color: #166534;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid #dcfce7;
+    }
+    
+    /* Elegant Clean Voucher Block */
+    .digital-voucher {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 35px;
+        border-radius: 28px;
+        max-width: 500px;
+        margin: 20px auto;
+        color: #0f172a;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.06);
+    }
+    
+    /* Mobile Layout Breakpoint Automation */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.8rem !important;
+            padding-right: 0.8rem !important;
+        }
+        .header-box {
+            padding: 30px 15px;
+            border-radius: 20px;
+        }
+        .kpi-card {
+            padding: 20px;
+            border-radius: 18px;
+        }
+        div[data-testid="stSidebarUserContent"] div.stRadio label {
+            padding: 14px 16px !important;
+            font-size: 14px !important;
+        }
+    }
+    </style>
 """, unsafe_allow_html=True)
+
 
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
@@ -567,11 +701,11 @@ if "Dashboard" in menu:
                 st.markdown(f"""<div class="forecast-box">📈 RUNWAY STABILITY PROJECTION: Safe operational buffer mapped for active site context: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
 
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>💰 TOTAL CAPITAL ARRIVAL</p><h2 style='color:#15803d; margin:8px 0 0 0; font-weight:900; font-size:40px; letter-spacing:-1px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
-    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>📉 DISBURSED OUTFLOWS</p><h2 style='color:#b91c1c; margin:8px 0 0 0; font-weight:900; font-size:40px; letter-spacing:-1px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>💰 TOTAL CAPITAL ARRIVAL</p><h2 style='color:#15803d; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>📉 DISBURSED OUTFLOWS</p><h2 style='color:#b91c1c; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
     with col_kpi3: 
         bal_color = "#15803d" if net_bal >= 0 else "#b91c1c"
-        st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>⚖️ NET RUNNING BALANCES</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:900; font-size:40px; letter-spacing:-1px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>⚖️ NET RUNNING BALANCES</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
     st.write("##")
     status_df = fetch_project_status(current_project)
@@ -584,13 +718,9 @@ if "Dashboard" in menu:
         st.markdown(f"### 📈 Structural Framework Progress")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Tasks Mapped & Complete**")
-        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff,stroke:none"
-        components.html(f"<div style='background:#ffffff; border-radius:20px; padding:15px; border:1px solid #e2e8f0;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
-
     with col_right:
         st.markdown("### 📝 Architectural Nodes Checklist")
         st.write(f"✅ Cleared Status Tasks: **{done_tasks}** | ⏳ Pending Core Nodes: **{total_tasks - done_tasks}**")
-        if st.button("Re-Sync Ledger Memory Cache", use_container_width=True): st.cache_data.clear(); st.rerun()
 
     st.divider()
     st.markdown("### 🏗️ Complete Site Blueprint Matrix Mapping")
@@ -604,13 +734,73 @@ if "Dashboard" in menu:
                 text_c = "#334155" if row['status'] == "Done" else "#ea580c"
                 st.markdown(f'<div style="background:{bg}; padding:16px; border-radius:16px; margin-bottom:10px; border:1px solid {border_c}; color:{text_c}; font-weight:600; font-size:13.5px; display:flex; justify-content:space-between; align-items:center;"><span>{row["task_name"]}</span><span style="font-size:11px; font-weight:700; opacity:0.9; text-transform:uppercase;">{icon}</span></div>', unsafe_allow_html=True)
 
+elif "Income Ledger" in menu:
+    st.subheader("💰 Income Accounts & Capital Flow")
+    income_data = df[df['type'] == 'Income'] if not df.empty else pd.DataFrame()
+    if not income_data.empty:
+        st.metric("Total Income Received", f"PKR {income_data['amount'].sum():,.0f}")
+        st.dataframe(income_data[['id', 'date', 'name', 'amount', 'detail', 'pay_method']], use_container_width=True)
+    else:
+        st.info("No income records found for this project context.")
 
-# --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
+elif "Labor Ledger History" in menu:
+    st.subheader("👷 Labor Ledger & Payout History")
+    labor_data = df[df['type'] == 'Labor'] if not df.empty else pd.DataFrame()
+    if not labor_data.empty:
+        st.metric("Total Labor Disbursed", f"PKR {labor_data['amount'].sum():,.0f}")
+        st.dataframe(labor_data[['id', 'date', 'name', 'occupation', 'amount', 'received_by', 'pay_method', 'detail']], use_container_width=True)
+    else:
+        st.info("No labor payout transactions found for this project context.")
+
+elif "Material Log Vault" in menu:
+    st.subheader("🏗️ Material Expense Log Vault")
+    material_data = df[df['type'] == 'Material'] if not df.empty else pd.DataFrame()
+    if not material_data.empty:
+        st.metric("Total Material Cost", f"PKR {material_data['amount'].sum():,.0f}")
+        st.dataframe(material_data[['id', 'date', 'name', 'amount', 'received_by', 'pay_method', 'detail']], use_container_width=True)
+        
+        st.markdown("### 📸 Digital Bill / Invoice Previews")
+        for idx, row in material_data.iterrows():
+            if row.get('image_url') and str(row['image_url']) != "nan":
+                with st.expander(f"📄 View Invoice for {row['name']} (PKR {row['amount']:,.0f})"):
+                    st.image(row['image_url'], use_container_width=True)
+    else:
+        st.info("No material tracking logs mapped to this site context yet.")
+
+elif "Labor Force Folder" in menu:
+    st.subheader("👥 Registered Labor Force Folder")
+    if not labor_df.empty:
+        for idx, row in labor_df.iterrows():
+            with st.container():
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    if row.get('photo_url') and str(row['photo_url']) != "nan":
+                        st.image(row['photo_url'], use_container_width=True)
+                    else:
+                        st.image("https://via.placeholder.com/150", use_container_width=True)
+                with col2:
+                    st.markdown(f"### {row['name']} ({row['occupation']})")
+                    st.write(f"📞 **Phone:** {row['phone']} | 🆔 **CNIC:** {row['cnic']}")
+                    st.write(f"💰 **Total Contract Amount:** PKR {row['total_contract_amount']:,.0f}")
+                    st.write(f"📝 **Profile Notes:** {row['details']}")
+                st.divider()
+    else:
+        st.info("No workforce personnel registered on this active project context.")
+
+elif "Search & Audit Reports" in menu:
+    st.subheader("🔍 Master Search, Audit & Export")
+    if not df.empty:
+        q = st.text_input("Enter keywords to filter entire system data logs:")
+        filtered_df = df[df.astype(str).apply(lambda x: x.str.contains(q, case=False)).any(axis=1)] if q else df
+        st.dataframe(filtered_df, use_container_width=True)
+        
+        pdf_buf = export_to_pdf(filtered_df, f"Audit Report - {current_project}")
+        st.download_button("📥 Download PDF Audit Sheet", data=pdf_buf, file_name=f"Deewaryn_Audit_{current_project}.pdf", mime="application/pdf")
+    else:
+        st.info("No system records available to run queries.")
+
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
-    st.write("Dynamic cryptographic clearance invoice framework tailored for professional architectural firms.")
-    st.divider()
-    
     if not df.empty:
         df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
         selected_log = st.selectbox("Select System Transaction Target Entry:", df['voucher_label'].tolist())
@@ -628,15 +818,10 @@ elif menu == "📑 Receipt Voucher System":
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Ledger Allocation:</span><b style="color:#0f172a;">{str(v_row['type']).upper()}</b></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Particular Scope:</span><b style="color:#0f172a;">{v_row['name']}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Designation Spec:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('occupation', 'N/A') if pd.notna(v_row.get('occupation')) else 'N/A'}</span></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Payment Method:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Authorized Receiver:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
                 <div style="margin-top: 18px; padding-top: 18px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 14px; font-weight: 700; color:#0f172a;">TOTAL AMOUNT:</span>
                     <span style="font-size: 22px; font-weight: 800; color: #15803d;">PKR {v_row['amount']:,.0f}</span>
-                </div>
-                <div style="margin-top: 15px; font-size: 12px; color: #64748b; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #edf2f7;">
-                    <b>Details:</b> {v_row['detail'] if v_row['detail'] else 'No breakdown notes appended.'}
                 </div>
             </div>
         """, unsafe_allow_html=True)
