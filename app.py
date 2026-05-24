@@ -186,16 +186,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-    
-    
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-    }
-    
-    /* ... (baaki ka CSS jo aapke paas pehle tha) ... */
-    
-    </style>
-""", unsafe_allow_html=True)
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
 def fetch_all_raw_data():
