@@ -158,7 +158,10 @@ def export_labor_profile_pdf(labor_row, payments_df):
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
-/* Background Image Injection */
+# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
+st.markdown("""
+    <style>
+    /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
         background-image: url("https://i.ibb.co/68v1r5W/image-49c1b9.jpg");
         background-size: cover;
@@ -166,16 +169,26 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
         background-attachment: fixed;
     }
 
-    /* Content ko readable banane ke liye overlay */
+    /* Content readability overlay */
     [data-testid="stAppViewContainer"]::before {
         content: "";
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.85); /* White overlay for readability */
+        background: rgba(255, 255, 255, 0.85); 
         z-index: 0;
     }
 
-
+    /* Baki ki aapki purani CSS yahan aayegi... */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+    
+    /* ... (baaki ka CSS jo aapke paas pehle tha) ... */
+    
+    </style>
+""", unsafe_allow_html=True)
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
 def fetch_all_raw_data():
