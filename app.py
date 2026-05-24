@@ -161,31 +161,17 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 # --- LUXURY BRANDED CSS WITH BACKGROUND ---
 st.markdown("""
     <style>
-    /* 1. Background image ko poori screen par fit karna */
+    /* Professional Background Image with Soft Overlay */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
+        background-image: linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.9)), 
+                          url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
-
-    /* 2. Main interface (cards) ko glass-like transparent banana */
-    .block-container {
-        /* background mein 60% opacity di hai taake peeche se image nazar aaye */
-        background: rgba(255, 255, 255, 0.6) !important;
-        /* Blur effect taake text readable rahe */
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border-radius: 30px !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        padding: 2rem !important;
-    }
-
-    /* 3. Saare text ko white background par dark color dena taake parhne mein dikkat na ho */
-    h1, h2, h3, p, div, span {
-        color: #0f172a !important;
-        font-weight: 500;
-    }
+    /* Sleek Cards */
+    .block-container { background: rgba(255, 255, 255, 0.5); border-radius: 20px; }
+    .css-1r6slb0 { padding: 2rem; }
     </style>
 """, unsafe_allow_html=True)
 # --- 4. DATA FETCH LOGIC ---
