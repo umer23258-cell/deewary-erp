@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 import io
 import urllib.parse
 import streamlit.components.v1 as components
-import requests  # For fetching profile images
-# ReportLab PDF Libraries
+import requests  # Image fetch karne ke liye
+# PDF ke liye libraries
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib import colors
@@ -804,7 +804,6 @@ elif "Labor Force Folder" in menu:
             st.write(f"**Phone Primary Identity:** {l_row.get('phone', 'N/A')}")
             st.write(f"**Internal Personal Logs Data:** {l_row.get('details', 'N/A')}")
             
-            # Sub-table history payload logic
             sub_pay = df[(df['type'] == 'Labor') & (df['name'].str.contains(selected_labor, case=False, na=False))] if not df.empty else pd.DataFrame()
             st.markdown("#### Direct Payout Logs History")
             if not sub_pay.empty:
@@ -812,37 +811,4 @@ elif "Labor Force Folder" in menu:
             else:
                 st.caption("No custom transaction histories traced for this unique worker profile registry yet.")
                 
-            pdf_data = export_labor_profile_pdf(l_row, sub_pay)
-            st.download_button(
-                label="📥 Export Individual Labor PDF Report",
-                data=pdf_data,
-                file_name=f"Labor_Dossier_{l_row['name']}.pdf",
-                mime="application/pdf"
-            )
-    else:
-        st.info("No registered workers mapped onto this enterprise database system yet.")
-
-elif "Search & Audit Reports" in menu:
-    st.title("🔍 Search & System Cross-Audit Infrastructure Reports")
-    if not df.empty:
-        search_q = st.text_input("Global Structural Data Search Engine Terminal:")
-        filtered_audit = df.copy()
-        
-        if search_q:
-            filtered_audit = filtered_audit[
-                filtered_audit['name'].str.contains(search_q, case=False, na=False) |
-                filtered_audit['detail'].str.contains(search_q, case=False, na=False)
-            ]
-            
-        st.dataframe(filtered_audit, use_container_width=True)
-        
-        pdf_report = export_to_pdf(filtered_audit, f"Audited Transaction Ledger Report: {current_project}")
-        st.download_button(
-            label="📥 Export Ledger Summary PDF Document",
-            data=pdf_report,
-            file_name=f"ERP_Audit_Report_{current_project}.pdf",
-            mime="application/pdf"
-        )
-    else:
-        st.info("System search metrics unavailable because database registries are totally empty.")
-        
+            pdf_data = export_labor_profile_pdf
