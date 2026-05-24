@@ -158,6 +158,7 @@ def export_labor_profile_pdf(labor_row, payments_df):
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
+# --- LUXURY BRANDED CSS WITH BACKGROUND ---
 st.markdown("""
     <style>
     /* Background Image setup */
@@ -168,21 +169,27 @@ st.markdown("""
         background-attachment: fixed;
     }
 
-    /* Overlay for readability */
+    /* Reading area overlay for better text contrast */
     .stApp {
         background: rgba(248, 250, 252, 0.85);
     }
 
-    /* Cards container */
+    /* Cards and container styling */
     .block-container {
         background: rgba(255, 255, 255, 0.95);
         border-radius: 25px;
         padding: 2rem !important;
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
+    
+    /* Plus Jakarta Sans font import (optional, as used in your original code) */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
     </style>
 """, unsafe_allow_html=True)
-
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
 def fetch_all_raw_data():
