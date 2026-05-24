@@ -163,9 +163,10 @@ st.markdown("""
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
         background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
-        background-size: cover;
+        background-size: 100% 100%; /* تصویر کو کھینچنے کے بجائے فل اسکرین فٹ کیا گیا ہے */
         background-position: center;
         background-attachment: fixed;
+        background-repeat: no-repeat;
     }
 
     /* Content readability overlay */
@@ -173,7 +174,7 @@ st.markdown("""
         content: "";
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.85); 
+        background: rgba(255, 255, 255, 0.65); /* تصویر کو صاف دکھانے کے لیے دھندلا پن کم (0.65) کر دیا ہے */
         z-index: 0;
     }
 
