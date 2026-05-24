@@ -163,7 +163,7 @@ st.markdown("""
     <style>
     /* 1. Background Image ko Blur aur Fix karna */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg");
+        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
