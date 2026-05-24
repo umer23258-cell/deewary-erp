@@ -5,50 +5,194 @@ from datetime import datetime, timedelta
 import io
 import urllib.parse
 import streamlit.components.v1 as components
+import requests  # Image fetch karne ke liye
+
+# PDF ke liye libraries
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
 
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- 2. PAGE CONFIG ---
+
+# --- 2. PDF GENERATION FUNCTION (Full Table View) ---
+def export_to_pdf(dataframe, title):
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=landscape(letter), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    elements.append(Paragraph(f"<font color='#FF4B4B' size=18><b>{title}</b></font>", styles['Title']))
+    elements.append(Paragraph(f"Deewaryn.com ERP - Full System Report", styles['Normal']))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 15))
+
+    pdf_df = dataframe.copy()
+    data = [["ID", "Date", "Item/Name", "Amount", "Detail", "Occupation", "Rec. By", "Method"]]
+    
+    for _, row in pdf_df.iterrows():
+        data.append([
+            str(row.get('id', '')),
+            str(row.get('date', '')),
+            str(row.get('name', '')),
+            f"{row.get('amount', 0):,.0f}",
+            str(row.get('detail', ''))[:30] + "..." if len(str(row.get('detail', ''))) > 30 else str(row.get('detail', '')),
+            str(row.get('occupation', '')),
+            str(row.get('received_by', '')),
+            str(row.get('pay_method', ''))
+        ])
+    
+    total_val = pdf_df['amount'].sum() if 'amount' in pdf_df.columns else 0
+    data.append(["", "", "TOTAL", f"{total_val:,.0f}", "", "", "", ""])
+
+    t = Table(data, colWidths=[40, 70, 110, 80, 150, 90, 90, 70])
+    style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
+        ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+    ])
+    t.setStyle(style)
+    elements.append(t)
+    doc.build(elements)
+    buf.seek(0)
+    return buf
+
+
+# --- INDIVIDUAL LABOR PROFILE PRINT PDF FUNCTION ---
+def export_labor_profile_pdf(labor_row, payments_df):
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Header
+    elements.append(Paragraph(f"<font color='#1e1e1e' size=22><b>DEEWARYN.COM ERP</b></font>", styles['Title']))
+    elements.append(Paragraph(f"<font color='#FF4B4B' size=14><b>LABOR PROFILE DOSSIER & LEDGER REPORT</b></font>", styles['Normal']))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Profile Picture Logic
+    photo_url = labor_row.get('photo_url', '')
+    if photo_url and str(photo_url) != "nan" and photo_url.startswith("http"):
+        try:
+            img_data = requests.get(photo_url, timeout=5).content
+            img_buf = io.BytesIO(img_data)
+            img = Image(img_buf, width=100, height=100)
+            img.hAlign = 'LEFT'
+            elements.append(img)
+            elements.append(Spacer(1, 15))
+        except:
+            elements.append(Paragraph("<i>[Profile Image Attached in Cloud File]</i>", styles['Normal']))
+            elements.append(Spacer(1, 10))
+
+    # Personal Details Table
+    det_data = [
+        [Paragraph("<b>Full Name:</b>", styles['Normal']), Paragraph(str(labor_row['name']), styles['Normal'])],
+        [Paragraph("<b>Occupation / Skill:</b>", styles['Normal']), Paragraph(str(labor_row['occupation'] if labor_row['occupation'] else 'General Labor'), styles['Normal'])],
+        [Paragraph("<b>Phone Number:</b>", styles['Normal']), Paragraph(str(labor_row['phone']), styles['Normal'])],
+        [Paragraph("<b>CNIC Number:</b>", styles['Normal']), Paragraph(str(labor_row['cnic']), styles['Normal'])],
+        [Paragraph("<b>Total Contract Value:</b>", styles['Normal']), Paragraph(f"PKR {labor_row['total_contract_amount']:,.0f}", styles['Normal'])],
+        [Paragraph("<b>Personal Details / Notes:</b>", styles['Normal']), Paragraph(str(labor_row['details'] if labor_row['details'] else 'N/A'), styles['Normal'])],
+    ]
+    det_table = Table(det_data, colWidths=[150, 350])
+    det_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor("#f8f9fa")),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    elements.append(det_table)
+    elements.append(Spacer(1, 20))
+    
+    # Payments History Table Section
+    elements.append(Paragraph("<font color='#1e1e1e' size=12><b>💵 STATEMENT OF PAID PAYMENTS HISTORY</b></font>", styles['Heading2']))
+    elements.append(Spacer(1, 5))
+    
+    pay_data = [["ID", "Date", "Payment Channel / Method", "Amount (PKR)", "Remarks / Details"]]
+    if not payments_df.empty:
+        for _, p in payments_df.iterrows():
+            pay_data.append([
+                str(p.get('id', '')),
+                str(p.get('date', '')),
+                str(p.get('pay_method', 'Cash')),
+                f"{p.get('amount', 0):,.0f}",
+                str(p.get('detail', ''))
+            ])
+        total_p = payments_df['amount'].sum()
+        pay_data.append(["", "", "TOTAL PAID AMOUNT:", f"{total_p:,.0f}", ""])
+    else:
+        pay_data.append(["-", "-", "No active transaction logs.", "0", "-"])
+        
+    pay_table = Table(pay_data, colWidths=[40, 80, 150, 100, 150])
+    pay_style = [
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e1e1e")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.lightgrey),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]
+    if not payments_df.empty:
+        pay_style.extend([
+            ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FF4B4B")),
+            ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ])
+    pay_table.setStyle(TableStyle(pay_style))
+    elements.append(pay_table)
+    
+    doc.build(elements)
+    buf.seek(0)
+    return buf
+
+
+# --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
-# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
+# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION WITH BACKGROUND IMAGE ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     
-    /* Global Background and Typography */
+    /* App-wide Typography Override aur Background Image Application */
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
-        background-image: url("https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070") !important;
+        background-image: linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)), url('https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg') !important;
         background-size: cover !important;
         background-position: center !important;
         background-attachment: fixed !important;
     }
     
-    /* Main container text visibility patch */
-    [data-testid="stMainBlockContainer"] {
-        background: rgba(258, 258, 258, 0.95) !important;
-        border-radius: 24px !important;
-        margin-top: 20px !important;
-        margin-bottom: 20px !important;
-        padding: 30px !important;
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.05) !important;
+    /* Content layer block container background management */
+    [data-testid="stHeader"] {
+        background: transparent !important;
     }
     
+    /* Clean layout alignment padding */
     .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
         max-width: 1250px !important;
     }
 
-    /* Sidebar Clean Styling */
+    /* Sidebar Glassmorphism Customization */
     [data-testid="stSidebar"] {
         background-color: #ffffff !important;
         border-right: 1px solid #e2e8f0 !important;
         box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02) !important;
     }
     
+    /* Luxury Radio Button Menu Customization */
     div[data-testid="stSidebarUserContent"] div.stRadio > div {
         gap: 6px !important;
     }
@@ -78,10 +222,12 @@ st.markdown("""
         color: inherit !important;
     }
     
+    /* Hide Default Streamlit Radio Circle Icons entirely */
     div[data-testid="stSidebarUserContent"] div.stRadio [data-testid="stFiberManualRecord"] {
         display: none !important;
     }
     
+    /* Bespoke Input Buttons Styling */
     div.stButton > button {
         background: #ffffff;
         color: #0f172a;
@@ -110,9 +256,11 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(220, 38, 38, 0.25);
     }
 
+    /* Branded Dashboard Headbox Layout */
     .header-box {
         text-align: center;
-        background: #ffffff;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
         padding: 40px 20px;
         border-radius: 28px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 10px 15px -3px rgba(0, 0, 0, 0.02);
@@ -128,8 +276,10 @@ st.markdown("""
         border-radius: 28px 28px 0 0;
     }
     
+    /* Modern Premium Real-Estate KPI Panels */
     .kpi-card {
-        background: #ffffff;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
         padding: 26px;
         border-radius: 22px;
         border: 1px solid #f1f5f9;
@@ -142,8 +292,9 @@ st.markdown("""
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.04);
     }
     
+    /* Custom Alerts Configuration */
     .alert-box {
-        background-color: #fff5f5;
+        background-color: rgba(255, 245, 245, 0.95);
         border-left: 5px solid #ef4444;
         padding: 18px;
         border-radius: 14px;
@@ -154,7 +305,7 @@ st.markdown("""
         border: 1px solid #fee2e2;
     }
     .forecast-box {
-        background-color: #f0fdf4;
+        background-color: rgba(240, 253, 244, 0.95);
         border-left: 5px solid #22c55e;
         padding: 18px;
         border-radius: 14px;
@@ -165,6 +316,7 @@ st.markdown("""
         border: 1px solid #dcfce7;
     }
     
+    /* Elegant Clean Voucher Block */
     .digital-voucher {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
@@ -176,9 +328,11 @@ st.markdown("""
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.06);
     }
     
+    /* Mobile Layout Breakpoint Automation */
     @media (max-width: 768px) {
-        [data-testid="stMainBlockContainer"] {
-            padding: 1rem !important;
+        .block-container {
+            padding-left: 0.8rem !important;
+            padding-right: 0.8rem !important;
         }
         .header-box {
             padding: 30px 15px;
@@ -196,6 +350,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
 def fetch_all_raw_data():
@@ -212,14 +367,18 @@ def fetch_all_labor_profiles():
     except: return pd.DataFrame()
 
 def fetch_project_status(project_name):
-    tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
     try:
-        res = supabase.table('project_status').select("*").eq('project_context', project_name).execute()
+        res = supabase.table('project_status').select("*").execute()
         df_status = pd.DataFrame(res.data)
-        if not df_status.empty:
-            return df_status
+        if not df_status.empty and 'project_context' in df_status.columns:
+            df_filtered = df_status[df_status['project_context'] == project_name]
+            if not df_filtered.empty:
+                return df_filtered
+        
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
     except: 
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
 
 def check_password():
@@ -231,8 +390,6 @@ def check_password():
             if pwd == st.secrets.get("ADMIN_PASSWORD", "admin786"):
                 st.session_state["authenticated"] = True
                 st.rerun()
-            else:
-                st.error("Invalid Secret Pin")
     return False
 
 def generate_whatsapp_link(type_tx, name, amount, detail, project):
@@ -246,6 +403,7 @@ def generate_whatsapp_link(type_tx, name, amount, detail, project):
     base_msg += f"\n_System generated tracking logs summary entry._"
     encoded_text = urllib.parse.quote(base_msg)
     return f"https://api.whatsapp.com/send?text={encoded_text}"
+
 
 # --- 5. INITIALIZE PROJECT REGISTRY STATE ---
 raw_df = fetch_all_raw_data()
@@ -262,6 +420,7 @@ if not raw_df.empty and 'project_context' in raw_df.columns:
 
 if "selected_project" not in st.session_state:
     st.session_state["selected_project"] = st.session_state["custom_projects"][0]
+
 
 # --- 6. POPUP DIALOG FORMS ---
 @st.dialog("📁 Create New Project Site Context", dismissible=False)
@@ -287,7 +446,10 @@ def popup_create_project():
                 try:
                     supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
                 except:
-                    pass
+                    try:
+                        supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
+                    except:
+                        pass
             
             st.success(f"Project '{new_proj_name}' successfully created!")
             st.rerun()
@@ -333,9 +495,11 @@ def popup_register_labor(current_project):
                 "total_contract_amount": float(l_contract), 
                 "rating": int(l_rating),
                 "photo_url": str(img_url), 
-                "details": str(l_details),
-                "project_context": str(current_project)
+                "details": str(l_details)
             }
+            
+            if 'project_context' in raw_labor_df.columns or not raw_labor_df.empty:
+                payload["project_context"] = str(current_project)
             
             try:
                 supabase.table('labor_profiles').insert(payload).execute()
@@ -390,12 +554,17 @@ def popup_transaction_entry(ftype, current_project):
                 "name": str(d_name), 
                 "amount": float(d_amt), 
                 "detail": str(d_det), 
-                "image_url": str(img_url),
-                "occupation": str(d_occ),
-                "received_by": str(d_rec),
-                "pay_method": str(d_meth),
-                "project_context": str(current_project)
+                "image_url": str(img_url)
             }
+            
+            if not raw_df.empty:
+                if 'occupation' in raw_df.columns: payload["occupation"] = str(d_occ)
+                if 'received_by' in raw_df.columns: payload["received_by"] = str(d_rec)
+                if 'pay_method' in raw_df.columns: payload["pay_method"] = str(d_meth)
+                if 'project_context' in raw_df.columns: payload["project_context"] = str(current_project)
+            else:
+                payload["project_context"] = str(current_project)
+                payload["pay_method"] = str(d_meth)
             
             try:
                 supabase.table('transactions').insert(payload).execute()
@@ -431,23 +600,37 @@ def popup_update_status(current_project, status_df):
             st.success("Task updated successfully!")
             st.rerun()
         except:
-            st.error("Schema configuration error while changing status state.")
+            try:
+                supabase.table('project_status').insert({"task_name": task, "status": stat, "project_context": current_project}).execute()
+                st.cache_data.clear()
+                st.success("Task aligned successfully!")
+                st.rerun()
+            except Exception as e:
+                st.error("Schema constraint failed to align state.")
                 
     if cancel_btn:
         st.rerun()
+
 
 # --- 7. DYNAMIC PROJECT FILTERS ---
 current_project = st.session_state["selected_project"]
 
 if not raw_df.empty:
-    df = raw_df[raw_df['project_context'] == current_project] if 'project_context' in raw_df.columns else raw_df.copy()
+    if 'project_context' in raw_df.columns:
+        df = raw_df[raw_df['project_context'] == current_project]
+    else:
+        df = raw_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
 else:
     df = pd.DataFrame()
 
 if not raw_labor_df.empty:
-    labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project] if 'project_context' in raw_labor_df.columns else raw_labor_df.copy()
+    if 'project_context' in raw_labor_df.columns:
+        labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project]
+    else:
+        labor_df = raw_labor_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
 else:
     labor_df = pd.DataFrame()
+
 
 # --- 8. SIDEBAR DESIGN (Custom Branded Luxury Styling) ---
 with st.sidebar:
@@ -489,6 +672,8 @@ with st.sidebar:
             st.session_state["authenticated"] = False
             st.rerun()
     st.divider()
+    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg")
+
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
@@ -625,6 +810,16 @@ elif "Labor Force Folder" in menu:
             st.markdown(f"#### **Contract Value:** PKR {l_row.get('total_contract_amount', 0):,.0f}")
             st.write(f"**Internal Management Profile Notes:** {l_row.get('details', 'N/A')}")
             
+        # PDF Generator Download Button for Individual Labor Profile Dossier
+        st.write("##")
+        labor_pdf_data = export_labor_profile_pdf(l_row, p_history)
+        st.download_button(
+            label="📥 Print/Export Worker Dossier PDF",
+            data=labor_pdf_data,
+            file_name=f"Labor_Dossier_{l_row.get('name').replace(' ', '_')}.pdf",
+            mime="application/pdf"
+        )
+            
         st.write("---")
         st.write("#### 💵 Ledger Log Statements")
         if not p_history.empty:
@@ -638,5 +833,16 @@ elif "Search & Audit Reports" in menu:
     st.subheader("🔍 Master Audit Ledger")
     if not df.empty:
         st.dataframe(df[['id', 'date', 'type', 'name', 'amount', 'pay_method', 'detail']], use_container_width=True)
+        
+        # PDF Generator Download Button for Master Report
+        st.write("##")
+        master_pdf_data = export_to_pdf(df, f"Master Audit Report: {current_project}")
+        st.download_button(
+            label="📥 Download Complete Master Audit Report (PDF)",
+            data=master_pdf_data,
+            file_name=f"Master_Audit_{current_project.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            key="master_pdf_download"
+        )
     else:
         st.info("Database matrix contains no operational data.")
