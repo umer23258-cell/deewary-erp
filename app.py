@@ -158,19 +158,24 @@ def export_labor_profile_pdf(labor_row, payments_df):
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
-/* Custom Background Image */
-[data-testid="stAppViewContainer"] {
-    background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-}
+st.markdown("""
+    <style>
+    /* ... aapka baaki CSS ... */
 
-/* Agar aap chahte hain ki panels ki transparency rahe taake image dikhe */
-.stApp {
-    background-color: rgba(255, 255, 255, 0.8) !important;
-}
-
+    /* Naya Background Image Code */
+    [data-testid="stAppViewContainer"] {
+        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    
+    /* Panel transparency settings */
+    .stApp {
+        background-color: rgba(255, 255, 255, 0.8) !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
