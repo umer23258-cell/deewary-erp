@@ -158,8 +158,9 @@ def export_labor_profile_pdf(labor_row, payments_df):
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
+# Yeh line bilkul screen ke left se start honi chahiye
 st.markdown("""
-    <style>
+<style>
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
         background-image: url("https://i.ibb.co/fgqhS8w/deewaryn-com-logo.jpg");
@@ -176,13 +177,13 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.85); 
         z-index: 0;
     }
-    
-    /* Ensure content is above the overlay */
-    .main > div {
-        position: relative;
-        z-index: 1;
+
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
-    </style>
+</style>
 """, unsafe_allow_html=True)
 
     
