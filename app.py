@@ -158,7 +158,6 @@ def export_labor_profile_pdf(labor_row, payments_df):
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
-# Yeh line bilkul screen ke left se start honi chahiye
 st.markdown("""
 <style>
     /* Background Image Injection */
@@ -178,10 +177,30 @@ st.markdown("""
         z-index: 0;
     }
 
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
 
     html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+
+    /* Styled Voucher Container */
+    .digital-voucher {
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        max-width: 600px;
+        margin: 20px auto;
+    }
+
+    /* KPI Card Enhancement */
+    .kpi-card {
+        background: #ffffff;
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -548,11 +567,11 @@ if "Dashboard" in menu:
                 st.markdown(f"""<div class="forecast-box">📈 RUNWAY STABILITY PROJECTION: Safe operational buffer mapped for active site context: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
 
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>💰 TOTAL CAPITAL ARRIVAL</p><h2 style='color:#15803d; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
-    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>📉 DISBURSED OUTFLOWS</p><h2 style='color:#b91c1c; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>💰 TOTAL CAPITAL ARRIVAL</p><h2 style='color:#15803d; margin:8px 0 0 0; font-weight:900; font-size:40px; letter-spacing:-1px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>📉 DISBURSED OUTFLOWS</p><h2 style='color:#b91c1c; margin:8px 0 0 0; font-weight:900; font-size:40px; letter-spacing:-1px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
     with col_kpi3: 
         bal_color = "#15803d" if net_bal >= 0 else "#b91c1c"
-        st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>⚖️ NET RUNNING BALANCES</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>⚖️ NET RUNNING BALANCES</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:900; font-size:40px; letter-spacing:-1px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
     st.write("##")
     status_df = fetch_project_status(current_project)
@@ -610,105 +629,16 @@ elif menu == "📑 Receipt Voucher System":
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Ledger Allocation:</span><b style="color:#0f172a;">{str(v_row['type']).upper()}</b></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Particular Scope:</span><b style="color:#0f172a;">{v_row['name']}</b></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Designation Spec:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('occupation', 'N/A') if pd.notna(v_row.get('occupation')) else 'N/A'}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Disbursed/Authorized:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 18px; font-size: 13.5px; color:#475569;"><span>Channel Pipeline:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
-                <p style="font-size: 12.5px; background: #f8fafc; padding: 14px; border-radius: 12px; font-style: italic; border-left: 4px solid #FF4B4B; margin-bottom:24px; color:#475569; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">Memo Notes: {v_row['detail'] if v_row['detail'] else 'No automated remarks logged.'}</p>
-                <div style="font-size: 20px; font-weight: 800; color: #ffffff; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius:14px; padding: 14px; text-align:center; box-shadow: 0 4px 12px rgba(15,23,42,0.15);"><span style="font-size:12px; font-weight:500; opacity:0.7; margin-right:10px; letter-spacing:0.5px;">NET VOLUME TOTAL:</span>PKR {v_row['amount']:,.0f}/-</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Payment Method:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Authorized Receiver:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
+                <div style="margin-top: 18px; padding-top: 18px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 14px; font-weight: 700; color:#0f172a;">TOTAL AMOUNT:</span>
+                    <span style="font-size: 22px; font-weight: 800; color: #15803d;">PKR {v_row['amount']:,.0f}</span>
+                </div>
+                <div style="margin-top: 15px; font-size: 12px; color: #64748b; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #edf2f7;">
+                    <b>Details:</b> {v_row['detail'] if v_row['detail'] else 'No breakdown notes appended.'}
+                </div>
             </div>
         """, unsafe_allow_html=True)
-    else: 
-        st.info(f"Is project site ({current_project}) ke under filhal koi transaction record mojud nahi hai.")
-
-
-# --- LABOR PROFILES APPLICATION PAGE ---
-elif "Labor Force" in menu:
-    st.title(f"👷 Dynamic Human Resource Roster")
-    
-    if not labor_df.empty:
-        l_search = st.text_input("🔎 Search Force Rosters Matrix...")
-        if l_search:
-            l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
-            labor_df = labor_df[l_mask]
-            
-        st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
-        
-        for _, row in labor_df.iterrows():
-            with st.container():
-                st.markdown(f"<div style='background:#ffffff; border:1px solid #e2e8f0; border-radius:20px; padding:25px; margin-bottom:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.01);'>", unsafe_allow_html=True)
-                st.markdown(f"#### 👤 {row['name']} — <span style='color:#FF4B4B; font-weight:700;'>{row['occupation'] if row['occupation'] else 'General Force'}</span>", unsafe_allow_html=True)
-                c_img, c_info = st.columns([1, 3])
-                with c_img:
-                    photo_path = row.get('photo_url', '')
-                    if photo_path and str(photo_path) != "nan": st.image(photo_path, use_container_width=True)
-                    else: st.info("No Photo Uploaded.")
-                with c_info:
-                    st.markdown(f"**🪪 CNIC Identifier Pass:** {row['cnic']} | **💰 Total Pool Budget Allocation:** PKR {row['total_contract_amount']:,.0f}")
-                    
-                    stars = "⭐" * int(row['rating'] if row['rating'] else 5)
-                    st.markdown(f"**📊 Performance Rating Score:** {stars}")
-                    st.info(row['details'] if row['details'] else "No metadata profile details added.")
-                    
-                    st.markdown("##### 💵 Correlated Ledger Clearance Pipeline Sync")
-                    if not df.empty:
-                        prof_name = str(row['name']).lower().strip()
-                        def is_name_match(tx_name):
-                            tx_name_clean = str(tx_name).lower().strip()
-                            return (prof_name in tx_name_clean) or (tx_name_clean in prof_name)
-                        
-                        labor_tx = df[df['type'] == 'Labor']
-                        if not labor_tx.empty:
-                            match_mask = labor_tx['name'].apply(is_name_match)
-                            labor_payments = labor_tx[match_mask]
-                        else: labor_payments = pd.DataFrame()
-                        
-                        if not labor_payments.empty:
-                            st.dataframe(labor_payments[['id', 'date', 'pay_method', 'amount', 'detail']], use_container_width=True)
-                            total_paid = labor_payments['amount'].sum()
-                            st.metric(label="Sum Cleared Remittances", value=f"PKR {total_paid:,.0f}/-")
-                        else:
-                            st.warning("No payment logs linked under this exact structural profile context designation name.")
-                            labor_payments = pd.DataFrame()
-                    else: labor_payments = pd.DataFrame()
-
-                    pdf_data = export_labor_profile_pdf(row, labor_payments)
-                    st.write("##")
-                    st.download_button(label="📄 Print Profile Evaluation Dossier", data=pdf_data, file_name=f"Labor_{str(row['name'])}.pdf", mime="application/pdf", key=f"dl_pdf_{row['id']}", type="primary")
-                st.markdown("</div>", unsafe_allow_html=True)
-                st.divider()
-        if is_auth:
-            l_tid = st.text_input("Enter Worker Core Database Row ID to Delete")
-            if st.button("🗑️ Delete Worker Record Permanently"):
-                if l_tid:
-                    supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
-                    st.cache_data.clear(); st.rerun()
-    else: st.info(f"No active worker logs inside configuration directory: {current_project}")
-
-
-# --- ORIGINAL HISTORY PAGES LOGIC (Project Restricted) ---
-else:
-    st.title(f"{menu} Terminal Portal")
-    if not df.empty:
-        if "Income" in menu: f_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: f_df = df[df['type'] == 'Material']
-        else: f_df = df.copy()
-        
-        search = st.text_input("🔎 Search targeted row indexing...")
-        if search:
-            mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
-            f_df = f_df[mask]
-        
-        st.dataframe(f_df, use_container_width=True)
-        st.metric("Total Operational Volume Aggregated", f"PKR {f_df['amount'].sum():,.0f}")
-        
-        if is_auth:
-            tid = st.text_input("Enter Target Ledger ID to Remove")
-            if st.button("🗑️ Remove Ledger Record Entry"):
-                supabase.table('transactions').delete().eq('id', tid).execute()
-                st.cache_data.clear(); st.rerun()
-
-        st.divider()
-        c1, c2 = st.columns(2)
-        with c1: st.download_button("📥 Export CSV Spreadsheet File", f_df.to_csv().encode('utf-8'), f"{menu}_{current_project}.csv", use_container_width=True)
-        with c2: st.download_button("📄 Print Signature PDF Audit Ledger", export_to_pdf(f_df, menu), f"{menu}_{current_project}.pdf", use_container_width=True, type="primary")
-    else: st.info(f"No active record data blocks synced under active site environment context: {current_project}")
+    else:
+        st.info("No logs available to generate digital vouchers for this project context yet.")
