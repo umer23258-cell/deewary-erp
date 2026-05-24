@@ -163,7 +163,7 @@ st.markdown("""
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
         background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
-        background-size: 100% 100%; /* تصویر کو کھینچنے کے بجائے فل اسکرین فٹ کیا گیا ہے */
+        background-size: 100% 100%;
         background-position: center;
         background-attachment: fixed;
         background-repeat: no-repeat;
@@ -174,7 +174,7 @@ st.markdown("""
         content: "";
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.65); /* تصویر کو صاف دکھانے کے لیے دھندلا پن کم (0.65) کر دیا ہے */
+        background: rgba(255, 255, 255, 0.65);
         z-index: 0;
     }
 
@@ -532,12 +532,19 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
+    # --- لکژری اور پریمیم ہیڈر ڈیزائن (اپڈیٹڈ) ---
     st.markdown(f"""
-        <div class="header-box">
-            <h1 style="color: #0f172a; margin: 0; font-weight:800; letter-spacing: -0.5px; font-size:36px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h1>
-            <p style="color: #64748b; letter-spacing: 0.5px; font-size: 14px; margin: 6px 0 18px 0; font-weight:500;">PREMIUM SYSTEM INTERFACE • DESIGNATED CONTEXT: {current_project.upper()}</p>
-            <div style="background: rgba(255, 75, 75, 0.06); color: #FF4B4B; display: inline-block; padding: 6px 20px; border-radius: 30px; font-weight: 700; font-size: 13px; border: 1px solid rgba(255, 75, 75, 0.15);">
-                C.E.O: SARDAR SAMI ULLAH
+        <div style="background: linear-gradient(135deg, #1e1e24 0%, #0f172a 100%); padding: 35px; border-radius: 24px; box-shadow: 0 12px 30px rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <div>
+                    <h1 style="color: #ffffff; margin: 0; font-weight: 900; letter-spacing: -1px; font-size: 52px; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h1>
+                    <p style="color: #94a3b8; letter-spacing: 1px; font-size: 14px; margin: 6px 0 0 0; font-weight: 600; text-transform: uppercase;">PREMIUM CORPORATE ENTERPRISE FRAMEWORK</p>
+                    <p style="color: #FF4B4B; margin: 4px 0 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">📍 SITE CONTEXT: {current_project.upper()}</p>
+                </div>
+                <div style="background: linear-gradient(90deg, #d4af37 0%, #aa7c11 100%); padding: 14px 28px; border-radius: 16px; border: 1px solid #ffe082; box-shadow: 0 4px 15px rgba(212,175,55,0.25); text-align: center;">
+                    <span style="color: #000000; display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8;">Executive Management</span>
+                    <span style="color: #000000; font-size: 20px; font-weight: 900; letter-spacing: -0.5px;">C.E.O: SARDAR SAMI ULLAH</span>
+                </div>
             </div>
         </div>
     """, unsafe_allow_html=True)
