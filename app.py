@@ -6,6 +6,7 @@ import io
 import urllib.parse
 import streamlit.components.v1 as components
 import requests  # Image fetch karne ke liye
+
 # PDF ke liye libraries
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
@@ -16,6 +17,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
+
 
 # --- 2. PDF GENERATION FUNCTION (Full Table View) ---
 def export_to_pdf(dataframe, title):
@@ -44,7 +46,7 @@ def export_to_pdf(dataframe, title):
             str(row.get('pay_method', ''))
         ])
     
-    total_val = pdf_df['amount'].sum()
+    total_val = pdf_df['amount'].sum() if not pdf_df.empty else 0
     data.append(["", "", "TOTAL", f"{total_val:,.0f}", "", "", "", ""])
 
     t = Table(data, colWidths=[40, 70, 110, 80, 150, 90, 90, 70])
@@ -160,24 +162,30 @@ st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗
 # --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
     /* Background Image Injection */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.ibb.co/fgqhS8w/deewaryn-com-logo.jpg");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background-image: url("https://i.ibb.co/fgqhS8w/deewaryn-com-logo.jpg") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
     }
 
-    /* Content readability overlay */
+    /* Content readability layer styling with backdrop-filter support */
     [data-testid="stAppViewContainer"]::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.85); 
-        z-index: 0;
+        content: "" !important;
+        position: absolute !important;
+        top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
+        background: rgba(255, 255, 255, 0.88) !important; 
+        z-index: 0 !important;
     }
 
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    /* Target direct children view cells alignment */
+    [data-testid="stAppViewContainer"] > div:first-child {
+        position: relative !important;
+        z-index: 1 !important;
+    }
 
     html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -185,16 +193,17 @@ st.markdown("""
 
     /* Styled Voucher Container */
     .digital-voucher {
-        background: #ffffff;
-        padding: 30px;
-        border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
-        max-width: 600px;
-        margin: 20px auto;
+        background: #ffffff !important;
+        padding: 30px !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
+        border: 1px solid #e2e8f0 !important;
+        max-width: 600px !important;
+        margin: 20px auto !important;
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
@@ -220,10 +229,10 @@ def fetch_project_status(project_name):
             if not df_filtered.empty:
                 return df_filtered
         
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
     except: 
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
 
 def check_password():
@@ -286,7 +295,7 @@ def popup_create_project():
                 st.session_state["custom_projects"].append(new_proj_name)
             st.session_state["selected_project"] = new_proj_name
             
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "Polishing/Grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
             for t in tasks:
                 try:
                     supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
@@ -428,7 +437,7 @@ def popup_transaction_entry(ftype, current_project):
 
 @st.dialog("🛠️ Update Site Checklist Status", dismissible=False)
 def popup_update_status(current_project, status_df):
-    task = st.selectbox("Select Task Line Target", status_df['task_name'].tolist())
+    task = st.selectbox("Select Task Line Target", status_df['task_name'].tolist() if not status_df.empty else [])
     stat = st.radio("Status Milestone Alignment", ["Pending", "Done"], horizontal=True)
     
     st.write("##")
@@ -534,9 +543,9 @@ if "Dashboard" in menu:
 
     inc, lab_exp, mat_exp, exp, net_bal = 0, 0, 0, 0, 0
     if not df.empty:
-        inc = df[df['type'] == 'Income']['amount'].sum()
-        lab_exp = df[df['type'] == 'Labor']['amount'].sum()
-        mat_exp = df[df['type'] == 'Material']['amount'].sum()
+        inc = df[df['type'] == 'Income']['amount'].sum() if 'type' in df.columns else 0
+        lab_exp = df[df['type'] == 'Labor']['amount'].sum() if 'type' in df.columns else 0
+        mat_exp = df[df['type'] == 'Material']['amount'].sum() if 'type' in df.columns else 0
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
@@ -596,7 +605,6 @@ if "Dashboard" in menu:
                 st.markdown(f'<div style="background:{bg}; padding:16px; border-radius:16px; margin-bottom:10px; border:1px solid {border_c}; color:{text_c}; font-weight:600; font-size:13.5px; display:flex; justify-content:space-between; align-items:center;"><span>{row["task_name"]}</span><span style="font-size:11px; font-weight:700; opacity:0.9; text-transform:uppercase;">{icon}</span></div>', unsafe_allow_html=True)
 
 
-# --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
     st.write("Dynamic cryptographic clearance invoice framework tailored for professional architectural firms.")
@@ -606,9 +614,11 @@ elif menu == "📑 Receipt Voucher System":
         df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
         selected_log = st.selectbox("Select System Transaction Target Entry:", df['voucher_label'].tolist())
         v_row = df[df['voucher_label'] == selected_log].iloc[0]
+        
         v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
         v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
         
+        # Details History block exactly from your design logic
         st.markdown(f"""
             <div class="digital-voucher">
                 <div style="text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 22px;">
@@ -616,20 +626,111 @@ elif menu == "📑 Receipt Voucher System":
                     <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 600; text-transform:uppercase; letter-spacing:1px;">Official Transaction Clearance Record</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B; font-weight:700;">{v_number}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Ledger Allocation:</span><b style="color:#0f172a;">{str(v_row['type']).upper()}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Particular Scope:</span><b style="color:#0f172a;">{v_row['name']}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Designation Spec:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('occupation', 'N/A') if pd.notna(v_row.get('occupation')) else 'N/A'}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Payment Method:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Authorized Receiver:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
-                <div style="margin-top: 18px; padding-top: 18px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 14px; font-weight: 700; color:#0f172a;">TOTAL AMOUNT:</span>
-                    <span style="font-size: 22px; font-weight: 800; color: #15803d;">PKR {v_row['amount']:,.0f}</span>
-                </div>
-                <div style="margin-top: 15px; font-size: 12px; color: #64748b; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #edf2f7;">
-                    <b>Details:</b> {v_row['detail'] if v_row['detail'] else 'No breakdown notes appended.'}
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('date', 'N/A')}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Ledger Allocation:</span><b style="color:#0f172a;">{str(v_row.get('type', '')).upper()}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Particular Scope:</span><b style="color:#0f172a;">{v_row.get('name', 'N/A')}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Amount Executed:</span><b style="color:#0f172a;">PKR {v_row.get('amount', 0):,.0f}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Payment Method:</span><b style="color:#0f172a;">{v_row.get('pay_method', 'Cash')}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Received By:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A') if v_row.get('received_by') else 'N/A'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Designation Spec:</span><span style="color:#0f172a;">{v_row.get('occupation', 'N/A') if v_row.get('occupation') else 'N/A'}</span></div>
+                <div style="border-top: 1px solid #f1f5f9; margin-top:15px; padding-top:15px; font-size: 13.5px; color:#475569;">
+                    <span>Remarks / Particular Specs:</span>
+                    <p style="color:#0f172a; margin: 5px 0 0 0; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #edf2f7;">{v_row.get('detail', 'No explicit description attached.')}</p>
                 </div>
             </div>
         """, unsafe_allow_html=True)
+        
+        # If it's a material invoice with an attached image, render inside the voucher box module scope
+        if v_row.get('type') == "Material" and v_row.get('image_url'):
+            st.write("##")
+            st.markdown("##### 📁 Connected Invoice Bill File")
+            st.image(v_row['image_url'], caption=f"Verification image blueprint for record: {v_number}", use_container_width=True)
+            
     else:
-        st.info("No logs available to generate digital vouchers for this project context yet.")
+        st.info("Active site context containing zero database transaction references.")
+
+elif "Income Ledger" in menu:
+    st.subheader("💰 Project Capital Inflow Registry")
+    inc_df = df[df['type'] == 'Income'] if not df.empty and 'type' in df.columns else pd.DataFrame()
+    if not inc_df.empty:
+        st.dataframe(inc_df[['id', 'date', 'name', 'amount', 'pay_method', 'detail']], use_container_width=True)
+    else:
+        st.info("No active capital arrivals logged for this project.")
+
+elif "Labor Ledger History" in menu:
+    st.subheader("👷 Labor Force Ledger Disburse Records")
+    lab_exp_df = df[df['type'] == 'Labor'] if not df.empty and 'type' in df.columns else pd.DataFrame()
+    if not lab_exp_df.empty:
+        st.dataframe(lab_exp_df[['id', 'date', 'name', 'occupation', 'amount', 'pay_method', 'detail']], use_container_width=True)
+    else:
+        st.info("No active labor financial transactions found.")
+
+elif "Material Log Vault" in menu:
+    st.subheader("🏗️ Material Invoices & Procurement Records")
+    mat_df = df[df['type'] == 'Material'] if not df.empty and 'type' in df.columns else pd.DataFrame()
+    if not mat_df.empty:
+        for idx, row in mat_df.iterrows():
+            with st.expander(f"📦 {row.get('date')} — {row.get('name')} (PKR {row.get('amount', 0):,.0f})"):
+                st.write(f"**Details:** {row.get('detail')}")
+                st.write(f"**Payment Method:** {row.get('pay_method')}")
+                if row.get('image_url'):
+                    st.image(row['image_url'], caption="Uploaded Invoice Copy", width=400)
+    else:
+        st.info("No procurement invoices documented yet.")
+
+elif "Labor Force Folder" in menu:
+    st.subheader("👤 Labor Profile Dossiers")
+    if not labor_df.empty:
+        selected_labor = st.selectbox("Select Worker Profile:", labor_df['name'].tolist())
+        l_row = labor_df[labor_df['name'] == selected_labor].iloc[0]
+        
+        p_history = df[(df['type'] == 'Labor') & (df['name'] == selected_labor)] if not df.empty and 'type' in df.columns else pd.DataFrame()
+        
+        col_prof1, col_prof2 = st.columns([1, 2])
+        with col_prof1:
+            if l_row.get('photo_url'):
+                st.image(l_row['photo_url'], use_container_width=True)
+            else:
+                st.info("No profile picture uploaded.")
+        with col_prof2:
+            st.markdown(f"### **Name:** {l_row.get('name')}")
+            st.write(f"**Skill / Occupation:** {l_row.get('occupation', 'General')}")
+            st.write(f"**Contact Number:** {l_row.get('phone', 'N/A')}")
+            st.write(f"**CNIC Record:** {l_row.get('cnic', 'N/A')}")
+            st.markdown(f"#### **Contract Value:** PKR {l_row.get('total_contract_amount', 0):,.0f}")
+            st.write(f"**Internal Management Profile Notes:** {l_row.get('details', 'N/A')}")
+            
+        st.write("##")
+        labor_pdf_data = export_labor_profile_pdf(l_row, p_history)
+        st.download_button(
+            label="📥 Print/Export Worker Dossier PDF",
+            data=labor_pdf_data,
+            file_name=f"Labor_Dossier_{l_row.get('name').replace(' ', '_')}.pdf",
+            mime="application/pdf"
+        )
+            
+        st.write("---")
+        st.write("#### 💵 Ledger Log Statements")
+        if not p_history.empty:
+            st.dataframe(p_history[['date', 'amount', 'pay_method', 'detail']], use_container_width=True)
+        else:
+            st.info("No dynamic payment records linked with this structural profile.")
+    else:
+        st.info("No profile structures synchronized inside this site scope registry.")
+
+elif "Search & Audit Reports" in menu:
+    st.subheader("🔍 Master Audit Ledger")
+    if not df.empty:
+        st.dataframe(df[['id', 'date', 'type', 'name', 'amount', 'pay_method', 'detail']], use_container_width=True)
+        
+        st.write("##")
+        master_pdf_data = export_to_pdf(df, f"Master Audit Report: {current_project}")
+        st.download_button(
+            label="📥 Download Complete Master Audit Report (PDF)",
+            data=master_pdf_data,
+            file_name=f"Master_Audit_{current_project.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            key="master_pdf_download"
+        )
+    else:
+        st.info("Database matrix contains no operational data.")
