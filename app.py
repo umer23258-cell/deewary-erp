@@ -718,9 +718,13 @@ if "Dashboard" in menu:
         st.markdown(f"### 📈 Structural Framework Progress")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Tasks Mapped & Complete**")
+        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff,stroke:none"
+        components.html(f"<div style='background:#ffffff; border-radius:20px; padding:15px; border:1px solid #e2e8f0;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
+
     with col_right:
         st.markdown("### 📝 Architectural Nodes Checklist")
         st.write(f"✅ Cleared Status Tasks: **{done_tasks}** | ⏳ Pending Core Nodes: **{total_tasks - done_tasks}**")
+        if st.button("Re-Sync Ledger Memory Cache", use_container_width=True): st.cache_data.clear(); st.rerun()
 
     st.divider()
     st.markdown("### 🏗️ Complete Site Blueprint Matrix Mapping")
@@ -734,73 +738,13 @@ if "Dashboard" in menu:
                 text_c = "#334155" if row['status'] == "Done" else "#ea580c"
                 st.markdown(f'<div style="background:{bg}; padding:16px; border-radius:16px; margin-bottom:10px; border:1px solid {border_c}; color:{text_c}; font-weight:600; font-size:13.5px; display:flex; justify-content:space-between; align-items:center;"><span>{row["task_name"]}</span><span style="font-size:11px; font-weight:700; opacity:0.9; text-transform:uppercase;">{icon}</span></div>', unsafe_allow_html=True)
 
-elif "Income Ledger" in menu:
-    st.subheader("💰 Income Accounts & Capital Flow")
-    income_data = df[df['type'] == 'Income'] if not df.empty else pd.DataFrame()
-    if not income_data.empty:
-        st.metric("Total Income Received", f"PKR {income_data['amount'].sum():,.0f}")
-        st.dataframe(income_data[['id', 'date', 'name', 'amount', 'detail', 'pay_method']], use_container_width=True)
-    else:
-        st.info("No income records found for this project context.")
 
-elif "Labor Ledger History" in menu:
-    st.subheader("👷 Labor Ledger & Payout History")
-    labor_data = df[df['type'] == 'Labor'] if not df.empty else pd.DataFrame()
-    if not labor_data.empty:
-        st.metric("Total Labor Disbursed", f"PKR {labor_data['amount'].sum():,.0f}")
-        st.dataframe(labor_data[['id', 'date', 'name', 'occupation', 'amount', 'received_by', 'pay_method', 'detail']], use_container_width=True)
-    else:
-        st.info("No labor payout transactions found for this project context.")
-
-elif "Material Log Vault" in menu:
-    st.subheader("🏗️ Material Expense Log Vault")
-    material_data = df[df['type'] == 'Material'] if not df.empty else pd.DataFrame()
-    if not material_data.empty:
-        st.metric("Total Material Cost", f"PKR {material_data['amount'].sum():,.0f}")
-        st.dataframe(material_data[['id', 'date', 'name', 'amount', 'received_by', 'pay_method', 'detail']], use_container_width=True)
-        
-        st.markdown("### 📸 Digital Bill / Invoice Previews")
-        for idx, row in material_data.iterrows():
-            if row.get('image_url') and str(row['image_url']) != "nan":
-                with st.expander(f"📄 View Invoice for {row['name']} (PKR {row['amount']:,.0f})"):
-                    st.image(row['image_url'], use_container_width=True)
-    else:
-        st.info("No material tracking logs mapped to this site context yet.")
-
-elif "Labor Force Folder" in menu:
-    st.subheader("👥 Registered Labor Force Folder")
-    if not labor_df.empty:
-        for idx, row in labor_df.iterrows():
-            with st.container():
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    if row.get('photo_url') and str(row['photo_url']) != "nan":
-                        st.image(row['photo_url'], use_container_width=True)
-                    else:
-                        st.image("https://via.placeholder.com/150", use_container_width=True)
-                with col2:
-                    st.markdown(f"### {row['name']} ({row['occupation']})")
-                    st.write(f"📞 **Phone:** {row['phone']} | 🆔 **CNIC:** {row['cnic']}")
-                    st.write(f"💰 **Total Contract Amount:** PKR {row['total_contract_amount']:,.0f}")
-                    st.write(f"📝 **Profile Notes:** {row['details']}")
-                st.divider()
-    else:
-        st.info("No workforce personnel registered on this active project context.")
-
-elif "Search & Audit Reports" in menu:
-    st.subheader("🔍 Master Search, Audit & Export")
-    if not df.empty:
-        q = st.text_input("Enter keywords to filter entire system data logs:")
-        filtered_df = df[df.astype(str).apply(lambda x: x.str.contains(q, case=False)).any(axis=1)] if q else df
-        st.dataframe(filtered_df, use_container_width=True)
-        
-        pdf_buf = export_to_pdf(filtered_df, f"Audit Report - {current_project}")
-        st.download_button("📥 Download PDF Audit Sheet", data=pdf_buf, file_name=f"Deewaryn_Audit_{current_project}.pdf", mime="application/pdf")
-    else:
-        st.info("No system records available to run queries.")
-
+# --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
+    st.write("Dynamic cryptographic clearance invoice framework tailored for professional architectural firms.")
+    st.divider()
+    
     if not df.empty:
         df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
         selected_log = st.selectbox("Select System Transaction Target Entry:", df['voucher_label'].tolist())
@@ -818,12 +762,106 @@ elif menu == "📑 Receipt Voucher System":
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Ledger Allocation:</span><b style="color:#0f172a;">{str(v_row['type']).upper()}</b></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Particular Scope:</span><b style="color:#0f172a;">{v_row['name']}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Payment Method:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
-                <div style="margin-top: 18px; padding-top: 18px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 14px; font-weight: 700; color:#0f172a;">TOTAL AMOUNT:</span>
-                    <span style="font-size: 22px; font-weight: 800; color: #15803d;">PKR {v_row['amount']:,.0f}</span>
-                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Designation Spec:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('occupation', 'N/A') if pd.notna(v_row.get('occupation')) else 'N/A'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Disbursed/Authorized:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 18px; font-size: 13.5px; color:#475569;"><span>Channel Pipeline:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
+                <p style="font-size: 12.5px; background: #f8fafc; padding: 14px; border-radius: 12px; font-style: italic; border-left: 4px solid #FF4B4B; margin-bottom:24px; color:#475569; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">Memo Notes: {v_row['detail'] if v_row['detail'] else 'No automated remarks logged.'}</p>
+                <div style="font-size: 20px; font-weight: 800; color: #ffffff; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius:14px; padding: 14px; text-align:center; box-shadow: 0 4px 12px rgba(15,23,42,0.15);"><span style="font-size:12px; font-weight:500; opacity:0.7; margin-right:10px; letter-spacing:0.5px;">NET VOLUME TOTAL:</span>PKR {v_row['amount']:,.0f}/-</div>
             </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info("No logs available to generate digital vouchers for this project context yet.")
+    else: 
+        st.info(f"Is project site ({current_project}) ke under filhal koi transaction record mojud nahi hai.")
+
+
+# --- LABOR PROFILES APPLICATION PAGE ---
+elif "Labor Force" in menu:
+    st.title(f"👷 Dynamic Human Resource Roster")
+    
+    if not labor_df.empty:
+        l_search = st.text_input("🔎 Search Force Rosters Matrix...")
+        if l_search:
+            l_mask = labor_df.astype(str).apply(lambda x: x.str.contains(l_search, case=False)).any(axis=1)
+            labor_df = labor_df[l_mask]
+            
+        st.dataframe(labor_df[["id", "name", "phone", "cnic", "occupation", "total_contract_amount", "rating"]], use_container_width=True)
+        
+        for _, row in labor_df.iterrows():
+            with st.container():
+                st.markdown(f"<div style='background:#ffffff; border:1px solid #e2e8f0; border-radius:20px; padding:25px; margin-bottom:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.01);'>", unsafe_allow_html=True)
+                st.markdown(f"#### 👤 {row['name']} — <span style='color:#FF4B4B; font-weight:700;'>{row['occupation'] if row['occupation'] else 'General Force'}</span>", unsafe_allow_html=True)
+                c_img, c_info = st.columns([1, 3])
+                with c_img:
+                    photo_path = row.get('photo_url', '')
+                    if photo_path and str(photo_path) != "nan": st.image(photo_path, use_container_width=True)
+                    else: st.info("No Photo Uploaded.")
+                with c_info:
+                    st.markdown(f"**🪪 CNIC Identifier Pass:** {row['cnic']} | **💰 Total Pool Budget Allocation:** PKR {row['total_contract_amount']:,.0f}")
+                    
+                    stars = "⭐" * int(row['rating'] if row['rating'] else 5)
+                    st.markdown(f"**📊 Performance Rating Score:** {stars}")
+                    st.info(row['details'] if row['details'] else "No metadata profile details added.")
+                    
+                    st.markdown("##### 💵 Correlated Ledger Clearance Pipeline Sync")
+                    if not df.empty:
+                        prof_name = str(row['name']).lower().strip()
+                        def is_name_match(tx_name):
+                            tx_name_clean = str(tx_name).lower().strip()
+                            return (prof_name in tx_name_clean) or (tx_name_clean in prof_name)
+                        
+                        labor_tx = df[df['type'] == 'Labor']
+                        if not labor_tx.empty:
+                            match_mask = labor_tx['name'].apply(is_name_match)
+                            labor_payments = labor_tx[match_mask]
+                        else: labor_payments = pd.DataFrame()
+                        
+                        if not labor_payments.empty:
+                            st.dataframe(labor_payments[['id', 'date', 'pay_method', 'amount', 'detail']], use_container_width=True)
+                            total_paid = labor_payments['amount'].sum()
+                            st.metric(label="Sum Cleared Remittances", value=f"PKR {total_paid:,.0f}/-")
+                        else:
+                            st.warning("No payment logs linked under this exact structural profile context designation name.")
+                            labor_payments = pd.DataFrame()
+                    else: labor_payments = pd.DataFrame()
+
+                    pdf_data = export_labor_profile_pdf(row, labor_payments)
+                    st.write("##")
+                    st.download_button(label="📄 Print Profile Evaluation Dossier", data=pdf_data, file_name=f"Labor_{str(row['name'])}.pdf", mime="application/pdf", key=f"dl_pdf_{row['id']}", type="primary")
+                st.markdown("</div>", unsafe_allow_html=True)
+                st.divider()
+        if is_auth:
+            l_tid = st.text_input("Enter Worker Core Database Row ID to Delete")
+            if st.button("🗑️ Delete Worker Record Permanently"):
+                if l_tid:
+                    supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
+                    st.cache_data.clear(); st.rerun()
+    else: st.info(f"No active worker logs inside configuration directory: {current_project}")
+
+
+# --- ORIGINAL HISTORY PAGES LOGIC (Project Restricted) ---
+else:
+    st.title(f"{menu} Terminal Portal")
+    if not df.empty:
+        if "Income" in menu: f_df = df[df['type'] == 'Income']
+        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
+        elif "Material" in menu: f_df = df[df['type'] == 'Material']
+        else: f_df = df.copy()
+        
+        search = st.text_input("🔎 Search targeted row indexing...")
+        if search:
+            mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
+            f_df = f_df[mask]
+        
+        st.dataframe(f_df, use_container_width=True)
+        st.metric("Total Operational Volume Aggregated", f"PKR {f_df['amount'].sum():,.0f}")
+        
+        if is_auth:
+            tid = st.text_input("Enter Target Ledger ID to Remove")
+            if st.button("🗑️ Remove Ledger Record Entry"):
+                supabase.table('transactions').delete().eq('id', tid).execute()
+                st.cache_data.clear(); st.rerun()
+
+        st.divider()
+        c1, c2 = st.columns(2)
+        with c1: st.download_button("📥 Export CSV Spreadsheet File", f_df.to_csv().encode('utf-8'), f"{menu}_{current_project}.csv", use_container_width=True)
+        with c2: st.download_button("📄 Print Signature PDF Audit Ledger", export_to_pdf(f_df, menu), f"{menu}_{current_project}.pdf", use_container_width=True, type="primary")
+    else: st.info(f"No active record data blocks synced under active site environment context: {current_project}")
