@@ -12,6 +12,15 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 
+def update_transaction_status(row_id, new_type):
+    try:
+        supabase.table('transactions').update({"type": new_type}).eq("id", row_id).execute()
+        st.cache_data.clear()
+        st.success(f"Status update ho gaya!")
+        st.rerun()
+    except Exception as e:
+        st.error(f"Error: {e}")
+
 # --- 1. SUPABASE SETUP ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
