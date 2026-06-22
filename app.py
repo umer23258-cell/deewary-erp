@@ -496,7 +496,7 @@ with st.sidebar:
     st.markdown("<p style='font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:8px;'>Navigation Menu</p>", unsafe_allow_html=True)
     menu = st.radio(
         "Navigation Portal", 
-        ["📊 Dashboard View", "📑 Receipt Voucher System", "💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Material Log Vault", "👷 Labor Force Folder", "🔍 Search & Audit Reports"],
+        ["📊 Dashboard View", "📑 Receipt Voucher System", "💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Material Log Vault", "📋 Pending Bills History", "👷 Labor Force Folder", "🔍 Search & Audit Reports"],
         label_visibility="collapsed"
     )
     st.divider()
@@ -507,6 +507,7 @@ with st.sidebar:
         if st.button("➕ Record Income Flow", use_container_width=True): popup_transaction_entry("Income", st.session_state["selected_project"])
         if st.button("👷 Log Labor Disburse", use_container_width=True): popup_transaction_entry("Labor", st.session_state["selected_project"])
         if st.button("🏗️ Log Material Invoice", use_container_width=True): popup_transaction_entry("Material", st.session_state["selected_project"])
+        if st.button("📋 Add Pending Bill", use_container_width=True): popup_transaction_entry("Pending Bill", st.session_state["selected_project"])
         if st.button("👤 Register New Worker", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
         if st.button("📁 Deploy New Site Project", use_container_width=True): popup_create_project()
         st.divider()
@@ -537,6 +538,7 @@ if "Dashboard" in menu:
         inc = df[df['type'] == 'Income']['amount'].sum()
         lab_exp = df[df['type'] == 'Labor']['amount'].sum()
         mat_exp = df[df['type'] == 'Material']['amount'].sum()
+        pending_bill = df[df['type'] == 'Pending Bill']['amount'].sum()
         exp = lab_exp + mat_exp
         net_bal = inc - exp
         
@@ -563,6 +565,8 @@ if "Dashboard" in menu:
     with col_kpi3: 
         bal_color = "#15803d" if net_bal >= 0 else "#b91c1c"
         st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>⚖️ NET RUNNING BALANCES</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
+
+    st.metric('📋 Pending Bills', f'PKR {pending_bill:,.0f}')
 
     st.write("##")
     status_df = fetch_project_status(current_project)
@@ -701,6 +705,7 @@ else:
         if "Income" in menu: f_df = df[df['type'] == 'Income']
         elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
         elif "Material" in menu: f_df = df[df['type'] == 'Material']
+        elif "Pending Bills" in menu: f_df = df[df['type'] == 'Pending Bill']
         else: f_df = df.copy()
         
         search = st.text_input("🔎 Search targeted row indexing...")
