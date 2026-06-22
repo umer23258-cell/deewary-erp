@@ -560,31 +560,11 @@ if "Dashboard" in menu:
                 st.markdown(f"""<div class="forecast-box">📈 RUNWAY STABILITY PROJECTION: Safe operational buffer mapped for active site context: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
 
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-    with col_kpi1:
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,#16a34a,#22c55e);padding:25px;border-radius:22px;color:white;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,.15);">
-            <div style="font-size:14px;font-weight:700;">💰 TOTAL INCOME</div>
-            <div style="font-size:34px;font-weight:900;margin-top:10px;">PKR {inc:,.0f}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_kpi2:
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:25px;border-radius:22px;color:white;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,.15);">
-            <div style="font-size:14px;font-weight:700;">📉 TOTAL EXPENSE</div>
-            <div style="font-size:34px;font-weight:900;margin-top:10px;">PKR {exp:,.0f}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_kpi3:
-        bal1 = "#2563eb" if net_bal >= 0 else "#dc2626"
-        bal2 = "#60a5fa" if net_bal >= 0 else "#f87171"
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,{bal1},{bal2});padding:25px;border-radius:22px;color:white;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,.15);">
-            <div style="font-size:14px;font-weight:700;">⚖️ NET BALANCE</div>
-            <div style="font-size:34px;font-weight:900;margin-top:10px;">PKR {net_bal:,.0f}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>💰 TOTAL CAPITAL ARRIVAL</p><h2 style='color:#15803d; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>📉 DISBURSED OUTFLOWS</p><h2 style='color:#b91c1c; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
+    with col_kpi3: 
+        bal_color = "#15803d" if net_bal >= 0 else "#b91c1c"
+        st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>⚖️ NET RUNNING BALANCES</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
 
     st.metric('📋 Pending Bills', f'PKR {pending_bill:,.0f}')
 
