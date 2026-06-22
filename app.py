@@ -714,6 +714,17 @@ else:
             f_df = f_df[mask]
         
         st.dataframe(f_df, use_container_width=True)
+
+        if "Pending Bills" in menu and not f_df.empty:
+            st.subheader("✅ Mark Pending Bill as Paid")
+            for _, row in f_df.iterrows():
+                c1, c2 = st.columns([4,1])
+                with c1:
+                    st.write(f"ID #{row['id']} - {row['name']} - PKR {row['amount']:,.0f}")
+                with c2:
+                    if st.button("Mark Paid", key=f"paid_{row['id']}"):
+                        update_transaction_status(row['id'], 'Material')
+
         st.metric("Total Operational Volume Aggregated", f"PKR {f_df['amount'].sum():,.0f}")
         
         if is_auth:
