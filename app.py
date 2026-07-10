@@ -25,7 +25,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- 2. PDF GENERATION FUNCTION (Full Table View) ---
+# --- 2. PDF GENERATION FUNCTION ---
 def export_to_pdf(dataframe, title):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
@@ -80,13 +80,11 @@ def export_labor_profile_pdf(labor_row, payments_df):
     elements = []
     styles = getSampleStyleSheet()
     
-    # Header
     elements.append(Paragraph(f"<font color='#1e1e1e' size=22><b>DEEWARYN.COM ERP</b></font>", styles['Title']))
     elements.append(Paragraph(f"<font color='#FF4B4B' size=14><b>LABOR PROFILE DOSSIER & LEDGER REPORT</b></font>", styles['Normal']))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 20))
     
-    # Profile Picture Logic
     photo_url = labor_row.get('photo_url', '')
     if photo_url and str(photo_url) != "nan" and photo_url.startswith("http"):
         try:
@@ -100,7 +98,6 @@ def export_labor_profile_pdf(labor_row, payments_df):
             elements.append(Paragraph("<i>[Profile Image Attached in Cloud File]</i>", styles['Normal']))
             elements.append(Spacer(1, 10))
 
-    # Personal Details Table
     det_data = [
         [Paragraph("<b>Full Name:</b>", styles['Normal']), Paragraph(str(labor_row['name']), styles['Normal'])],
         [Paragraph("<b>Occupation / Skill:</b>", styles['Normal']), Paragraph(str(labor_row['occupation'] if labor_row['occupation'] else 'General Labor'), styles['Normal'])],
@@ -119,7 +116,6 @@ def export_labor_profile_pdf(labor_row, payments_df):
     elements.append(det_table)
     elements.append(Spacer(1, 20))
     
-    # Payments History Table Section
     elements.append(Paragraph("<font color='#1e1e1e' size=12><b>💵 STATEMENT OF PAID PAYMENTS HISTORY</b></font>", styles['Heading2']))
     elements.append(Spacer(1, 5))
     
@@ -160,35 +156,31 @@ def export_labor_profile_pdf(labor_row, payments_df):
     buf.seek(0)
     return buf
 
-# --- 3. PAGE CONFIG ---
+# --- 3. PAGE CONFIG & HIGH-CONTRAST CSS ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
-# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
     <style>
-    /* 1. Background image ko poori screen par fit karna */
+    /* Premium Background Image */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
+        background-image: url("https://images.unsplash.com/photo-1541888086425-d81bb19240f5?q=80&w=2070");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
 
-    /* 2. Main interface (cards) ko glass-like transparent banana */
+    /* Transparent Glass box with High Opacity (88% white) for perfect text reading */
     .block-container {
-        background: rgba(255, 255, 255, 0.6) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border-radius: 30px !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        background: rgba(255, 255, 255, 0.88) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(255, 255, 255, 0.6) !important;
         padding: 2rem !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
     }
-
-    /* 3. Saare text ko white background par dark color dena taake parhne mein dikkat na ho */
-    h1, h2, h3, p, div, span {
-        color: #0f172a !important;
-        font-weight: 500;
-    }
+    
+    /* Removed the global forced text color to fix dark-on-dark bugs */
     </style>
 """, unsafe_allow_html=True)
 
@@ -216,10 +208,10 @@ def fetch_project_status(project_name):
             if not df_filtered.empty:
                 return df_filtered
         
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
     except: 
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
 
 def check_password():
@@ -280,7 +272,7 @@ def popup_create_project():
                 st.session_state["custom_projects"].append(new_proj_name)
             st.session_state["selected_project"] = new_proj_name
             
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
             for t in tasks:
                 try:
                     supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
@@ -469,7 +461,7 @@ if not raw_labor_df.empty:
 else:
     labor_df = pd.DataFrame()
 
-# --- 8. SIDEBAR DESIGN (Custom Branded Luxury Styling) ---
+# --- 8. SIDEBAR DESIGN ---
 with st.sidebar:
     st.markdown("<h2 style='color:#FF4B4B; font-weight:800; margin-bottom:0; font-size:24px; letter-spacing:-0.5px;'>DEEWARYN</h2>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:11px; color:#64748b; font-weight:500; margin-top:2px; text-transform:uppercase; letter-spacing:1px;'>Site Infrastructure ERP</p>", unsafe_allow_html=True)
@@ -515,14 +507,13 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # 🌟 1. MASSIVE PROJECT HEADLINE BANNER
+    # 🌟 1. MASSIVE PROJECT HEADLINE BANNER (Clear White Text)
     st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; border-radius: 24px; text-align: center; margin-bottom: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -50%; left: -10%; width: 50%; height: 200%; background: radial-gradient(circle, rgba(255,75,75,0.15) 0%, transparent 70%); transform: rotate(30deg); pointer-events: none;"></div>
-            <p style="color: #FF4B4B; margin: 0 0 8px 0; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 3px;">⚡ Active Site Framework</p>
-            <h1 style="color: #ffffff; margin: 0; font-size: 52px; font-weight: 900; letter-spacing: -1.5px; text-shadow: 2px 4px 8px rgba(0,0,0,0.4); line-height: 1.1;">{current_project.upper()}</h1>
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 35px 20px; border-radius: 20px; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
+            <p style="color: #FF4B4B; margin: 0 0 10px 0; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;">⚡ Active Site Framework</p>
+            <h1 style="color: #ffffff; margin: 0; font-size: 48px; font-weight: 900; letter-spacing: -1px; text-shadow: 1px 2px 5px rgba(0,0,0,0.5);">{current_project.upper()}</h1>
             <div style="margin-top: 15px;">
-                <span style="background: rgba(255, 75, 75, 0.2); color: #ff8b8b; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 12px; border: 1px solid rgba(255, 75, 75, 0.3); letter-spacing: 1px;">DEEWARYN.COM ERP SYSTEM</span>
+                <span style="background: rgba(255, 75, 75, 0.15); color: #ff9999; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 12px; border: 1px solid rgba(255, 75, 75, 0.3);">DEEWARYN.COM ERP SYSTEM</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -547,48 +538,47 @@ if "Dashboard" in menu:
 
         # WARNING ALERTS
         if net_bal < 50000:
-            st.markdown(f"""<div style="background: #fef2f2; border-left: 6px solid #ef4444; padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; color: #991b1b; font-weight: 600; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1);">🚨 RUNNING BALANCE WARNING: Capital pool reserve is critical (PKR {net_bal:,.0f}) inside {current_project}.</div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div style="background: #fef2f2; border-left: 5px solid #ef4444; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; color: #991b1b; font-weight: 600;">🚨 RUNNING BALANCE WARNING: Capital pool reserve is critical (PKR {net_bal:,.0f}) inside {current_project}.</div>""", unsafe_allow_html=True)
         elif daily_burn_rate > 0:
             days_left = net_bal / daily_burn_rate
             if days_left <= 5:
-                st.markdown(f"""<div style="background: #fffbeb; border-left: 6px solid #f59e0b; padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; color: #b45309; font-weight: 600; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">⚠️ RESERVES DEFICIT: Capital status for {current_project} estimated to expire in ~{days_left:.1f} days.</div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div style="background: #fffbeb; border-left: 5px solid #f59e0b; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; color: #b45309; font-weight: 600;">⚠️ RESERVES DEFICIT: Capital status for {current_project} estimated to expire in ~{days_left:.1f} days.</div>""", unsafe_allow_html=True)
             else:
-                st.markdown(f"""<div style="background: #f0fdf4; border-left: 6px solid #22c55e; padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; color: #166534; font-weight: 600; box-shadow: 0 4px 6px rgba(34, 197, 94, 0.1);">📈 RUNWAY STABILITY PROJECTION: Safe operational buffer mapped for active site context: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div style="background: #f0fdf4; border-left: 5px solid #22c55e; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; color: #166534; font-weight: 600;">📈 RUNWAY STABILITY PROJECTION: Safe operational buffer mapped for active site context: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
 
-    # 🌟 2. BEAUTIFUL LUXURY KPI CARDS (AMOUNTS)
+    # 🌟 2. BEAUTIFUL LUXURY KPI CARDS (AMOUNTS) - Super High Contrast
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
     
     with col_kpi1: 
         st.markdown(f"""
-        <div style="background: linear-gradient(145deg, #ffffff, #f0fdf4); padding: 25px 20px; border-radius: 24px; text-align: center; border: 1px solid #bbf7d0; box-shadow: 0 10px 20px rgba(21, 128, 61, 0.08); transition: transform 0.2s;">
-            <div style="font-size: 38px; margin-bottom: 12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">💰</div>
-            <p style="color: #166534; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin: 0;">Total Capital Arrival</p>
-            <h2 style="color: #15803d; font-size: 34px; font-weight: 900; margin: 8px 0 0 0; letter-spacing: -1px;">Rs {inc:,.0f}</h2>
+        <div style="background: #f0fdf4; padding: 25px 20px; border-radius: 16px; text-align: center; border: 1px solid #bbf7d0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
+            <p style="color: #15803d; font-size: 13px; font-weight: 700; text-transform: uppercase; margin: 0;">Total Capital Arrival</p>
+            <h2 style="color: #166534; font-size: 32px; font-weight: 800; margin: 5px 0 0 0;">Rs {inc:,.0f}</h2>
         </div>
         """, unsafe_allow_html=True)
         
     with col_kpi2: 
         st.markdown(f"""
-        <div style="background: linear-gradient(145deg, #ffffff, #fef2f2); padding: 25px 20px; border-radius: 24px; text-align: center; border: 1px solid #fecaca; box-shadow: 0 10px 20px rgba(185, 28, 28, 0.08); transition: transform 0.2s;">
-            <div style="font-size: 38px; margin-bottom: 12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">📉</div>
-            <p style="color: #991b1b; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin: 0;">Disbursed Outflows</p>
-            <h2 style="color: #b91c1c; font-size: 34px; font-weight: 900; margin: 8px 0 0 0; letter-spacing: -1px;">Rs {exp:,.0f}</h2>
+        <div style="background: #fef2f2; padding: 25px 20px; border-radius: 16px; text-align: center; border: 1px solid #fecaca; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="font-size: 32px; margin-bottom: 8px;">📉</div>
+            <p style="color: #b91c1c; font-size: 13px; font-weight: 700; text-transform: uppercase; margin: 0;">Disbursed Outflows</p>
+            <h2 style="color: #991b1b; font-size: 32px; font-weight: 800; margin: 5px 0 0 0;">Rs {exp:,.0f}</h2>
         </div>
         """, unsafe_allow_html=True)
         
     with col_kpi3: 
         bal_bg = "#f0fdf4" if net_bal >= 0 else "#fef2f2"
-        bal_border = "#bbf7d0" if net_bal >= 0 else "#fecaca"
-        bal_text_title = "#166534" if net_bal >= 0 else "#991b1b"
-        bal_text_amount = "#15803d" if net_bal >= 0 else "#b91c1c"
-        bal_shadow = "rgba(21, 128, 61, 0.15)" if net_bal >= 0 else "rgba(185, 28, 28, 0.15)"
+        bal_border = "#4ade80" if net_bal >= 0 else "#f87171"
+        bal_text_title = "#15803d" if net_bal >= 0 else "#b91c1c"
+        bal_text_amount = "#166534" if net_bal >= 0 else "#991b1b"
         bal_icon = "⚖️" if net_bal >= 0 else "🚨"
         
         st.markdown(f"""
-        <div style="background: linear-gradient(145deg, #ffffff, {bal_bg}); padding: 25px 20px; border-radius: 24px; text-align: center; border: 2px solid {bal_border}; box-shadow: 0 12px 24px {bal_shadow}; transform: scale(1.02);">
-            <div style="font-size: 38px; margin-bottom: 12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">{bal_icon}</div>
-            <p style="color: {bal_text_title}; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin: 0;">Net Running Balance</p>
-            <h2 style="color: {bal_text_amount}; font-size: 36px; font-weight: 900; margin: 8px 0 0 0; letter-spacing: -1px;">Rs {net_bal:,.0f}</h2>
+        <div style="background: {bal_bg}; padding: 25px 20px; border-radius: 16px; text-align: center; border: 2px solid {bal_border}; box-shadow: 0 8px 15px rgba(0,0,0,0.1);">
+            <div style="font-size: 32px; margin-bottom: 8px;">{bal_icon}</div>
+            <p style="color: {bal_text_title}; font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 0;">Net Running Balance</p>
+            <h2 style="color: {bal_text_amount}; font-size: 36px; font-weight: 900; margin: 5px 0 0 0;">Rs {net_bal:,.0f}</h2>
         </div>
         """, unsafe_allow_html=True)
 
@@ -605,7 +595,7 @@ if "Dashboard" in menu:
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Tasks Mapped & Complete**")
         chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff,stroke:none"
-        components.html(f"<div style='background:#ffffff; border-radius:20px; padding:15px; border:1px solid #e2e8f0;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
+        components.html(f"<div style='background:#ffffff; border-radius:15px; padding:15px; border:1px solid #e2e8f0;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
     with col_right:
         st.markdown("### 📝 Architectural Nodes Checklist")
@@ -620,10 +610,10 @@ if "Dashboard" in menu:
         for i, row in status_df.reset_index().iterrows():
             with t_cols[i % 3]:
                 icon = "🟢 Clear" if row['status'] == "Done" else "⏳ Pending"
-                bg = "#f0fdf4" if row['status'] == "Done" else "#fff7ed"
-                border_c = "#bbf7d0" if row['status'] == "Done" else "#ffedd5"
-                text_c = "#166534" if row['status'] == "Done" else "#c2410c"
-                st.markdown(f'<div style="background:{bg}; padding:16px; border-radius:16px; margin-bottom:10px; border:1px solid {border_c}; color:{text_c}; font-weight:700; font-size:13.5px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);"><span>{row["task_name"]}</span><span style="font-size:11px; font-weight:800; opacity:0.9; text-transform:uppercase; letter-spacing:0.5px;">{icon}</span></div>', unsafe_allow_html=True)
+                bg = "#f0fdf4" if row['status'] == "Done" else "#fffbeb"
+                border_c = "#bbf7d0" if row['status'] == "Done" else "#fde68a"
+                text_c = "#166534" if row['status'] == "Done" else "#b45309"
+                st.markdown(f'<div style="background:{bg}; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid {border_c}; color:{text_c}; font-weight:600; font-size:14px; display:flex; justify-content:space-between; align-items:center;"><span>{row["task_name"]}</span><span style="font-size:11px; font-weight:800; opacity:0.8; text-transform:uppercase;">{icon}</span></div>', unsafe_allow_html=True)
 
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
@@ -640,32 +630,32 @@ elif menu == "📑 Receipt Voucher System":
         v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
         
         st.markdown(f"""
-            <div style="background-color: white; padding: 40px; border-radius: 15px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #ffffff; padding: 40px; border-radius: 15px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
                 <div style="text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 22px;">
-                    <h3 style="margin: 0; color: #0f172a; letter-spacing: -0.5px; font-weight:800; font-size:22px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h3>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 600; text-transform:uppercase; letter-spacing:1px;">Official Transaction Clearance Record</p>
+                    <h3 style="margin: 0; color: #0f172a; font-weight:800; font-size:24px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h3>
+                    <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b; font-weight: 600; text-transform:uppercase; letter-spacing:1px;">Official Transaction Clearance Record</p>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B; font-weight:700;">{v_number}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B; font-weight:800;">{v_number}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:600;">{v_row['date']}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; color:#475569;">
                     <span>Target Entity / Particulars:</span>
-                    <span style="color:#0f172a; font-weight:500;">{v_row.get('name', 'N/A')}</span>
+                    <span style="color:#0f172a; font-weight:600;">{v_row.get('name', 'N/A')}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; color:#475569;">
                     <span>Authorized Receiver:</span>
-                    <span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A')}</span>
+                    <span style="color:#0f172a; font-weight:600;">{v_row.get('received_by', 'N/A')}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; color:#475569;">
                     <span>Payment Protocol:</span>
-                    <span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'N/A')}</span>
+                    <span style="color:#0f172a; font-weight:600;">{v_row.get('pay_method', 'N/A')}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; color:#475569;">
                     <span>Project Context Hub:</span>
-                    <span style="color:#0f172a; font-weight:500;">{current_project}</span>
+                    <span style="color:#0f172a; font-weight:600;">{current_project}</span>
                 </div>
-                <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 14px; font-weight: 700; color:#475569;">Gross Disbursement:</span>
-                    <span style="font-size: 20px; font-weight: 800; color:#15803d;">PKR {v_row.get('amount', 0):,.0f}</span>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 16px; font-weight: 700; color:#475569;">Gross Disbursement:</span>
+                    <span style="font-size: 24px; font-weight: 800; color:#15803d;">PKR {v_row.get('amount', 0):,.0f}</span>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -715,7 +705,6 @@ elif menu == "📋 Pending Bills History":
         pending_df = df[df['type'] == 'Pending Bill'].copy()
         st.dataframe(pending_df, use_container_width=True)
         
-        # Admin Quick Clear Feature
         if is_auth and not pending_df.empty:
             st.divider()
             st.markdown("### ⚡ Quick Resolve Pending Bill")
