@@ -166,39 +166,62 @@ def export_labor_profile_pdf(labor_row, payments_df):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
-# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
-st.markdown("""
+# --- 🎨 THEME CUSTOMIZER CONFIGURATION (Sidebar Control State) ---
+with st.sidebar:
+    with st.expander("🎨 USER THEME CUSTOMIZER (Live)", expanded=False):
+        st.markdown("<p style='font-size:11px; font-weight:bold; color:#78716c;'>DASHBOARD LOOKS CUSTOMIZE KAREIN:</p>", unsafe_allow_html=True)
+        # 1. Primary Corporate Color Selection
+        brand_color = st.color_picker("Primary Accent Color", value="#D4AF37") # Default Gold
+        # 2. Glass Panel Opacity & Background Dark Mode Tone
+        panel_opacity = st.slider("Container Transparency (Glassmorphism)", min_value=0.50, max_value=1.00, value=0.92, step=0.02)
+        panel_bg_tone = st.selectbox("Dashboard Base Theme", ["Luxury Pure White", "Ultra Premium Light Slate", "Elite Soft Dark Blue"])
+        
+        # Color Map conversions based on selection
+        if panel_bg_tone == "Luxury Pure White":
+            bg_css = f"rgba(255, 255, 255, {panel_opacity})"
+            text_color = "#0f172a"
+        elif panel_bg_tone == "Ultra Premium Light Slate":
+            bg_css = f"rgba(241, 245, 249, {panel_opacity})"
+            text_color = "#1e293b"
+        else:
+            bg_css = f"rgba(15, 23, 42, {panel_opacity})"
+            text_color = "#f8fafc"
+
+# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION WITH DYNAMIC THEMEING ---
+st.markdown(f"""
     <style>
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
+        background-image: url("https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
 
-    .block-container {
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border-radius: 30px !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        padding: 2rem !important;
-    }
+    .block-container {{
+        background: {bg_css} !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 24px !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        padding: 2.5rem !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    }}
 
-    h1, h2, h3, p, div, span {
-        color: #0f172a !important;
+    h1, h2, h3, p, div, span, label {{
+        color: {text_color} !important;
         font-weight: 500;
-    }
+    }}
     
-    .kpi-card {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
+    .kpi-card {{
+        background: { "rgba(255,255,255,0.9)" if panel_bg_tone != "Elite Soft Dark Blue" else "rgba(30,41,59,0.8)" };
+        padding: 22px;
+        border-radius: 16px;
+        border-left: 5px solid {brand_color};
+        border-top: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    }}
     
-    .digital-voucher {
+    .digital-voucher {{
         background: white;
         border: 2px solid #e2e8f0;
         border-radius: 20px;
@@ -206,17 +229,17 @@ st.markdown("""
         max-width: 600px;
         margin: auto;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
+    }}
     
     /* New Project Header Box Styling */
-    .project-banner-box {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-radius: 20px;
-        padding: 24px;
-        border: 1px solid #334155;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    .project-banner-box {{
+        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        border-radius: 18px;
+        padding: 26px;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
         margin-bottom: 25px;
-    }
+    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -493,7 +516,7 @@ else:
 
 # --- 8. SIDEBAR DESIGN (Custom Branded Luxury Styling) ---
 with st.sidebar:
-    st.markdown("<h2 style='color:#FF4B4B; font-weight:800; margin-bottom:0; font-size:24px; letter-spacing:-0.5px;'>DEEWARYN</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='color:{brand_color}; font-weight:800; margin-bottom:0; font-size:24px; letter-spacing:-0.5px;'>DEEWARYN</h2>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:11px; color:#64748b; font-weight:500; margin-top:2px; text-transform:uppercase; letter-spacing:1px;'>Site Infrastructure ERP</p>", unsafe_allow_html=True)
     st.divider()
     
@@ -539,30 +562,29 @@ if "Dashboard" in menu:
     # Top Branded corporate header
     st.markdown(f"""
         <div style="margin-bottom: 20px;">
-            <h1 style="color: #0f172a; margin: 0; font-weight:800; letter-spacing: -0.5px; font-size:36px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h1>
+            <h1 style="color: {text_color}; margin: 0; font-weight:800; letter-spacing: -0.5px; font-size:36px;">DEEWARYN<span style="color:{brand_color};">.COM</span></h1>
             <p style="color: #64748b; letter-spacing: 0.5px; font-size: 13px; margin: 4px 0 0 0; font-weight:500;">PREMIUM REAL ESTATE DEVELOPMENT NETWORK • C.E.O: SARDAR SAMI ULLAH</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # --- NEW DYNAMIC HEADLINE & DETAIL BOX FOR ACTIVE PROJECT ---
+    # --- DYNAMIC HEADLINE & DETAIL BOX FOR ACTIVE PROJECT ---
     total_logs_count = len(df) if not df.empty else 0
     active_workers_count = len(labor_df) if not labor_df.empty else 0
     
     st.markdown(f"""
         <div class="project-banner-box">
-            <span style="color: #FF4B4B; font-weight: 800; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px;">📂 CURRENTLY VIEWING SITE</span>
+            <span style="color: {brand_color}; font-weight: 800; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px;">📂 CURRENTLY VIEWING SITE</span>
             <h2 style="color: #ffffff !important; font-weight: 800; font-size: 30px; margin: 0; letter-spacing: -0.5px;">PROJECT: {current_project.upper()}</h2>
             <p style="color: #94a3b8 !important; font-size: 14px; margin: 8px 0 16px 0; line-height: 1.6; font-weight: 400;">
                 Yeh dashboard temporary aur real-time state metrics ke mutabik <b>{current_project}</b> ka complete live infrastructure data, payments cashflow records, aur layout development parameters show kar raha hai. Is project file se related a to z entries database security layers ke sath filtered hain.
             </p>
             <div style="display: flex; gap: 20px; flex-wrap: wrap; border-top: 1px solid #334155; padding-top: 12px;">
-                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">📊 Total Logs Filed: <b style="color: #FF4B4B !important;">{total_logs_count} Entries</b></span>
+                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">📊 Total Logs Filed: <b style="color: {brand_color} !important;">{total_logs_count} Entries</b></span>
                 <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">👷 Registered Site Force: <b style="color: #38bdf8 !important;">{active_workers_count} Workers</b></span>
                 <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">📍 Sync Status: <b style="color: #4ade80 !important;">Live Guard Secure</b></span>
             </div>
         </div>
     """, unsafe_allow_html=True)
-    # -----------------------------------------------------------
 
     inc, lab_exp, mat_exp, exp, net_bal = 0, 0, 0, 0, 0
     if not df.empty:
@@ -611,7 +633,7 @@ if "Dashboard" in menu:
         st.markdown(f"### 📈 Structural Framework Progress")
         st.progress(prog_val / 100)
         st.markdown(f"**{prog_val}% Tasks Mapped & Complete**")
-        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff,stroke:none"
+        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:{brand_color},color:#fff,stroke:none"
         components.html(f"<div style='background:#ffffff; border-radius:20px; padding:15px; border:1px solid #e2e8f0;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
 
     with col_right:
@@ -648,11 +670,11 @@ elif menu == "📑 Receipt Voucher System":
         st.markdown(f"""
             <div class="digital-voucher">
                 <div style="text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 22px;">
-                    <h3 style="margin: 0; color: #0f172a; letter-spacing: -0.5px; font-weight:800; font-size:22px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h3>
+                    <h3 style="margin: 0; color: #0f172a; letter-spacing: -0.5px; font-weight:800; font-size:22px;">DEEWARYN<span style="color:{brand_color};">.COM</span></h3>
                     <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 600; text-transform:uppercase; letter-spacing:1px;">Official Transaction Clearance Record</p>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Project Location:</span><b style="color:#0f172a;">{current_project.upper()}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B; font-weight:700;">{v_number}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:{brand_color}; font-weight:700;">{v_number}</b></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Account Particular:</span><span style="color:#0f172a; font-weight:700;">{v_row['name']}</span></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Allocation Channel:</span><span style="color:#0f172a;">{v_row.get('pay_method', 'Cash')}</span></div>
