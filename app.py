@@ -207,11 +207,21 @@ st.markdown("""
         margin: auto;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
+    
+    /* New Project Header Box Styling */
+    .project-banner-box {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 20px;
+        padding: 24px;
+        border: 1px solid #334155;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        margin-bottom: 25px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # --- 4. DATA FETCH LOGIC ---
-@st.cache_data(ttl=5) # Reduced TTL for multi-project responsiveness
+@st.cache_data(ttl=5) 
 def fetch_all_raw_data():
     try:
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
@@ -352,7 +362,7 @@ def popup_register_labor(current_project):
                 "rating": int(l_rating),
                 "photo_url": str(img_url), 
                 "details": str(l_details),
-                "project_context": str(current_project) # Fixed project context binding
+                "project_context": str(current_project) 
             }
             
             try:
@@ -412,7 +422,7 @@ def popup_transaction_entry(ftype, current_project):
                 "occupation": str(d_occ),
                 "received_by": str(d_rec),
                 "pay_method": str(d_meth),
-                "project_context": str(current_project) # Clean mapping for active selection
+                "project_context": str(current_project) 
             }
             
             try:
@@ -468,7 +478,7 @@ if not raw_df.empty:
     if 'project_context' in raw_df.columns:
         df = raw_df[raw_df['project_context'] == current_project]
     else:
-        df = pd.DataFrame() # Secure segregation fallback
+        df = pd.DataFrame() 
 else:
     df = pd.DataFrame()
 
@@ -526,15 +536,33 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
+    # Top Branded corporate header
     st.markdown(f"""
-        <div class="header-box">
+        <div style="margin-bottom: 20px;">
             <h1 style="color: #0f172a; margin: 0; font-weight:800; letter-spacing: -0.5px; font-size:36px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h1>
-            <p style="color: #64748b; letter-spacing: 0.5px; font-size: 14px; margin: 6px 0 18px 0; font-weight:500;">PREMIUM SYSTEM INTERFACE • DESIGNATED CONTEXT: {current_project.upper()}</p>
-            <div style="background: rgba(255, 75, 75, 0.06); color: #FF4B4B; display: inline-block; padding: 6px 20px; border-radius: 30px; font-weight: 700; font-size: 13px; border: 1px solid rgba(255, 75, 75, 0.15);">
-                C.E.O: SARDAR SAMI ULLAH
+            <p style="color: #64748b; letter-spacing: 0.5px; font-size: 13px; margin: 4px 0 0 0; font-weight:500;">PREMIUM REAL ESTATE DEVELOPMENT NETWORK • C.E.O: SARDAR SAMI ULLAH</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # --- NEW DYNAMIC HEADLINE & DETAIL BOX FOR ACTIVE PROJECT ---
+    total_logs_count = len(df) if not df.empty else 0
+    active_workers_count = len(labor_df) if not labor_df.empty else 0
+    
+    st.markdown(f"""
+        <div class="project-banner-box">
+            <span style="color: #FF4B4B; font-weight: 800; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px;">📂 CURRENTLY VIEWING SITE</span>
+            <h2 style="color: #ffffff !important; font-weight: 800; font-size: 30px; margin: 0; letter-spacing: -0.5px;">PROJECT: {current_project.upper()}</h2>
+            <p style="color: #94a3b8 !important; font-size: 14px; margin: 8px 0 16px 0; line-height: 1.6; font-weight: 400;">
+                Yeh dashboard temporary aur real-time state metrics ke mutabik <b>{current_project}</b> ka complete live infrastructure data, payments cashflow records, aur layout development parameters show kar raha hai. Is project file se related a to z entries database security layers ke sath filtered hain.
+            </p>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; border-top: 1px solid #334155; padding-top: 12px;">
+                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">📊 Total Logs Filed: <b style="color: #FF4B4B !important;">{total_logs_count} Entries</b></span>
+                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">👷 Registered Site Force: <b style="color: #38bdf8 !important;">{active_workers_count} Workers</b></span>
+                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">📍 Sync Status: <b style="color: #4ade80 !important;">Live Guard Secure</b></span>
             </div>
         </div>
     """, unsafe_allow_html=True)
+    # -----------------------------------------------------------
 
     inc, lab_exp, mat_exp, exp, net_bal = 0, 0, 0, 0, 0
     if not df.empty:
@@ -607,7 +635,7 @@ if "Dashboard" in menu:
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
-    st.write("Dynamic cryptographic clearance invoice framework tailored for professional architectural firms.")
+    st.write(f"Active Project Context: **{current_project}**")
     st.divider()
     
     if not df.empty:
@@ -623,6 +651,7 @@ elif menu == "📑 Receipt Voucher System":
                     <h3 style="margin: 0; color: #0f172a; letter-spacing: -0.5px; font-weight:800; font-size:22px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h3>
                     <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 600; text-transform:uppercase; letter-spacing:1px;">Official Transaction Clearance Record</p>
                 </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Project Location:</span><b style="color:#0f172a;">{current_project.upper()}</b></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B; font-weight:700;">{v_number}</b></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Account Particular:</span><span style="color:#0f172a; font-weight:700;">{v_row['name']}</span></div>
@@ -648,6 +677,7 @@ elif menu in ["💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Materi
     }
     target_type = mapping[menu]
     st.title(f"{menu} Matrix")
+    st.write(f"Filtered Site Source: **{current_project}**")
     
     filtered_df = df[df['type'] == target_type] if not df.empty else pd.DataFrame()
     
@@ -655,8 +685,8 @@ elif menu in ["💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Materi
         st.metric("Total Summary Volume", f"PKR {filtered_df['amount'].sum():,.0f}")
         st.dataframe(filtered_df[["id", "date", "name", "amount", "detail", "pay_method"]], use_container_width=True)
         
-        pdf_data = export_to_pdf(filtered_df, f"Deewaryn ERP - {target_type} Ledger")
-        st.download_button("📥 Export Dynamic PDF Report", data=pdf_data, file_name=f"{target_type}_ledger.pdf", mime="application/pdf")
+        pdf_data = export_to_pdf(filtered_df, f"Deewaryn ERP - {target_type} Ledger ({current_project})")
+        st.download_button("📥 Export Dynamic PDF Report", data=pdf_data, file_name=f"{target_type}_{current_project}_ledger.pdf", mime="application/pdf")
     else:
         st.info(f"Yahan filhal koi '{target_type}' data load nahi hua.")
 
@@ -664,6 +694,7 @@ elif menu in ["💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Materi
 # --- LABOR FORCE DIGITAL FOLDER ---
 elif menu == "👷 Labor Force Folder":
     st.title("👷 Active Workforce Registry Files")
+    st.write(f"Project Location: **{current_project}**")
     st.divider()
     
     if not labor_df.empty:
@@ -693,7 +724,7 @@ elif menu == "👷 Labor Force Folder":
 # --- GLOBAL SEARCH & AUDIT FRAMEWORK ---
 elif menu == "🔍 Search & Audit Reports":
     st.title("🔍 Comprehensive System Audit Terminal")
-    st.write("Zameen.com standard architectural search grid structure optimization metrics.")
+    st.write(f"Target Grid Context: **{current_project}**")
     st.divider()
     
     if not df.empty:
@@ -704,7 +735,7 @@ elif menu == "🔍 Search & Audit Reports":
             res_df = df.copy()
             
         st.dataframe(res_df, use_container_width=True)
-        pdf_audit = export_to_pdf(res_df, "System Filtered Audit Log Matrix")
-        st.download_button("📥 Print Filtered Audit Report", data=pdf_audit, file_name="System_Audit_Report.pdf", mime="application/pdf")
+        pdf_audit = export_to_pdf(res_df, f"System Filtered Audit Log Matrix - {current_project}")
+        st.download_button("📥 Print Filtered Audit Report", data=pdf_audit, file_name=f"Audit_Report_{current_project}.pdf", mime="application/pdf")
     else:
         st.info("Database matrix holds no transactional values yet.")
