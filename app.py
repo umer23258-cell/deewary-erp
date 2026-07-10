@@ -211,14 +211,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 4. DATA FETCH LOGIC ---
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=5) # Reduced TTL for multi-project responsiveness
 def fetch_all_raw_data():
     try:
         res = supabase.table('transactions').select("*").order('date', desc=True).execute()
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=5)
 def fetch_all_labor_profiles():
     try:
         res = supabase.table('labor_profiles').select("*").order('id', desc=True).execute()
@@ -227,12 +227,10 @@ def fetch_all_labor_profiles():
 
 def fetch_project_status(project_name):
     try:
-        res = supabase.table('project_status').select("*").execute()
+        res = supabase.table('project_status').select("*").eq('project_context', project_name).execute()
         df_status = pd.DataFrame(res.data)
-        if not df_status.empty and 'project_context' in df_status.columns:
-            df_filtered = df_status[df_status['project_context'] == project_name]
-            if not df_filtered.empty:
-                return df_filtered
+        if not df_status.empty:
+            return df_status
         
         tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
@@ -271,6 +269,7 @@ raw_labor_df = fetch_all_labor_profiles()
 if "custom_projects" not in st.session_state:
     st.session_state["custom_projects"] = ["Yousaf Colony"]
 
+# Global Database se automatic unique projects list extract karke load karna
 if not raw_df.empty and 'project_context' in raw_df.columns:
     proj_list = raw_df['project_context'].dropna().unique().tolist()
     for p in proj_list:
@@ -305,12 +304,10 @@ def popup_create_project():
                 try:
                     supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
                 except:
-                    try:
-                        supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
-                    except:
-                        pass
+                    pass
             
             st.success(f"Project '{new_proj_name}' successfully created!")
+            st.cache_data.clear()
             st.rerun()
         else: st.error("Project identity descriptor required.")
         
@@ -354,11 +351,9 @@ def popup_register_labor(current_project):
                 "total_contract_amount": float(l_contract), 
                 "rating": int(l_rating),
                 "photo_url": str(img_url), 
-                "details": str(l_details)
+                "details": str(l_details),
+                "project_context": str(current_project) # Fixed project context binding
             }
-            
-            if 'project_context' in raw_labor_df.columns or not raw_labor_df.empty:
-                payload["project_context"] = str(current_project)
             
             try:
                 supabase.table('labor_profiles').insert(payload).execute()
@@ -413,17 +408,12 @@ def popup_transaction_entry(ftype, current_project):
                 "name": str(d_name), 
                 "amount": float(d_amt), 
                 "detail": str(d_det), 
-                "image_url": str(img_url)
+                "image_url": str(img_url),
+                "occupation": str(d_occ),
+                "received_by": str(d_rec),
+                "pay_method": str(d_meth),
+                "project_context": str(current_project) # Clean mapping for active selection
             }
-            
-            if not raw_df.empty:
-                if 'occupation' in raw_df.columns: payload["occupation"] = str(d_occ)
-                if 'received_by' in raw_df.columns: payload["received_by"] = str(d_rec)
-                if 'pay_method' in raw_df.columns: payload["pay_method"] = str(d_meth)
-                if 'project_context' in raw_df.columns: payload["project_context"] = str(current_project)
-            else:
-                payload["project_context"] = str(current_project)
-                payload["pay_method"] = str(d_meth)
             
             try:
                 supabase.table('transactions').insert(payload).execute()
@@ -454,7 +444,7 @@ def popup_update_status(current_project, status_df):
         
     if submit_btn:
         try:
-            supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name").execute()
+            supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name,project_context").execute()
             st.cache_data.clear()
             st.success("Task updated successfully!")
             st.rerun()
@@ -471,14 +461,14 @@ def popup_update_status(current_project, status_df):
         st.rerun()
 
 
-# --- 7. DYNAMIC PROJECT FILTERS ---
+# --- 7. CRITICAL STAGE: HARD DYNAMIC PROJECT FILTERS ---
 current_project = st.session_state["selected_project"]
 
 if not raw_df.empty:
     if 'project_context' in raw_df.columns:
         df = raw_df[raw_df['project_context'] == current_project]
     else:
-        df = raw_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
+        df = pd.DataFrame() # Secure segregation fallback
 else:
     df = pd.DataFrame()
 
@@ -486,7 +476,7 @@ if not raw_labor_df.empty:
     if 'project_context' in raw_labor_df.columns:
         labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project]
     else:
-        labor_df = raw_labor_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
+        labor_df = pd.DataFrame()
 else:
     labor_df = pd.DataFrame()
 
@@ -691,7 +681,6 @@ elif menu == "👷 Labor Force Folder":
                     st.write(f"📞 **Phone:** {row.get('phone','N/A')} | 🆔 **CNIC:** {row.get('cnic','N/A')}")
                     st.write(f"💰 **Total Contract Amount:** PKR {row.get('total_contract_amount',0):,.0f}")
                     
-                    # Fetch labor payment transaction context safely
                     labor_pmts = df[(df['type'] == 'Labor') & (df['name'].str.contains(row['name'], case=False, na=False))] if not df.empty else pd.DataFrame()
                     
                     pdf_profile = export_labor_profile_pdf(row, labor_pmts)
