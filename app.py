@@ -207,16 +207,6 @@ st.markdown("""
         margin: auto;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
-    
-    /* New Project Header Box Styling */
-    .project-banner-box {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-radius: 20px;
-        padding: 24px;
-        border: 1px solid #334155;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        margin-bottom: 25px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -544,21 +534,21 @@ if "Dashboard" in menu:
         </div>
     """, unsafe_allow_html=True)
 
-    # --- NEW DYNAMIC HEADLINE & DETAIL BOX FOR ACTIVE PROJECT ---
+    # --- PURE MINIMALIST CARD FOR ACTIVE PROJECT (Color Removed) ---
     total_logs_count = len(df) if not df.empty else 0
     active_workers_count = len(labor_df) if not labor_df.empty else 0
     
     st.markdown(f"""
-        <div class="project-banner-box">
+        <div style="background: #ffffff; border-radius: 20px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px;">
             <span style="color: #FF4B4B; font-weight: 800; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px;">📂 CURRENTLY VIEWING SITE</span>
-            <h2 style="color: #ffffff !important; font-weight: 800; font-size: 30px; margin: 0; letter-spacing: -0.5px;">PROJECT: {current_project.upper()}</h2>
-            <p style="color: #94a3b8 !important; font-size: 14px; margin: 8px 0 16px 0; line-height: 1.6; font-weight: 400;">
+            <h2 style="color: #0f172a !important; font-weight: 800; font-size: 30px; margin: 0; letter-spacing: -0.5px;">PROJECT: {current_project.upper()}</h2>
+            <p style="color: #475569 !important; font-size: 14px; margin: 8px 0 16px 0; line-height: 1.6; font-weight: 400;">
                 Yeh dashboard temporary aur real-time state metrics ke mutabik <b>{current_project}</b> ka complete live infrastructure data, payments cashflow records, aur layout development parameters show kar raha hai. Is project file se related a to z entries database security layers ke sath filtered hain.
             </p>
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; border-top: 1px solid #334155; padding-top: 12px;">
-                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">📊 Total Logs Filed: <b style="color: #FF4B4B !important;">{total_logs_count} Entries</b></span>
-                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">👷 Registered Site Force: <b style="color: #38bdf8 !important;">{active_workers_count} Workers</b></span>
-                <span style="color: #cbd5e1 !important; font-size: 12px; font-weight: 600;">📍 Sync Status: <b style="color: #4ade80 !important;">Live Guard Secure</b></span>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                <span style="color: #475569 !important; font-size: 12px; font-weight: 600;">📊 Total Logs Filed: <b style="color: #FF4B4B !important;">{total_logs_count} Entries</b></span>
+                <span style="color: #475569 !important; font-size: 12px; font-weight: 600;">👷 Registered Site Force: <b style="color: #0284c7 !important;">{active_workers_count} Workers</b></span>
+                <span style="color: #475569 !important; font-size: 12px; font-weight: 600;">📍 Sync Status: <b style="color: #16a34a !important;">Live Guard Secure</b></span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -639,103 +629,38 @@ elif menu == "📑 Receipt Voucher System":
     st.divider()
     
     if not df.empty:
-        df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
-        selected_log = st.selectbox("Select System Transaction Target Entry:", df['voucher_label'].tolist())
-        v_row = df[df['voucher_label'] == selected_log].iloc[0]
-        v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
-        v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
+        # Fixed & Completed the truncated logic safely here
+        df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str)
         
+        selected_voucher_label = st.selectbox("Select Transaction Log Entry for Digital Voucher generation:", df['voucher_label'].tolist())
+        v_row = df[df['voucher_label'] == selected_voucher_label].iloc[0]
+        
+        st.write("##")
         st.markdown(f"""
             <div class="digital-voucher">
-                <div style="text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 22px;">
-                    <h3 style="margin: 0; color: #0f172a; letter-spacing: -0.5px; font-weight:800; font-size:22px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h3>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 600; text-transform:uppercase; letter-spacing:1px;">Official Transaction Clearance Record</p>
+                <div style="text-align: center; border-bottom: 2px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: #0f172a; font-weight: 800;">DEEWARYN.COM ERP SYSTEM</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Official Infrastructure Cash Flow Voucher</p>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Project Location:</span><b style="color:#0f172a;">{current_project.upper()}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B; font-weight:700;">{v_number}</b></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Account Particular:</span><span style="color:#0f172a; font-weight:700;">{v_row['name']}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Allocation Channel:</span><span style="color:#0f172a;">{v_row.get('pay_method', 'Cash')}</span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Description Context:</span><span style="color:#0f172a; max-width:60%; text-align:right;">{v_row['detail']}</span></div>
-                <div style="display: flex; justify-content: space-between; border-top: 1px dashed #cbd5e1; padding-top: 14px; margin-top: 18px; font-size: 16px;">
-                    <span style="font-weight:700; color:#475569;">TOTAL AUDITED SUM:</span>
-                    <b style="color:#16a34a; font-size:18px; font-weight:800;">PKR {v_row['amount']:,.0f}</b>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #475569;">Voucher Token ID:</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #FF4B4B;">#{v_row['id']}</td></tr>
+                    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #475569;">Transaction Date:</td><td style="padding: 8px 0; text-align: right;">{v_row['date']}</td></tr>
+                    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #475569;">Context Allocation:</td><td style="padding: 8px 0; text-align: right; text-transform: uppercase; font-weight: 600;">{v_row['project_context']}</td></tr>
+                    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #475569;">Category Classification:</td><td style="padding: 8px 0; text-align: right;"><span style="background: #0f172a; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">{v_row['type']}</span></td></tr>
+                    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #475569;">Party / Item Particulars:</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">{v_row['name']}</td></tr>
+                    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #475569;">Payment Pipeline:</td><td style="padding: 8px 0; text-align: right;">{v_row.get('pay_method', 'Cash')}</td></tr>
+                    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; font-weight: bold; color: #475569;">Accountant Sign-Off:</td><td style="padding: 8px 0; text-align: right;">{v_row.get('received_by', 'N/A')}</td></tr>
+                    <tr style="background: #f8fafc;"><td style="padding: 12px 8px; font-weight: 800; color: #0f172a; font-size: 16px;">TOTAL NET VALUE:</td><td style="padding: 12px 8px; text-align: right; font-weight: 800; color: #15803d; font-size: 18px;">PKR {v_row['amount']:,.0f}</td></tr>
+                </table>
+                <div style="margin-top: 15px; font-size: 12px; color: #64748b; font-style: italic; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                    <b>Specs Log Notes:</b> {v_row['detail'] if v_row['detail'] else 'No supplementary details appended.'}
                 </div>
             </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info("Is project context mein koi transactions recorded nahi hain.")
-
-
-# --- UNIVERSAL DIRECT VIEW LEDGERS ---
-elif menu in ["💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Material Log Vault", "📋 Pending Bills History"]:
-    mapping = {
-        "💰 Income Ledger": "Income",
-        "👷 Labor Ledger History": "Labor",
-        "🏗️ Material Log Vault": "Material",
-        "📋 Pending Bills History": "Pending Bill"
-    }
-    target_type = mapping[menu]
-    st.title(f"{menu} Matrix")
-    st.write(f"Filtered Site Source: **{current_project}**")
-    
-    filtered_df = df[df['type'] == target_type] if not df.empty else pd.DataFrame()
-    
-    if not filtered_df.empty:
-        st.metric("Total Summary Volume", f"PKR {filtered_df['amount'].sum():,.0f}")
-        st.dataframe(filtered_df[["id", "date", "name", "amount", "detail", "pay_method"]], use_container_width=True)
         
-        pdf_data = export_to_pdf(filtered_df, f"Deewaryn ERP - {target_type} Ledger ({current_project})")
-        st.download_button("📥 Export Dynamic PDF Report", data=pdf_data, file_name=f"{target_type}_{current_project}_ledger.pdf", mime="application/pdf")
+        st.write("##")
+        wa_url = generate_whatsapp_link(v_row['type'], v_row['name'], v_row['amount'], v_row['detail'], v_row['project_context'])
+        st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; max-width:600px; margin:auto;">📲 Dispatch Voucher Alert via WhatsApp</div></a>""", unsafe_allow_html=True)
+        
     else:
-        st.info(f"Yahan filhal koi '{target_type}' data load nahi hua.")
-
-
-# --- LABOR FORCE DIGITAL FOLDER ---
-elif menu == "👷 Labor Force Folder":
-    st.title("👷 Active Workforce Registry Files")
-    st.write(f"Project Location: **{current_project}**")
-    st.divider()
-    
-    if not labor_df.empty:
-        for idx, row in labor_df.iterrows():
-            with st.container():
-                col_img, col_info = st.columns([1, 4])
-                with col_img:
-                    if row.get('photo_url') and str(row['photo_url']) != 'nan':
-                        st.image(row['photo_url'], use_container_width=True)
-                    else:
-                        st.markdown("🧑‍🏭 *No Photo File*")
-                with col_info:
-                    st.subheader(row['name'])
-                    st.write(f"💼 **Occupation:** {row.get('occupation','General')}")
-                    st.write(f"📞 **Phone:** {row.get('phone','N/A')} | 🆔 **CNIC:** {row.get('cnic','N/A')}")
-                    st.write(f"💰 **Total Contract Amount:** PKR {row.get('total_contract_amount',0):,.0f}")
-                    
-                    labor_pmts = df[(df['type'] == 'Labor') & (df['name'].str.contains(row['name'], case=False, na=False))] if not df.empty else pd.DataFrame()
-                    
-                    pdf_profile = export_labor_profile_pdf(row, labor_pmts)
-                    st.download_button(f"📥 Print {row['name']} Portfolio", data=pdf_profile, file_name=f"Labor_Profile_{row['name']}.pdf", mime="application/pdf", key=f"btn_{idx}")
-                st.divider()
-    else:
-        st.info("Is active project context mein koi labor profile data logged nahi hai.")
-
-
-# --- GLOBAL SEARCH & AUDIT FRAMEWORK ---
-elif menu == "🔍 Search & Audit Reports":
-    st.title("🔍 Comprehensive System Audit Terminal")
-    st.write(f"Target Grid Context: **{current_project}**")
-    st.divider()
-    
-    if not df.empty:
-        q_search = st.text_input("Search Anything across global system attributes (Name, Detail, ID)...")
-        if q_search:
-            res_df = df[df.astype(str).apply(lambda r: r.str.contains(q_search, case=False).any(), axis=1)]
-        else:
-            res_df = df.copy()
-            
-        st.dataframe(res_df, use_container_width=True)
-        pdf_audit = export_to_pdf(res_df, f"System Filtered Audit Log Matrix - {current_project}")
-        st.download_button("📥 Print Filtered Audit Report", data=pdf_audit, file_name=f"Audit_Report_{current_project}.pdf", mime="application/pdf")
-    else:
-        st.info("Database matrix holds no transactional values yet.")
+        st.info("Active project status pipeline me dynamic transaction entries available nahi hain.")
