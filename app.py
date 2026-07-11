@@ -522,32 +522,42 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-# --- 9. RENDER ACTIVE MAIN PAGE (PROFESSIONAL UPGRADE) ---
 if "Dashboard" in menu:
     
-    # 1. Premium Header (Dark Theme)
+    # 1. Premium Header (High Contrast Update)
     st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);">
-            <h1 style="color: #ffffff; margin: 0; font-size: 36px; letter-spacing: -1px;">{current_project.upper()}</h1>
-            <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Strategic Site Infrastructure</p>
+        <div style="background: linear-gradient(135deg, #FF4B4B 0%, #b91c1c 100%); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);">
+            <h1 style="color: #ffffff; margin: 0; font-size: 36px; font-weight: 800; letter-spacing: -1px;">{current_project.upper()}</h1>
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. Corporate Info Card
+    # 2. Project Specifications (Specific to Yousaf Colony/Dynamic)
+    project_brief = """
+    • <b>Plot Size:</b> 6 Marla | <b>Structure:</b> 3 Story VIP Build
+    • <b>Layout:</b> 2 Bedroom units on each floor (Total 6 Bed)
+    • <b>Location:</b> Prime VIP Sector | <b>Features:</b> Modern Minimalist Finish
+    """
+    st.markdown(f"""
+        <div style="background: #ffffff; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+            <h4 style="margin:0 0 10px 0; color:#0f172a;">🏗️ Project Specifications</h4>
+            <p style="color:#475569; font-size:14px; line-height:1.6;">{project_brief}</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # 3. Corporate Info Card
     st.markdown("""
-        <div style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; border-left: 6px solid #FF4B4B; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+        <div style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; border-left: 6px solid #1e293b; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
             <div>
                 <h3 style="margin:0; color:#0f172a; font-size: 20px;">DEEWARYN.COM</h3>
                 <p style="margin:5px 0; color:#475569;"><b>CEO:</b> Sardar Sami Ullah</p>
             </div>
             <div style="text-align: right; font-size: 13px; color:#475569;">
-                <b>Phone:</b> 0333-200266<br>
-                <b>Email:</b> info@deewaryn.com
+                <b>Phone:</b> 0333-200266 | <b>Email:</b> info@deewaryn.com
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # 3. Financial Metrics (Professional Row)
+    # 4. Financial Metrics
     inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
     lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
     mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
@@ -561,26 +571,23 @@ if "Dashboard" in menu:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 4. Operational Details (Grid View)
+    # 5. Operational Details
     st.subheader("📋 Project Operational Nodes")
     status_df = fetch_project_status(current_project)
     
-    # Modern CSS Grid for status cards
     cols = st.columns(3)
     for idx, row in status_df.reset_index().iterrows():
         with cols[idx % 3]:
-            # Professional status indicators
             status_color = "#16a34a" if row['status'] == "Done" else "#ea580c"
             status_bg = "#f0fdf4" if row['status'] == "Done" else "#fff7ed"
             
             st.markdown(f"""
-                <div style="background: {status_bg}; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; transition: 0.3s;">
-                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Task Component</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #0f172a; margin: 5px 0;">{row['task_name']}</div>
-                    <div style="color: {status_color}; font-weight: 700; font-size: 13px;">● {row['status'].upper()}</div>
+                <div style="background: {status_bg}; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                    <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700;">Task</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #0f172a; margin: 2px 0;">{row['task_name']}</div>
+                    <div style="color: {status_color}; font-weight: 700; font-size: 12px;">● {row['status'].upper()}</div>
                 </div>
             """, unsafe_allow_html=True)
-
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
