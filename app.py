@@ -523,59 +523,61 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # --- Clean Black & White Professional Styling ---
+    # --- Modern Dark Dashboard Styles ---
     st.markdown("""
         <style>
-        .container-box { background-color: #ffffff; padding: 25px; border-radius: 10px; border: 2px solid #000000; margin-bottom: 20px; color: #000000; }
-        .header-box { background-color: #000000; padding: 20px; border-radius: 10px; text-align: center; color: #ffffff; margin-bottom: 20px; }
-        .metric-card { border: 2px solid #000000; padding: 15px; border-radius: 8px; text-align: center; background-color: #f8f9fa; }
-        .label-text { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #555; }
-        .value-text { font-size: 20px; font-weight: 900; color: #000; }
+        .main-container { background-color: #0e0e0e; padding: 20px; border-radius: 15px; border: 1px solid #333; color: white; }
+        .header-strip { background: linear-gradient(to right, #004d40, #00897b); padding: 15px; border-radius: 10px; margin-bottom: 20px; color: white; text-align: center; }
+        .card { background-color: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #444; margin-bottom: 15px; }
+        .highlight-text { color: #00e676; font-weight: bold; }
+        .big-val { font-size: 24px; font-weight: 800; color: #ffffff; }
         </style>
     """, unsafe_allow_html=True)
 
-    # 1. Main Header
-    st.markdown("<div class='header-box'><h1>CONSTRUCTION PROJECT DASHBOARD</h1></div>", unsafe_allow_html=True)
+    # 1. Header Strip
+    st.markdown("<div class='header-strip'><h1>CONSTRUCTION PROJECT DASHBOARD</h1></div>", unsafe_allow_html=True)
 
-    # 2. Company & Project Info Section
-    st.markdown("""
-        <div class='container-box'>
-            <h2 style='margin-top:0;'>🏢 DEEWARYN.COM</h2>
-            <p><b>CEO:</b> Sardar Sami Ullah | <b>Phone:</b> 0333-200266 | <b>Email:</b> info@deewaryn.com</p>
-            <hr style='border: 1px solid #000;'>
-            <h3>🏗️ Project: {}</h3>
-            <p><b>Specifications:</b> 6 Marla Plot | 3 Story VIP Build | 2 Bed units per floor (Total 6 Bed) | VIP Location</p>
-        </div>
-    """.format(current_project), unsafe_allow_html=True)
+    # 2. Top Info Row (The "Image" Style)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.markdown("<div class='card'>Project:<br><b>" + current_project + "</b></div>", unsafe_allow_html=True)
+    c2.markdown("<div class='card'>Phase:<br><b>3 Story Structure</b></div>", unsafe_allow_html=True)
+    c3.markdown("<div class='card'>CEO:<br><b>Sardar Sami Ullah</b></div>", unsafe_allow_html=True)
+    c4.markdown("<div class='card'>Status:<br><b style='color:#00e676;'>VIP Location</b></div>", unsafe_allow_html=True)
 
-    # 3. Financial Metrics (Black & White)
+    # 3. Financials
     inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
     lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
     mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
     net_bal = inc - (lab_exp + mat_exp)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f"<div class='metric-card'><div class='label-text'>Total Income</div><div class='value-text'>{inc:,.0f}</div></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div class='metric-card'><div class='label-text'>Labor Cost</div><div class='value-text'>{lab_exp:,.0f}</div></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='metric-card'><div class='label-text'>Material Cost</div><div class='value-text'>{mat_exp:,.0f}</div></div>", unsafe_allow_html=True)
-    c4.markdown(f"<div class='metric-card'><div class='label-text'>Net Balance</div><div class='value-text'>{net_bal:,.0f}</div></div>", unsafe_allow_html=True)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.markdown(f"<div class='card'>Income<br><div class='big-val'>{inc:,.0f}</div></div>", unsafe_allow_html=True)
+    m2.markdown(f"<div class='card'>Labor<br><div class='big-val'>{lab_exp:,.0f}</div></div>", unsafe_allow_html=True)
+    m3.markdown(f"<div class='card'>Material<br><div class='big-val'>{mat_exp:,.0f}</div></div>", unsafe_allow_html=True)
+    m4.markdown(f"<div class='card'>Net Balance<br><div class='big-val' style='color:#00e676;'>{net_bal:,.0f}</div></div>", unsafe_allow_html=True)
 
-    st.write("##")
-
-    # 4. Operational Nodes
-    st.markdown("<div class='container-box'><h3>📋 Project Operational Nodes</h3>", unsafe_allow_html=True)
-    status_df = fetch_project_status(current_project)
+    # 4. Project Details & Specs
+    col_a, col_b = st.columns([1, 1])
+    with col_a:
+        st.markdown("""
+            <div class='card'>
+                <h3>🏗️ Project Specifications</h3>
+                <p>• <b>Plot:</b> 6 Marla VIP Plot<br>
+                • <b>Structure:</b> 3 Story Construction<br>
+                • <b>Layout:</b> 2 Bedroom units each floor (6 Bed Total)<br>
+                • <b>Design:</b> Modern Minimalist</p>
+            </div>
+        """, unsafe_allow_html=True)
     
-    cols = st.columns(3)
-    for idx, row in status_df.reset_index().iterrows():
-        with cols[idx % 3]:
-            st.markdown(f"""
-                <div style="border: 1px solid #000; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
-                    <b>{row['task_name']}</b><br>
-                    Status: {row['status']}
-                </div>
-            """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    with col_b:
+        st.markdown("""
+            <div class='card'>
+                <h3>🏢 Contact Details</h3>
+                <p><b>Company:</b> DEEWARYN.COM<br>
+                <b>Phone:</b> 0333-200266<br>
+                <b>Email:</b> info@deewaryn.com</p>
+            </div>
+        """, unsafe_allow_html=True)]
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
