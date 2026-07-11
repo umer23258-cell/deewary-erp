@@ -522,56 +522,53 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-# --- 9. RENDER ACTIVE MAIN PAGE (Card-Based Smart Layout) ---
 if "Dashboard" in menu:
-    # 1. HEADER SECTION (Project Detail)
+    # 1. PROJECT HEADER & DETAILS
     st.markdown("""
-        <div class="main-card" style="padding: 20px; background: white; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-            <h1 style="margin:0; font-size: 32px; color: #0f172a;">""" + current_project.upper() + """</h1>
-            <p style="margin: 5px 0; color: #64748b; font-weight: 500;">Project Address & Budget Overview</p>
+        <div style="background: #f8fafc; padding: 25px; border-radius: 20px; border-left: 8px solid #FF4B4B; margin-bottom: 20px;">
+            <h1 style="margin:0; font-size: 32px; color: #1e293b;">Yousaf Colony Street</h1>
+            <p style="font-size: 16px; color: #475569; margin-top:5px;">
+                <b>Type:</b> 6 Marla | <b>Scale:</b> 3 Story | <b>Location:</b> VIP Sector | <b>Layout:</b> 2-Bed per Floor
+            </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. WORK PROGRESS
-    st.markdown("### 📊 Work Progress")
-    prog_val = 65 # Yahan aap apni calculate ki hui value daal sakte hain
+    # 2. COMPANY PROFILE
+    col_dash, col_comp = st.columns([2, 1])
+    with col_comp:
+        st.markdown("### 🏢 Deewaryn.com")
+        st.write("Professional Real Estate Property Management & Development Firm operating in Rawalpindi/Islamabad region.")
+        st.info("Quality Construction. Transparent Layouts. Modern Engineering.")
+
+    # 3. FINANCIAL ACCOUNTING (KPIs)
+    total_inc = df[df['type']=='Income']['amount'].sum()
+    total_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])]['amount'].sum()
+    
+    with col_dash:
+        st.markdown("### 💰 Financial Accounting")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total Investment", f"PKR {total_inc:,.0f}")
+        c2.metric("Total Expenditure", f"PKR {total_exp:,.0f}")
+        c3.metric("Running Balance", f"PKR {total_inc - total_exp:,.0f}")
+
+    st.write("##")
+
+    # 4. MONTHLY BUDGET CHART
+    st.markdown("### 📈 Monthly Expenditure Trend")
+    df['date'] = pd.to_datetime(df['date'])
+    monthly_data = df.groupby(df['date'].dt.strftime('%b'))['amount'].sum().sort_index()
+    # Chart with specific yellow-green theme
+    st.bar_chart(monthly_data, color="#d4ed35")
+
+    # 5. PROGRESS REPORT
+    st.markdown("### 🏗️ Structural Progress Report")
+    status_df = fetch_project_status(current_project)
+    total_tasks = len(status_df)
+    done_tasks = len(status_df[status_df['status'] == 'Done']) if total_tasks > 0 else 0
+    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+    
     st.progress(prog_val / 100)
-    col_p1, col_p2 = st.columns(2)
-    col_p1.write(f"**{prog_val}% Complete**")
-    col_p2.write(f"**{100-prog_val}% Incomplete**")
-
-    st.write("---")
-
-    # 3. SPLIT VIEW: Activities (Left) + Overview (Right)
-    col_left, col_right = st.columns([2, 1])
-
-    with col_left:
-        st.markdown("### 📝 Recent Activities")
-        # Yahan hum transactions ko display karenge
-        if not df.empty:
-            for _, row in df.head(5).iterrows():
-                st.info(f"**{row['date']}**: {row['type']} - PKR {row['amount']:,.0f} ({row['name']})")
-        else:
-            st.write("No recent activity logs found.")
-
-    with col_right:
-        st.markdown("### 💰 Budget Overview")
-        # Calculation
-        inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
-        exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum() if not df.empty else 0
-        rem = inc - exp
-        
-        # Budget Metric Cards
-        st.metric("Total Arrival", f"PKR {inc:,.0f}")
-        st.metric("Total Used", f"PKR {exp:,.0f}")
-        st.metric("Remaining Balance", f"PKR {rem:,.0f}")
-
-    # CSS for the Card look
-    st.markdown("""
-        <style>
-        .stMetric { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
-        </style>
-    """, unsafe_allow_html=True)
+    st.markdown(f"**Current Completion Level: {prog_val}%** (Status: {'Active' if prog_val < 100 else 'Completed'})")
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
