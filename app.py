@@ -523,42 +523,67 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # --- Custom CSS for Dashboard Cards ---
+    # --- Professional High-Contrast CSS ---
     st.markdown("""
         <style>
-        .dash-card { background-color: #1e1e1e; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; color: white; }
-        .stat-box { background-color: #262626; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #10b981; }
-        .title-text { color: #10b981; font-size: 14px; font-weight: bold; text-transform: uppercase; }
+        .dash-card { background-color: #262626; padding: 20px; border-radius: 12px; border: 1px solid #404040; margin-bottom: 15px; color: #ffffff; }
+        .metric-box { background-color: #171717; padding: 20px; border-radius: 12px; border: 1px solid #525252; text-align: center; }
+        .metric-value { font-size: 22px; font-weight: 800; color: #38bdf8; }
+        .metric-label { font-size: 12px; color: #a3a3a3; text-transform: uppercase; margin-bottom: 5px; }
         </style>
     """, unsafe_allow_html=True)
 
-    # --- Header Section ---
-    st.markdown("<h1 style='text-align: center; color: white;'>Construction Project Dashboard</h1>", unsafe_allow_html=True)
+    # --- Header ---
+    st.markdown("<h1 style='color: #ffffff; text-align: center;'>CONSTRUCTION PROJECT DASHBOARD</h1>", unsafe_allow_html=True)
     
+    # --- Top Info Row ---
     c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f"<div class='dash-card'><b>Project:</b><br>{current_project}</div>", unsafe_allow_html=True)
-    c2.markdown("<div class='dash-card'><b>Phase:</b><br>Structure & Finishing</div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='dash-card'><b>Date:</b><br>{datetime.now().strftime('%d-%b-%Y')}</div>", unsafe_allow_html=True)
-    c4.markdown("<div class='dash-card'><b>Contractor:</b><br>Deewaryn Team</div>", unsafe_allow_html=True)
+    c1.markdown(f"<div class='dash-card'><div class='metric-label'>Project</div><div style='font-size:16px;'>{current_project}</div></div>", unsafe_allow_html=True)
+    c2.markdown("<div class='dash-card'><div class='metric-label'>Phase</div><div style='font-size:16px;'>3 Story Structure</div></div>", unsafe_allow_html=True)
+    c3.markdown(f"<div class='dash-card'><div class='metric-label'>Date</div><div style='font-size:16px;'>{datetime.now().strftime('%d %b %Y')}</div></div>", unsafe_allow_html=True)
+    c4.markdown("<div class='dash-card'><div class='metric-label'>Contractor</div><div style='font-size:16px;'>Deewaryn Team</div></div>", unsafe_allow_html=True)
 
-    # --- Metrics Section ---
+    # --- Financial Metrics (Exact Amounts) ---
+    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
+    lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
+    mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
+    net_bal = inc - (lab_exp + mat_exp)
+
     m1, m2, m3, m4 = st.columns(4)
-    m1.markdown("<div class='stat-box'><div class='title-text'>Total Income</div><h2 style='color:white;'>PKR 5M+</h2></div>", unsafe_allow_html=True)
-    m2.markdown("<div class='stat-box'><div class='title-text'>Labor Cost</div><h2 style='color:white;'>PKR 2.2M</h2></div>", unsafe_allow_html=True)
-    m3.markdown("<div class='stat-box' style='border-left-color: #ef4444;'><div class='title-text'>Pending</div><h2 style='color:white;'>12 Items</h2></div>", unsafe_allow_html=True)
-    m4.markdown("<div class='stat-box'><div class='title-text'>Net Balance</div><h2 style='color:white;'>PKR 1.8M</h2></div>", unsafe_allow_html=True)
+    m1.markdown(f"<div class='metric-box'><div class='metric-label'>Total Income</div><div class='metric-value'>{inc:,.0f}</div></div>", unsafe_allow_html=True)
+    m2.markdown(f"<div class='metric-box'><div class='metric-label'>Labor Cost</div><div class='metric-value'>{lab_exp:,.0f}</div></div>", unsafe_allow_html=True)
+    m3.markdown(f"<div class='metric-box'><div class='metric-label'>Material Cost</div><div class='metric-value'>{mat_exp:,.0f}</div></div>", unsafe_allow_html=True)
+    m4.markdown(f"<div class='metric-box'><div class='metric-label'>Net Balance</div><div class='metric-value' style='color:#fbbf24;'>{net_bal:,.0f}</div></div>", unsafe_allow_html=True)
 
     st.write("##")
 
-    # --- Main Content Grid ---
-    col_a, col_b = st.columns([2, 1])
+    # --- Project Details & Operational Nodes ---
+    col_a, col_b = st.columns([1, 1])
     
     with col_a:
-        st.markdown("<div class='dash-card'><h3>Project Specifications</h3><p>• <b>Plot:</b> 6 Marla | <b>Type:</b> 3 Story VIP Build<br>• <b>Layout:</b> 2 Bed units on each floor (Total 6 Bed)<br>• <b>Status:</b> On Track / VIP Location</p></div>", unsafe_allow_html=True)
-        # Yahan aap apna bar chart ya status list dal sakte hain
+        st.markdown("""
+            <div class='dash-card'>
+                <h3 style='color: #38bdf8;'>🏗️ Project Specifications</h3>
+                <p style='font-size: 15px;'>
+                • <b>Plot:</b> 6 Marla (VIP Location)<br>
+                • <b>Structure:</b> 3 Story Construction<br>
+                • <b>Layout:</b> 2 Bedroom units per floor<br>
+                • <b>Total Capacity:</b> 6 Bedroom Residential
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
 
     with col_b:
-        st.markdown("<div class='dash-card'><h3>Top Risks / Issues</h3><ul><li>Rebar Lead Time - Score 12</li><li>Permit Revision - Score 10</li><li>Crane Downtime - Score 8</li></ul></div>", unsafe_allow_html=True)
+        st.markdown("""
+            <div class='dash-card'>
+                <h3 style='color: #fbbf24;'>⚠️ Site Notes & Risks</h3>
+                <p style='font-size: 15px;'>
+                • Rebar lead time issues<br>
+                • Permit revision pending<br>
+                • Material delivery on schedule
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
