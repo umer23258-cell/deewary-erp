@@ -523,44 +523,52 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # 1. Top Metric Tiles (Colored)
+    # 1. Calculations for your project
+    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
+    lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
+    mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
+    net_bal = inc - (lab_exp + mat_exp)
+    
+    # 2. Styling
     st.markdown("""
         <style>
-        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; }
+        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; font-weight: bold; }
         </style>
     """, unsafe_allow_html=True)
     
-    t1, t2, t3, t4, t5, t6 = st.columns(6)
-    t1.markdown("<div class='tile' style='background-color:#f1c40f; color:black;'><b>Total Projects</b><br>5</div>", unsafe_allow_html=True)
-    t2.markdown("<div class='tile' style='background-color:#3498db;'><b>Committed</b><br>4.0m</div>", unsafe_allow_html=True)
-    t3.markdown("<div class='tile' style='background-color:#1abc9c;'><b>Budget</b><br>7.1m</div>", unsafe_allow_html=True)
-    t4.markdown("<div class='tile' style='background-color:#e67e22;'><b>Forecast</b><br>7.6m</div>", unsafe_allow_html=True)
-    t5.markdown("<div class='tile' style='background-color:#e74c3c;'><b>Variance</b><br>-0.4m</div>", unsafe_allow_html=True)
-    t6.markdown("<div class='tile' style='background-color:#27ae60;'><b>Paid To Date</b><br>1.1m</div>", unsafe_allow_html=True)
+    # 3. Metric Tiles (Your Data)
+    t1, t2, t3, t4 = st.columns(4)
+    t1.markdown(f"<div class='tile' style='background-color:#f1c40f; color:black;'><b>Project Name</b><br>{current_project}</div>", unsafe_allow_html=True)
+    t2.markdown(f"<div class='tile' style='background-color:#3498db;'><b>Total Income</b><br>{inc:,.0f}</div>", unsafe_allow_html=True)
+    t3.markdown(f"<div class='tile' style='background-color:#e67e22;'><b>Total Expenses</b><br>{(lab_exp + mat_exp):,.0f}</div>", unsafe_allow_html=True)
+    t4.markdown(f"<div class='tile' style='background-color:#27ae60;'><b>Net Balance</b><br>{net_bal:,.0f}</div>", unsafe_allow_html=True)
 
     st.write("---")
 
-    # 2. Charts Section (Mid Row)
+    # 4. Project Specs & Details
     c1, c2 = st.columns([1, 2])
     with c1:
-        st.subheader("Project Phases")
-        # Placeholder for Pie Chart: 
-        st.write("• Initiation: 15%")
-        st.write("• Procurement: 25%")
-        st.write("• Delivery: 60%")
+        st.markdown(f"""
+            ### Project Specs: {current_project}
+            - **Plot Size:** 6 Marla
+            - **Structure:** 3 Story VIP Build
+            - **Location:** Yousaf Colony, Rawalpindi
+            - **Capacity:** 6 Bedrooms (2 per floor)
+        """)
+        st.markdown("""
+            ### Company Info:
+            - **CEO:** Sardar Sami Ullah
+            - **Phone:** 0333-200266
+            - **Email:** info@deewaryn.com
+        """)
+        
     with c2:
-        st.subheader("Finance Bar Chart")
-        # Placeholder for Bar Chart
-        st.bar_chart(df.groupby('type')['amount'].sum())
+        st.subheader("Financial Breakdown")
+        st.bar_chart({'Expenses': [lab_exp, mat_exp], 'Total': [inc, net_bal]})
 
-    # 3. Projects Table
-    st.subheader("Projects Table")
-    # Ye aapke dataframe ko show karega
-    st.dataframe(df[['type', 'amount', 'date']], use_container_width=True)
-
-    # 4. Project Phases Timeline
-    st.subheader("Project Phases Timeline")
-    st.info("Visual Timeline: Construction Stages (Site Prep -> Foundation -> Structure -> Finishing)")
+    # 5. Project Table
+    st.subheader("Latest Records")
+    st.dataframe(df.tail(10), use_container_width=True)
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
