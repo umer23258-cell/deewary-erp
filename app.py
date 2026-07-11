@@ -523,71 +523,42 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    
-    # 1. Premium Header (High Contrast Update)
-    st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #FF4B4B 0%, #b91c1c 100%); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);">
-            <h1 style="color: #ffffff; margin: 0; font-size: 36px; font-weight: 800; letter-spacing: -1px;">{current_project.upper()}</h1>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 2. Project Specifications (Specific to Yousaf Colony/Dynamic)
-    project_brief = """
-    • <b>Plot Size:</b> 6 Marla | <b>Structure:</b> 3 Story VIP Build
-    • <b>Layout:</b> 2 Bedroom units on each floor (Total 6 Bed)
-    • <b>Location:</b> Prime VIP Sector | <b>Features:</b> Modern Minimalist Finish
-    """
-    st.markdown(f"""
-        <div style="background: #ffffff; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-            <h4 style="margin:0 0 10px 0; color:#0f172a;">🏗️ Project Specifications</h4>
-            <p style="color:#475569; font-size:14px; line-height:1.6;">{project_brief}</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 3. Corporate Info Card
+    # --- Custom CSS for Dashboard Cards ---
     st.markdown("""
-        <div style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; border-left: 6px solid #1e293b; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-            <div>
-                <h3 style="margin:0; color:#0f172a; font-size: 20px;">DEEWARYN.COM</h3>
-                <p style="margin:5px 0; color:#475569;"><b>CEO:</b> Sardar Sami Ullah</p>
-            </div>
-            <div style="text-align: right; font-size: 13px; color:#475569;">
-                <b>Phone:</b> 0333-200266 | <b>Email:</b> info@deewaryn.com
-            </div>
-        </div>
+        <style>
+        .dash-card { background-color: #1e1e1e; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; color: white; }
+        .stat-box { background-color: #262626; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #10b981; }
+        .title-text { color: #10b981; font-size: 14px; font-weight: bold; text-transform: uppercase; }
+        </style>
     """, unsafe_allow_html=True)
 
-    # 4. Financial Metrics
-    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
-    lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
-    mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
-    net_bal = inc - (lab_exp + mat_exp)
-
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Income", f"PKR {inc:,.0f}")
-    col2.metric("Labor Costs", f"PKR {lab_exp:,.0f}")
-    col3.metric("Material Cost", f"PKR {mat_exp:,.0f}")
-    col4.metric("Net Balance", f"PKR {net_bal:,.0f}")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # 5. Operational Details
-    st.subheader("📋 Project Operational Nodes")
-    status_df = fetch_project_status(current_project)
+    # --- Header Section ---
+    st.markdown("<h1 style='text-align: center; color: white;'>Construction Project Dashboard</h1>", unsafe_allow_html=True)
     
-    cols = st.columns(3)
-    for idx, row in status_df.reset_index().iterrows():
-        with cols[idx % 3]:
-            status_color = "#16a34a" if row['status'] == "Done" else "#ea580c"
-            status_bg = "#f0fdf4" if row['status'] == "Done" else "#fff7ed"
-            
-            st.markdown(f"""
-                <div style="background: {status_bg}; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
-                    <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700;">Task</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #0f172a; margin: 2px 0;">{row['task_name']}</div>
-                    <div style="color: {status_color}; font-weight: 700; font-size: 12px;">● {row['status'].upper()}</div>
-                </div>
-            """, unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.markdown(f"<div class='dash-card'><b>Project:</b><br>{current_project}</div>", unsafe_allow_html=True)
+    c2.markdown("<div class='dash-card'><b>Phase:</b><br>Structure & Finishing</div>", unsafe_allow_html=True)
+    c3.markdown(f"<div class='dash-card'><b>Date:</b><br>{datetime.now().strftime('%d-%b-%Y')}</div>", unsafe_allow_html=True)
+    c4.markdown("<div class='dash-card'><b>Contractor:</b><br>Deewaryn Team</div>", unsafe_allow_html=True)
+
+    # --- Metrics Section ---
+    m1, m2, m3, m4 = st.columns(4)
+    m1.markdown("<div class='stat-box'><div class='title-text'>Total Income</div><h2 style='color:white;'>PKR 5M+</h2></div>", unsafe_allow_html=True)
+    m2.markdown("<div class='stat-box'><div class='title-text'>Labor Cost</div><h2 style='color:white;'>PKR 2.2M</h2></div>", unsafe_allow_html=True)
+    m3.markdown("<div class='stat-box' style='border-left-color: #ef4444;'><div class='title-text'>Pending</div><h2 style='color:white;'>12 Items</h2></div>", unsafe_allow_html=True)
+    m4.markdown("<div class='stat-box'><div class='title-text'>Net Balance</div><h2 style='color:white;'>PKR 1.8M</h2></div>", unsafe_allow_html=True)
+
+    st.write("##")
+
+    # --- Main Content Grid ---
+    col_a, col_b = st.columns([2, 1])
+    
+    with col_a:
+        st.markdown("<div class='dash-card'><h3>Project Specifications</h3><p>• <b>Plot:</b> 6 Marla | <b>Type:</b> 3 Story VIP Build<br>• <b>Layout:</b> 2 Bed units on each floor (Total 6 Bed)<br>• <b>Status:</b> On Track / VIP Location</p></div>", unsafe_allow_html=True)
+        # Yahan aap apna bar chart ya status list dal sakte hain
+
+    with col_b:
+        st.markdown("<div class='dash-card'><h3>Top Risks / Issues</h3><ul><li>Rebar Lead Time - Score 12</li><li>Permit Revision - Score 10</li><li>Crane Downtime - Score 8</li></ul></div>", unsafe_allow_html=True)
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
