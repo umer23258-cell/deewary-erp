@@ -522,41 +522,86 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-# 4. Project Specs & Details
-    c1, c2 = st.columns([1, 2])
+if "Dashboard" in menu:
+    # 1. Calculations for your project
+    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
+    lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
+    mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
+    net_bal = inc - (lab_exp + mat_exp)
     
+    # 2. Styling
+    st.markdown("""
+        <style>
+        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; font-weight: bold; }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # 3. Metric Tiles (Your Data)
+    t1, t2, t3, t4 = st.columns(4)
+    t1.markdown(f"<div class='tile' style='background-color:#f1c40f; color:black;'><b>Project Name</b><br>{current_project}</div>", unsafe_allow_html=True)
+    t2.markdown(f"<div class='tile' style='background-color:#3498db;'><b>Total Income</b><br>{inc:,.0f}</div>", unsafe_allow_html=True)
+    t3.markdown(f"<div class='tile' style='background-color:#e67e22;'><b>Total Expenses</b><br>{(lab_exp + mat_exp):,.0f}</div>", unsafe_allow_html=True)
+    t4.markdown(f"<div class='tile' style='background-color:#27ae60;'><b>Net Balance</b><br>{net_bal:,.0f}</div>", unsafe_allow_html=True)
+
+    st.write("---")
+
+    # 4. Project Specs & Details
+    c1, c2 = st.columns([1, 2])
     with c1:
-        # PROJECT SPECS BOX
         st.markdown(f"""
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px;">
-                <h4 style="margin:0; color:#333;">🏗️ {current_project}</h4>
-                <ul style="padding-left: 20px;">
-                    <li>6 Marla Plot</li>
-                    <li>3 Story VIP Build</li>
-                    <li>Yousaf Colony, Rawalpindi</li>
-                    <li>6 Bedrooms Total</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # COMPANY PROFILE BOX (Side Message)
+            ### Project Specs: {current_project}
+            - **Plot Size:** 6 Marla
+            - **Structure:** 3 Story VIP Build
+            - **Location:** Yousaf Colony, Rawalpindi
+            - **Capacity:** 6 Bedrooms (2 per floor)
+        """)
         st.markdown("""
-            <div style="background-color: #000; padding: 15px; border-radius: 10px; color: #fff;">
-                <h4 style="margin:0; color:#fff;">🏢 DEEWARYN.COM</h4>
-                <p style="font-size: 13px; margin: 5px 0;">Leading Real Estate Property Management & Development Firm.</p>
-                <hr style="border-top: 1px solid #444;">
-                <b>CEO:</b> Sardar Sami Ullah<br>
-                <b>Phone:</b> 0333-200266<br>
-                <b>Email:</b> info@deewaryn.com
-            </div>
-        """, unsafe_allow_html=True)
+            ### Company Info:
+            - **CEO:** Sardar Sami Ullah
+            - **Phone:** 0333-200266
+            - **Email:** info@deewaryn.com
+        """)
         
     with c2:
         st.subheader("Financial Breakdown")
-        # Bar chart aapke amount ke hisaab se
-        st.bar_chart({'Expenses': [lab_exp, mat_exp], 'Total Income': [inc, net_bal]})
+        st.bar_chart({'Expenses': [lab_exp, mat_exp], 'Total': [inc, net_bal]})
 
+    # 5. Project Table
+    st.subheader("Latest Records")
+    st.dataframe(df.tail(10), use_container_width=True)
 
+# --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
+elif menu == "📑 Receipt Voucher System":
+    st.title(f"📑 Corporate Allocation Voucher Module")
+    st.write("Dynamic cryptographic clearance invoice framework tailored for professional architectural firms.")
+    st.divider()
+    
+    if not df.empty:
+        df['voucher_label'] = "[" + df['type'].astype(str).str.upper() + "] ID: " + df['id'].astype(str) + " - " + df['name'].astype(str) + " (PKR " + df['amount'].map('{:,.0f}'.format) + ")"
+        selected_log = st.selectbox("Select System Transaction Target Entry:", df['voucher_label'].tolist())
+        v_row = df[df['voucher_label'] == selected_log].iloc[0]
+        v_prefix = "INC" if v_row['type'] == "Income" else "LAB" if v_row['type'] == "Labor" else "MAT"
+        v_number = f"DW-{v_prefix}-{1000 + int(v_row['id'])}"
+        
+        st.markdown(f"""
+            <div class="digital-voucher">
+                <div style="text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 22px;">
+                    <h3 style="margin: 0; color: #0f172a; letter-spacing: -0.5px; font-weight:800; font-size:22px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h3>
+                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 600; text-transform:uppercase; letter-spacing:1px;">Official Transaction Clearance Record</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Voucher Reference ID:</span><b style="color:#FF4B4B; font-weight:700;">{v_number}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Execution Log Date:</span><span style="color:#0f172a; font-weight:500;">{v_row['date']}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Ledger Allocation:</span><b style="color:#0f172a;">{str(v_row['type']).upper()}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Particular Scope:</span><b style="color:#0f172a;">{v_row['name']}</b></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Designation Spec:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('occupation', 'N/A') if pd.notna(v_row.get('occupation')) else 'N/A'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; color:#475569;"><span>Disbursed/Authorized:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('received_by', 'N/A') if pd.notna(v_row.get('received_by')) else 'N/A'}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 18px; font-size: 13.5px; color:#475569;"><span>Channel Pipeline:</span><span style="color:#0f172a; font-weight:500;">{v_row.get('pay_method', 'Cash') if pd.notna(v_row.get('pay_method')) else 'Cash'}</span></div>
+                <p style="font-size: 12.5px; background: #f8fafc; padding: 14px; border-radius: 12px; font-style: italic; border-left: 4px solid #FF4B4B; margin-bottom:24px; color:#475569; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">Memo Notes: {v_row['detail'] if v_row['detail'] else 'No automated remarks logged.'}</p>
+                <div style="font-size: 20px; font-weight: 800; color: #ffffff; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius:14px; padding: 14px; text-align:center; box-shadow: 0 4px 12px rgba(15,23,42,0.15);"><span style="font-size:12px; font-weight:500; opacity:0.7; margin-right:10px; letter-spacing:0.5px;">NET VOLUME TOTAL:</span>PKR {v_row['amount']:,.0f}/-</div>
+            </div>
+        """, unsafe_allow_html=True)
+    else: 
+        st.info(f"Is project site ({current_project}) ke under filhal koi transaction record mojud nahi hai.")
 
 
 # --- LABOR PROFILES APPLICATION PAGE ---
