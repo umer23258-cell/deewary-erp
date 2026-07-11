@@ -522,61 +522,51 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-import plotly.graph_objects as go
-import plotly.express as px
-
-# --- NPS GAUGE CHART ---
-def plot_nps_gauge(score):
-    fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = score,
-        domain = {'x': [0, 1], 'y': [0, 1]},
-        gauge = {
-            'axis': {'range': [-100, 100]},
-            'bar': {'color': "#1e293b"},
-            'steps': [
-                {'range': [-100, 0], 'color': "#ef4444"},
-                {'range': [0, 50], 'color': "#eab308"},
-                {'range': [50, 100], 'color': "#22c55e"}],
-        }
-    ))
-    fig.update_layout(height=250, margin=dict(l=20, r=20, t=30, b=10))
-    return fig
-
-# --- STACKED BAR CHART ---
-def plot_defects_chart():
-    data = {
-        'Category': ['Highway', 'Commercial', 'Residential', 'Individual'],
-        'Design': [150, 300, 200, 400],
-        'Construction': [400, 500, 600, 700],
-        'Workmanship': [100, 200, 150, 250]
-    }
-    fig = px.bar(data, x=['Design', 'Construction', 'Workmanship'], y='Category',
-                 orientation='h', barmode='stack',
-                 color_discrete_map={'Design': '#4f46e5', 'Construction': '#eab308', 'Workmanship': '#94a3b8'})
-    fig.update_layout(height=300, showlegend=True, margin=dict(l=0, r=0, t=30, b=0))
-    return fig
-
-# --- DASHBOARD RENDER ---
+# --- DASHBOARD RENDER: EXECUTIVE VIEW ---
 if "Dashboard" in menu:
-    st.title(f"🏗️ {current_project} Performance Overview")
     
-    # 1. Metrics Row
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Site Success", "90.13%", "+2.5%")
-    col2.metric("Rework Cost", "PKR 62.83k")
-    col3.metric("Safety Meetings", "1,016")
-    col4.metric("Avg Defect Time", "89.82 hrs")
-    
+    # 1. PROJECT DETAILS SECTION
+    st.markdown(f"""
+        <div style="background: #0f172a; padding: 20px; border-radius: 15px; color: white; margin-bottom: 20px;">
+            <h1 style="margin:0; font-size: 28px;">{current_project.upper()}</h1>
+            <p style="margin:5px 0 0 0; color: #94a3b8;">Site Location & Project Context Details</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # 2. COMPANY PROFILE SECTION
+    with st.expander("🏢 Company & Executive Profile", expanded=True):
+        c1, c2 = st.columns(2)
+        c1.markdown("**Company Name:** Deewaryn.com")
+        c1.markdown("**Domain:** Architectural & Construction ERP")
+        c2.markdown("**C.E.O:** Sardar Sami Ullah")
+        c2.markdown("**Status:** Operational & Active")
+
     st.write("---")
+
+    # 3. FINANCIAL SUMMARY (AMOUNTS WAGARA)
+    st.subheader("💰 Financial Performance Overview")
+    col_a, col_b, col_c = st.columns(3)
     
-    # 2. Charts Row
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        st.subheader("Defects by Category")
+    # Calculation Logic
+    total_inc = df[df['type'] == 'Income']['amount'].sum()
+    total_exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum()
+    net_bal = total_inc - total_exp
+    
+    col_a.metric("Total Arrival", f"PKR {total_inc:,.0f}")
+    col_b.metric("Total Outflow", f"PKR {total_exp:,.0f}")
+    col_c.metric("Running Balance", f"PKR {net_bal:,.0f}", delta_color="inverse")
+
+    st.write("##")
+
+    # 4. PERFORMANCE CHARTS (AS PER YOUR PREVIOUS REQUEST)
+    row2_col1, row2_col2 = st.columns([1, 1])
+    
+    with row2_col1:
+        st.subheader("Defect Categories")
         st.plotly_chart(plot_defects_chart(), use_container_width=True)
-    with c2:
-        st.subheader("Net Promoter Score (NPS)")
+        
+    with row2_col2:
+        st.subheader("Project Health (NPS)")
         st.plotly_chart(plot_nps_gauge(36.37), use_container_width=True)
 
 
