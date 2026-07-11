@@ -522,58 +522,56 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-import streamlit as st
+# --- 9. RENDER ACTIVE MAIN PAGE (Card-Based Smart Layout) ---
+if "Dashboard" in menu:
+    # 1. HEADER SECTION (Project Detail)
+    st.markdown("""
+        <div class="main-card" style="padding: 20px; background: white; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+            <h1 style="margin:0; font-size: 32px; color: #0f172a;">""" + current_project.upper() + """</h1>
+            <p style="margin: 5px 0; color: #64748b; font-weight: 500;">Project Address & Budget Overview</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-# Custom CSS for the "Smart House" Card look
-st.markdown("""
-    <style>
-    .main-card {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+    # 2. WORK PROGRESS
+    st.markdown("### 📊 Work Progress")
+    prog_val = 65 # Yahan aap apni calculate ki hui value daal sakte hain
+    st.progress(prog_val / 100)
+    col_p1, col_p2 = st.columns(2)
+    col_p1.write(f"**{prog_val}% Complete**")
+    col_p2.write(f"**{100-prog_val}% Incomplete**")
 
-# 1. TOP HEADER (Project Title + Info)
-with st.container():
-    col_img, col_info = st.columns([1, 2])
-    with col_info:
-        st.title("Elmwood Villas")
-        st.subheader("3475 SF | 3891 Ranchview Dr. Richardson, California 62639")
-        st.write("### 120k USD Budget | Working Ration")
-    with col_img:
-        st.image("https://via.placeholder.com/300x150", caption="Project Render")
+    st.write("---")
 
-# 2. WORK PROGRESS BAR
-st.markdown('<div class="main-card">', unsafe_allow_html=True)
-st.write("### Work Progress")
-st.progress(20) # 20% complete
-col_p1, col_p2 = st.columns(2)
-col_p1.write("20% Complete")
-col_p2.write("80% Incomplete")
-st.markdown('</div>', unsafe_allow_html=True)
+    # 3. SPLIT VIEW: Activities (Left) + Overview (Right)
+    col_left, col_right = st.columns([2, 1])
 
-# 3. SPLIT VIEW: Activities (Left) + Overview/Budget (Right)
-col_left, col_right = st.columns([2, 1])
+    with col_left:
+        st.markdown("### 📝 Recent Activities")
+        # Yahan hum transactions ko display karenge
+        if not df.empty:
+            for _, row in df.head(5).iterrows():
+                st.info(f"**{row['date']}**: {row['type']} - PKR {row['amount']:,.0f} ({row['name']})")
+        else:
+            st.write("No recent activity logs found.")
 
-with col_left:
-    st.markdown('<div class="main-card">', unsafe_allow_html=True)
-    st.write("### Activities")
-    # Yahan aap apna chat ya logs section daal sakte hain
-    st.text_area("Chat", "Conversation history here...", height=200)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with col_right:
+        st.markdown("### 💰 Budget Overview")
+        # Calculation
+        inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
+        exp = df[df['type'].isin(['Labor', 'Material'])]['amount'].sum() if not df.empty else 0
+        rem = inc - exp
+        
+        # Budget Metric Cards
+        st.metric("Total Arrival", f"PKR {inc:,.0f}")
+        st.metric("Total Used", f"PKR {exp:,.0f}")
+        st.metric("Remaining Balance", f"PKR {rem:,.0f}")
 
-with col_right:
-    st.markdown('<div class="main-card">', unsafe_allow_html=True)
-    st.write("### Overview (Budget)")
-    # Circular progress ya simple metric cards
-    st.metric("Rehab Budget", "$100k", "$20k used")
-    st.metric("Draws", "$20k", "$15k used")
-    st.metric("Remaining", "$80k")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # CSS for the Card look
+    st.markdown("""
+        <style>
+        .stMetric { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        </style>
+    """, unsafe_allow_html=True)
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
