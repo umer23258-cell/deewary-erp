@@ -522,53 +522,39 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-if "Dashboard" in menu:
-    # 1. Calculations for your project
-    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
-    lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
-    mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
-    net_bal = inc - (lab_exp + mat_exp)
-    
-    # 2. Styling
-    st.markdown("""
-        <style>
-        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; font-weight: bold; }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # 3. Metric Tiles (Your Data)
-    t1, t2, t3, t4 = st.columns(4)
-    t1.markdown(f"<div class='tile' style='background-color:#f1c40f; color:black;'><b>Project Name</b><br>{current_project}</div>", unsafe_allow_html=True)
-    t2.markdown(f"<div class='tile' style='background-color:#3498db;'><b>Total Income</b><br>{inc:,.0f}</div>", unsafe_allow_html=True)
-    t3.markdown(f"<div class='tile' style='background-color:#e67e22;'><b>Total Expenses</b><br>{(lab_exp + mat_exp):,.0f}</div>", unsafe_allow_html=True)
-    t4.markdown(f"<div class='tile' style='background-color:#27ae60;'><b>Net Balance</b><br>{net_bal:,.0f}</div>", unsafe_allow_html=True)
-
-    st.write("---")
-
-    # 4. Project Specs & Details
+# 4. Project Specs & Details
     c1, c2 = st.columns([1, 2])
+    
     with c1:
+        # PROJECT SPECS BOX
         st.markdown(f"""
-            ### Project Specs: {current_project}
-            - **Plot Size:** 6 Marla
-            - **Structure:** 3 Story VIP Build
-            - **Location:** Yousaf Colony, Rawalpindi
-            - **Capacity:** 6 Bedrooms (2 per floor)
-        """)
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px;">
+                <h4 style="margin:0; color:#333;">🏗️ {current_project}</h4>
+                <ul style="padding-left: 20px;">
+                    <li>6 Marla Plot</li>
+                    <li>3 Story VIP Build</li>
+                    <li>Yousaf Colony, Rawalpindi</li>
+                    <li>6 Bedrooms Total</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # COMPANY PROFILE BOX (Side Message)
         st.markdown("""
-            ### Company Info:
-            - **CEO:** Sardar Sami Ullah
-            - **Phone:** 0333-200266
-            - **Email:** info@deewaryn.com
-        """)
+            <div style="background-color: #000; padding: 15px; border-radius: 10px; color: #fff;">
+                <h4 style="margin:0; color:#fff;">🏢 DEEWARYN.COM</h4>
+                <p style="font-size: 13px; margin: 5px 0;">Leading Real Estate Property Management & Development Firm.</p>
+                <hr style="border-top: 1px solid #444;">
+                <b>CEO:</b> Sardar Sami Ullah<br>
+                <b>Phone:</b> 0333-200266<br>
+                <b>Email:</b> info@deewaryn.com
+            </div>
+        """, unsafe_allow_html=True)
         
     with c2:
         st.subheader("Financial Breakdown")
-        st.bar_chart({'Expenses': [lab_exp, mat_exp], 'Total': [inc, net_bal]})
-
-    # 5. Project Table
-    st.subheader("Latest Records")
-    st.dataframe(df.tail(10), use_container_width=True)
+        # Bar chart aapke amount ke hisaab se
+        st.bar_chart({'Expenses': [lab_exp, mat_exp], 'Total Income': [inc, net_bal]})
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
