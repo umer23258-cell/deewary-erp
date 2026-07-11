@@ -522,56 +522,58 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-if "Dashboard" in menu:
-    # 1. UPPER PROJECT NAME (Heading)
-    st.markdown(f"""
-        <div style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.3); border-radius: 20px; margin-bottom: 20px;">
-            <h1 style="color: #0f172a; margin: 0; font-weight:800; font-size:40px;">{current_project.upper()}</h1>
-            <p style="color: #64748b; font-size: 16px; margin: 5px 0;">SITE OPERATIONAL COMMAND CENTER</p>
-        </div>
-    """, unsafe_allow_html=True)
+import streamlit as st
 
-    # 2. COMPANY DETAIL (CEO/Brand Info)
-    st.markdown("""
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="display: inline-block; background: #1e1e1e; color: #fff; padding: 8px 25px; border-radius: 50px; font-weight: 600;">
-                DEEWARYN.COM ERP | C.E.O: SARDAR SAMI ULLAH
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+# Custom CSS for the "Smart House" Card look
+st.markdown("""
+    <style>
+    .main-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-    # Calculate Values
-    inc, lab_exp, mat_exp = 0, 0, 0
-    if not df.empty:
-        inc = df[df['type'] == 'Income']['amount'].sum()
-        lab_exp = df[df['type'] == 'Labor']['amount'].sum()
-        mat_exp = df[df['type'] == 'Material']['amount'].sum()
-        exp = lab_exp + mat_exp
-        net_bal = inc - exp
+# 1. TOP HEADER (Project Title + Info)
+with st.container():
+    col_img, col_info = st.columns([1, 2])
+    with col_info:
+        st.title("Elmwood Villas")
+        st.subheader("3475 SF | 3891 Ranchview Dr. Richardson, California 62639")
+        st.write("### 120k USD Budget | Working Ration")
+    with col_img:
+        st.image("https://via.placeholder.com/300x150", caption="Project Render")
 
-    # 3. AMOUNTS (KPI Cards)
-    col1, col2, col3 = st.columns(3)
-    col1.metric("💰 Total Arrival", f"PKR {inc:,.0f}")
-    col2.metric("📉 Total Outflow", f"PKR {exp:,.0f}")
-    col3.metric("⚖️ Net Balance", f"PKR {net_bal:,.0f}", delta_color="inverse")
+# 2. WORK PROGRESS BAR
+st.markdown('<div class="main-card">', unsafe_allow_html=True)
+st.write("### Work Progress")
+st.progress(20) # 20% complete
+col_p1, col_p2 = st.columns(2)
+col_p1.write("20% Complete")
+col_p2.write("80% Incomplete")
+st.markdown('</div>', unsafe_allow_html=True)
 
-    st.divider()
+# 3. SPLIT VIEW: Activities (Left) + Overview/Budget (Right)
+col_left, col_right = st.columns([2, 1])
 
-    # 4. PROJECT DETAIL / PROGRESS (Bottom Section)
-    st.markdown(f"### 🏗️ {current_project} Status Breakdown")
-    
-    status_df = fetch_project_status(current_project)
-    
-    # Progress Calculation
-    total_tasks = len(status_df)
-    done_tasks = len(status_df[status_df['status'] == 'Done']) if total_tasks > 0 else 0
-    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
-    
-    st.progress(prog_val / 100)
-    st.write(f"**Overall Progress: {prog_val}%**")
+with col_left:
+    st.markdown('<div class="main-card">', unsafe_allow_html=True)
+    st.write("### Activities")
+    # Yahan aap apna chat ya logs section daal sakte hain
+    st.text_area("Chat", "Conversation history here...", height=200)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Checklist Table
-    st.table(status_df[['task_name', 'status']])
+with col_right:
+    st.markdown('<div class="main-card">', unsafe_allow_html=True)
+    st.write("### Overview (Budget)")
+    # Circular progress ya simple metric cards
+    st.metric("Rehab Budget", "$100k", "$20k used")
+    st.metric("Draws", "$20k", "$15k used")
+    st.metric("Remaining", "$80k")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
