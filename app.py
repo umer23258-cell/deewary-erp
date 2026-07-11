@@ -523,61 +523,44 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # --- Modern Dark Dashboard Styles ---
+    # 1. Top Metric Tiles (Colored)
     st.markdown("""
         <style>
-        .main-container { background-color: #0e0e0e; padding: 20px; border-radius: 15px; border: 1px solid #333; color: white; }
-        .header-strip { background: linear-gradient(to right, #004d40, #00897b); padding: 15px; border-radius: 10px; margin-bottom: 20px; color: white; text-align: center; }
-        .card { background-color: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #444; margin-bottom: 15px; }
-        .highlight-text { color: #00e676; font-weight: bold; }
-        .big-val { font-size: 24px; font-weight: 800; color: #ffffff; }
+        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; }
         </style>
     """, unsafe_allow_html=True)
-
-    # 1. Header Strip
-    st.markdown("<div class='header-strip'><h1>CONSTRUCTION PROJECT DASHBOARD</h1></div>", unsafe_allow_html=True)
-
-    # 2. Top Info Row (The "Image" Style)
-    c1, c2, c3, c4 = st.columns(4)
-    c1.markdown("<div class='card'>Project:<br><b>" + current_project + "</b></div>", unsafe_allow_html=True)
-    c2.markdown("<div class='card'>Phase:<br><b>3 Story Structure</b></div>", unsafe_allow_html=True)
-    c3.markdown("<div class='card'>CEO:<br><b>Sardar Sami Ullah</b></div>", unsafe_allow_html=True)
-    c4.markdown("<div class='card'>Status:<br><b style='color:#00e676;'>VIP Location</b></div>", unsafe_allow_html=True)
-
-    # 3. Financials
-    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
-    lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
-    mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
-    net_bal = inc - (lab_exp + mat_exp)
-
-    m1, m2, m3, m4 = st.columns(4)
-    m1.markdown(f"<div class='card'>Income<br><div class='big-val'>{inc:,.0f}</div></div>", unsafe_allow_html=True)
-    m2.markdown(f"<div class='card'>Labor<br><div class='big-val'>{lab_exp:,.0f}</div></div>", unsafe_allow_html=True)
-    m3.markdown(f"<div class='card'>Material<br><div class='big-val'>{mat_exp:,.0f}</div></div>", unsafe_allow_html=True)
-    m4.markdown(f"<div class='card'>Net Balance<br><div class='big-val' style='color:#00e676;'>{net_bal:,.0f}</div></div>", unsafe_allow_html=True)
-
-    # 4. Project Details & Specs
-    col_a, col_b = st.columns([1, 1])
-    with col_a:
-        st.markdown("""
-            <div class='card'>
-                <h3>🏗️ Project Specifications</h3>
-                <p>• <b>Plot:</b> 6 Marla VIP Plot<br>
-                • <b>Structure:</b> 3 Story Construction<br>
-                • <b>Layout:</b> 2 Bedroom units each floor (6 Bed Total)<br>
-                • <b>Design:</b> Modern Minimalist</p>
-            </div>
-        """, unsafe_allow_html=True)
     
-    with col_b:
-        st.markdown("""
-            <div class='card'>
-                <h3>🏢 Contact Details</h3>
-                <p><b>Company:</b> DEEWARYN.COM<br>
-                <b>Phone:</b> 0333-200266<br>
-                <b>Email:</b> info@deewaryn.com</p>
-            </div>
-        """, unsafe_allow_html=True)]
+    t1, t2, t3, t4, t5, t6 = st.columns(6)
+    t1.markdown("<div class='tile' style='background-color:#f1c40f; color:black;'><b>Total Projects</b><br>5</div>", unsafe_allow_html=True)
+    t2.markdown("<div class='tile' style='background-color:#3498db;'><b>Committed</b><br>4.0m</div>", unsafe_allow_html=True)
+    t3.markdown("<div class='tile' style='background-color:#1abc9c;'><b>Budget</b><br>7.1m</div>", unsafe_allow_html=True)
+    t4.markdown("<div class='tile' style='background-color:#e67e22;'><b>Forecast</b><br>7.6m</div>", unsafe_allow_html=True)
+    t5.markdown("<div class='tile' style='background-color:#e74c3c;'><b>Variance</b><br>-0.4m</div>", unsafe_allow_html=True)
+    t6.markdown("<div class='tile' style='background-color:#27ae60;'><b>Paid To Date</b><br>1.1m</div>", unsafe_allow_html=True)
+
+    st.write("---")
+
+    # 2. Charts Section (Mid Row)
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        st.subheader("Project Phases")
+        # Placeholder for Pie Chart: 
+        st.write("• Initiation: 15%")
+        st.write("• Procurement: 25%")
+        st.write("• Delivery: 60%")
+    with c2:
+        st.subheader("Finance Bar Chart")
+        # Placeholder for Bar Chart
+        st.bar_chart(df.groupby('type')['amount'].sum())
+
+    # 3. Projects Table
+    st.subheader("Projects Table")
+    # Ye aapke dataframe ko show karega
+    st.dataframe(df[['type', 'amount', 'date']], use_container_width=True)
+
+    # 4. Project Phases Timeline
+    st.subheader("Project Phases Timeline")
+    st.info("Visual Timeline: Construction Stages (Site Prep -> Foundation -> Structure -> Finishing)")
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
