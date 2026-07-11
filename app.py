@@ -522,40 +522,7 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-# 4. Project Specs & Company Profile Section
-    c1, c2 = st.columns([1, 2])
-    
-    with c1:
-        # PROJECT SPECIFICATIONS BOX (Japan Valley)
-        st.markdown(f"""
-            <div style="background-color: #f1f5f9; padding: 15px; border-radius: 10px; border-left: 5px solid #0f172a; margin-bottom: 15px;">
-                <h4 style="margin:0 0 10px 0; color:#0f172a;">🏗️ {current_project}</h4>
-                <div style="font-size: 13px; line-height: 1.6; color:#334155;">
-                    • <b>Total Area:</b> 25 Marla<br>
-                    • <b>Built-up Area:</b> 5 Marla (House)<br>
-                    • <b>Location:</b> Japan Valley, Islamabad<br>
-                    • <b>Client:</b> Sardar Yasir
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # COMPANY PROFILE BOX (Side Message)
-        st.markdown("""
-            <div style="background-color: #000000; padding: 15px; border-radius: 10px; color: #ffffff;">
-                <h4 style="margin:0; color:#ffffff;">🏢 DEEWARYN.COM</h4>
-                <p style="font-size: 12px; margin: 5px 0; color: #cbd5e1;">Real Estate Property Management & Development</p>
-                <div style="font-size: 11px; margin-top: 10px;">
-                    <b>CEO:</b> Sardar Sami Ullah<br>
-                    <b>Phone:</b> 0333-200266<br>
-                    <b>Email:</b> info@deewaryn.com
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    with c2:
-        st.subheader("Financial Breakdown")
-        # Visual Summary Chart
-        st.bar_chart({'Income': [inc], 'Labor Cost': [lab_exp], 'Material': [mat_exp], 'Net Balance': [net_bal]})
+
 
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
