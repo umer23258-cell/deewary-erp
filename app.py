@@ -524,24 +524,26 @@ with st.sidebar:
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
     # 1. Calculations for your project
-    inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
-    lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
-    mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
-    net_bal = inc - (lab_exp + mat_exp)
+    # Using .loc is generally faster and safer in pandas than chained indexing
+    inc = df.loc[df['type'] == 'Income', 'amount'].sum() if not df.empty else 0
+    lab_exp = df.loc[df['type'] == 'Labor', 'amount'].sum() if not df.empty else 0
+    mat_exp = df.loc[df['type'] == 'Material', 'amount'].sum() if not df.empty else 0
+    total_exp = lab_exp + mat_exp
+    net_bal = inc - total_exp
     
     # 2. Styling
     st.markdown("""
         <style>
-        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; font-weight: bold; }
+        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; font-weight: bold; margin-bottom: 1rem; }
         </style>
     """, unsafe_allow_html=True)
     
-    # 3. Metric Tiles (Your Data)
+    # 3. Metric Tiles
     t1, t2, t3, t4 = st.columns(4)
     t1.markdown(f"<div class='tile' style='background-color:#f1c40f; color:black;'><b>Project Name</b><br>{current_project}</div>", unsafe_allow_html=True)
-    t2.markdown(f"<div class='tile' style='background-color:#3498db;'><b>Total Income</b><br>{inc:,.0f}</div>", unsafe_allow_html=True)
-    t3.markdown(f"<div class='tile' style='background-color:#e67e22;'><b>Total Expenses</b><br>{(lab_exp + mat_exp):,.0f}</div>", unsafe_allow_html=True)
-    t4.markdown(f"<div class='tile' style='background-color:#27ae60;'><b>Net Balance</b><br>{net_bal:,.0f}</div>", unsafe_allow_html=True)
+    t2.markdown(f"<div class='tile' style='background-color:#3498db;'><b>Total Income</b><br>Rs. {inc:,.0f}</div>", unsafe_allow_html=True)
+    t3.markdown(f"<div class='tile' style='background-color:#e67e22;'><b>Total Expenses</b><br>Rs. {total_exp:,.0f}</div>", unsafe_allow_html=True)
+    t4.markdown(f"<div class='tile' style='background-color:#27ae60;'><b>Net Balance</b><br>Rs. {net_bal:,.0f}</div>", unsafe_allow_html=True)
 
     st.write("---")
 
@@ -549,14 +551,14 @@ if "Dashboard" in menu:
     c1, c2 = st.columns([1, 2])
     with c1:
         st.markdown(f"""
-            ### Project Specs: {current_project}
+            ### Project Specs
+            **{current_project}**
             - **Plot Size:** 6 Marla
             - **Structure:** 3 Story VIP Build
             - **Location:** Yousaf Colony, Rawalpindi
             - **Capacity:** 6 Bedrooms (2 per floor)
-        """)
-        st.markdown("""
-            ### Company Info:
+
+            ### Company Info
             - **CEO:** Sardar Sami Ullah
             - **Phone:** 0333-200266
             - **Email:** info@deewaryn.com
@@ -564,12 +566,18 @@ if "Dashboard" in menu:
         
     with c2:
         st.subheader("Financial Breakdown")
-        st.bar_chart({'Expenses': [lab_exp, mat_exp], 'Total': [inc, net_bal]})
+        
+        # FIX: Structure the data so Streamlit plots the 4 categories clearly
+        chart_data = pd.DataFrame(
+            [inc, lab_exp, mat_exp, net_bal], 
+            index=["Total Income", "Labor", "Materials", "Net Balance"],
+            columns=["Amount"]
+        )
+        st.bar_chart(chart_data)
 
     # 5. Project Table
     st.subheader("Latest Records")
     st.dataframe(df.tail(10), use_container_width=True)
-
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
