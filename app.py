@@ -522,6 +522,45 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
+if "Dashboard" in menu:
+    # 1. Top Metric Tiles (Colored)
+    st.markdown("""
+        <style>
+        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    t1, t2, t3, t4, t5, t6 = st.columns(6)
+    t1.markdown("<div class='tile' style='background-color:#f1c40f; color:black;'><b>Total Projects</b><br>5</div>", unsafe_allow_html=True)
+    t2.markdown("<div class='tile' style='background-color:#3498db;'><b>Committed</b><br>4.0m</div>", unsafe_allow_html=True)
+    t3.markdown("<div class='tile' style='background-color:#1abc9c;'><b>Budget</b><br>7.1m</div>", unsafe_allow_html=True)
+    t4.markdown("<div class='tile' style='background-color:#e67e22;'><b>Forecast</b><br>7.6m</div>", unsafe_allow_html=True)
+    t5.markdown("<div class='tile' style='background-color:#e74c3c;'><b>Variance</b><br>-0.4m</div>", unsafe_allow_html=True)
+    t6.markdown("<div class='tile' style='background-color:#27ae60;'><b>Paid To Date</b><br>1.1m</div>", unsafe_allow_html=True)
+
+    st.write("---")
+
+    # 2. Charts Section (Mid Row)
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        st.subheader("Project Phases")
+        # Placeholder for Pie Chart: 
+        st.write("• Initiation: 15%")
+        st.write("• Procurement: 25%")
+        st.write("• Delivery: 60%")
+    with c2:
+        st.subheader("Finance Bar Chart")
+        # Placeholder for Bar Chart
+        st.bar_chart(df.groupby('type')['amount'].sum())
+
+    # 3. Projects Table
+    st.subheader("Projects Table")
+    # Ye aapke dataframe ko show karega
+    st.dataframe(df[['type', 'amount', 'date']], use_container_width=True)
+
+    # 4. Project Phases Timeline
+    st.subheader("Project Phases Timeline")
+    st.info("Visual Timeline: Construction Stages (Site Prep -> Foundation -> Structure -> Finishing)")
 
 
 
