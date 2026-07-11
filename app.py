@@ -523,53 +523,58 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # 1. IMPROVED PROJECT HEADER (Data Grid Look)
+    # --- MODERN CSS STYLING ---
     st.markdown("""
         <style>
-        .header-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 25px; border-radius: 20px; color: white; margin-bottom: 25px; }
-        .project-tag { background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: 8px; font-size: 12px; margin-right: 10px; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .hero-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 30px; border-radius: 25px; color: white; margin-bottom: 25px; }
+        .stat-card { background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 20px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .chart-box { background: white; padding: 20px; border-radius: 20px; border: 1px solid #e2e8f0; }
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-        <div class="header-box">
-            <h1 style="margin:0; font-size: 32px;">{current_project.upper()}</h1>
-            <div style="margin-top: 15px;">
-                <span class="project-tag">6 MARLA</span>
-                <span class="project-tag">3 STORY</span>
-                <span class="project-tag">VIP LOCATION</span>
-                <span class="project-tag">2-BED PER FLOOR</span>
-            </div>
-            <p style="margin-top: 15px; font-size: 13px; opacity: 0.8;">COMPANY: DEEWARYN.COM | PROJECT STATUS: ACTIVE</p>
+    # 1. HERO PROJECT SECTION
+    st.markdown("""
+        <div class="hero-card">
+            <h1 style="margin:0; font-size: 38px;">Yousaf Colony Street</h1>
+            <p style="font-size: 16px; opacity: 0.9;">6 Marla | 3 Story | VIP Location | 2-Bed per Floor</p>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2);">
+            <p style="font-size: 14px; font-style: italic;">"Crafting Excellence in Real Estate Development - Deewaryn.com"</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. ACCURATE BUDGET CALCULATION
-    # Income (Arrival)
-    total_inc = df[df['type'] == 'Income']['amount'].sum()
-    # Expenses (Used Amount) - Filtered to show exact sum of spent money
+    # 2. FINANCIAL STATS (Clean Grid)
+    total_inc = df[df['type']=='Income']['amount'].sum()
     total_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])]['amount'].sum()
-    remaining = total_inc - total_exp
-
-    # Display using Metric Cards (Professional Layout)
+    net = total_inc - total_exp
+    
     col1, col2, col3 = st.columns(3)
-    col1.metric("Capital Inflow", f"PKR {total_inc:,.0f}")
-    col2.metric("Total Used", f"PKR {total_exp:,.0f}", delta_color="inverse")
-    col3.metric("Balance", f"PKR {remaining:,.0f}")
+    c_list = [(col1, "Capital Inflow", total_inc, "#10b981"), 
+              (col2, "Total Expenses", total_exp, "#ef4444"), 
+              (col3, "Running Balance", net, "#3b82f6")]
+    
+    for col, label, val, color in c_list:
+        col.markdown(f"""
+            <div class="stat-card">
+                <div style="color:{color}; font-size:12px; font-weight:700; text-transform:uppercase;">{label}</div>
+                <div style="font-size:24px; font-weight:800; color:#1e293b; margin-top:5px;">PKR {val:,.0f}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
     st.write("##")
 
-    # 3. MONTHLY EXPENDITURE CHART (Perfectly Aggregated)
+    # 3. ADVANCED MONTHLY ANALYSIS
     st.markdown("### 📊 Monthly Expenditure Insights")
     df['date'] = pd.to_datetime(df['date'])
-    # Yahan hum sirf 'Expense' types ka data le rahe hain taake chart kharche dikhaye
-    monthly_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])].groupby(df['date'].dt.strftime('%b'))['amount'].sum()
+    monthly = df.groupby(df['date'].dt.strftime('%b'))['amount'].sum().sort_index()
     
-    # Sort order (Jan, Feb, Mar...)
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    monthly_exp = monthly_exp.reindex(months, fill_value=0)
-    
-    st.bar_chart(monthly_exp, color="#d4ed35")
+    # Modern Bar Chart
+    st.bar_chart(monthly, color="#d4ed35")
+
+    # 4. PROGRESS REPORT (Visual Feedback)
+    st.markdown("### 🏗️ Construction Roadmap")
+    prog = 75 # Example progress
+    st.progress(prog/100)
+    st.markdown(f"**Site Progress: {prog}%** — The structure is currently in the finishing stages.")
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
