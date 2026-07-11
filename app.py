@@ -522,54 +522,54 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-if "Dashboard" in menu:
-    # 1. IMPROVED PROJECT HEADER (Data Grid Look)
-    st.markdown("""
-        <style>
-        .header-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 25px; border-radius: 20px; color: white; margin-bottom: 25px; }
-        .project-tag { background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: 8px; font-size: 12px; margin-right: 10px; border: 1px solid rgba(255, 255, 255, 0.2); }
-        </style>
-    """, unsafe_allow_html=True)
+# --- 1. MINIMALIST BLACK & WHITE HEADER ---
+st.markdown("""
+    <style>
+    .bw-header { 
+        background: #000000; 
+        padding: 30px; 
+        border-radius: 0px; 
+        color: #ffffff; 
+        border: 2px solid #ffffff;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .bw-tag { 
+        border: 1px solid #ffffff; 
+        padding: 5px 15px; 
+        margin: 5px; 
+        display: inline-block; 
+        font-weight: bold;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-    st.markdown(f"""
-        <div class="header-box">
-            <h1 style="margin:0; font-size: 32px;">{current_project.upper()}</h1>
-            <div style="margin-top: 15px;">
-                <span class="project-tag">6 MARLA</span>
-                <span class="project-tag">3 STORY</span>
-                <span class="project-tag">VIP LOCATION</span>
-                <span class="project-tag">2-BED PER FLOOR</span>
-            </div>
-            <p style="margin-top: 15px; font-size: 13px; opacity: 0.8;">COMPANY: DEEWARYN.COM | PROJECT STATUS: ACTIVE</p>
+st.markdown(f"""
+    <div class="bw-header">
+        <h1 style="color: #ffffff; font-size: 40px; text-transform: uppercase;">{current_project.upper()}</h1>
+        <div style="margin-top: 20px;">
+            <span class="bw-tag">6 MARLA</span>
+            <span class="bw-tag">3 STORY</span>
+            <span class="bw-tag">VIP LOCATION</span>
+            <span class="bw-tag">2-BED PER FLOOR</span>
         </div>
-    """, unsafe_allow_html=True)
+        <p style="margin-top: 20px; font-size: 14px; letter-spacing: 2px;">DEEWARYN.COM | OPERATIONAL STATUS</p>
+    </div>
+""", unsafe_allow_html=True)
 
-    # 2. ACCURATE BUDGET CALCULATION
-    # Income (Arrival)
-    total_inc = df[df['type'] == 'Income']['amount'].sum()
-    # Expenses (Used Amount) - Filtered to show exact sum of spent money
-    total_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])]['amount'].sum()
-    remaining = total_inc - total_exp
+# 2. BLACK & WHITE METRIC CARDS
+col1, col2, col3 = st.columns(3)
+# Inflow, Expense, Balance ko white/black theme mein
+col1.metric("CAPITAL", f"PKR {total_inc:,.0f}")
+col2.metric("EXPENDITURE", f"PKR {total_exp:,.0f}")
+col3.metric("BALANCE", f"PKR {remaining:,.0f}")
 
-    # Display using Metric Cards (Professional Layout)
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Capital Inflow", f"PKR {total_inc:,.0f}")
-    col2.metric("Total Used", f"PKR {total_exp:,.0f}", delta_color="inverse")
-    col3.metric("Balance", f"PKR {remaining:,.0f}")
+st.write("---")
 
-    st.write("##")
-
-    # 3. MONTHLY EXPENDITURE CHART (Perfectly Aggregated)
-    st.markdown("### 📊 Monthly Expenditure Insights")
-    df['date'] = pd.to_datetime(df['date'])
-    # Yahan hum sirf 'Expense' types ka data le rahe hain taake chart kharche dikhaye
-    monthly_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])].groupby(df['date'].dt.strftime('%b'))['amount'].sum()
-    
-    # Sort order (Jan, Feb, Mar...)
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    monthly_exp = monthly_exp.reindex(months, fill_value=0)
-    
-    st.bar_chart(monthly_exp, color="#d4ed35")
+# 3. BLACK & WHITE CHART
+st.markdown("### 📊 MONTHLY EXPENDITURE")
+# Chart ko bhi grayscale ya simple style mein set karein
+st.bar_chart(monthly_exp, color="#ffffff") # White color bars on black background
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
