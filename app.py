@@ -6,11 +6,17 @@ import io
 import urllib.parse
 import streamlit.components.v1 as components
 import requests  # Image fetch karne ke liye
+
 # PDF ke liye libraries
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+
+# --- 1. SUPABASE SETUP ---
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(url, key)
 
 def update_transaction_status(row_id, new_type):
     try:
@@ -20,11 +26,6 @@ def update_transaction_status(row_id, new_type):
         st.rerun()
     except Exception as e:
         st.error(f"Error: {e}")
-
-# --- 1. SUPABASE SETUP ---
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(url, key)
 
 # --- 2. PDF GENERATION FUNCTION (Full Table View) ---
 def export_to_pdf(dataframe, title):
@@ -53,7 +54,7 @@ def export_to_pdf(dataframe, title):
             str(row.get('pay_method', ''))
         ])
     
-    total_val = pdf_df['amount'].sum()
+    total_val = pdf_df['amount'].sum() if not pdf_df.empty else 0
     data.append(["", "", "TOTAL", f"{total_val:,.0f}", "", "", "", ""])
 
     t = Table(data, colWidths=[40, 70, 110, 80, 150, 90, 90, 70])
@@ -82,13 +83,11 @@ def export_labor_profile_pdf(labor_row, payments_df):
     elements = []
     styles = getSampleStyleSheet()
     
-    # Header
     elements.append(Paragraph(f"<font color='#1e1e1e' size=22><b>DEEWARYN.COM ERP</b></font>", styles['Title']))
     elements.append(Paragraph(f"<font color='#FF4B4B' size=14><b>LABOR PROFILE DOSSIER & LEDGER REPORT</b></font>", styles['Normal']))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 20))
     
-    # Profile Picture Logic
     photo_url = labor_row.get('photo_url', '')
     if photo_url and str(photo_url) != "nan" and photo_url.startswith("http"):
         try:
@@ -102,14 +101,13 @@ def export_labor_profile_pdf(labor_row, payments_df):
             elements.append(Paragraph("<i>[Profile Image Attached in Cloud File]</i>", styles['Normal']))
             elements.append(Spacer(1, 10))
 
-    # Personal Details Table
     det_data = [
         [Paragraph("<b>Full Name:</b>", styles['Normal']), Paragraph(str(labor_row['name']), styles['Normal'])],
         [Paragraph("<b>Occupation / Skill:</b>", styles['Normal']), Paragraph(str(labor_row['occupation'] if labor_row['occupation'] else 'General Labor'), styles['Normal'])],
         [Paragraph("<b>Phone Number:</b>", styles['Normal']), Paragraph(str(labor_row['phone']), styles['Normal'])],
         [Paragraph("<b>CNIC Number:</b>", styles['Normal']), Paragraph(str(labor_row['cnic']), styles['Normal'])],
-        [Paragraph("<b>Total Contract (Taka):</b>", styles['Normal']), Paragraph(f"PKR {labor_row['total_contract_amount']:,.0f}", styles['Normal'])],
-        [Paragraph("<b>Personal Details / Notes:</b>", styles['Normal']), Paragraph(str(labor_row['details'] if labor_row['details'] else 'N/A'), styles['Normal'])],
+        [Paragraph("<b>Total Contract:</b>", styles['Normal']), Paragraph(f"PKR {labor_row['total_contract_amount']:,.0f}", styles['Normal'])],
+        [Paragraph("<b>Details / Notes:</b>", styles['Normal']), Paragraph(str(labor_row['details'] if labor_row['details'] else 'N/A'), styles['Normal'])],
     ]
     det_table = Table(det_data, colWidths=[150, 350])
     det_table.setStyle(TableStyle([
@@ -121,7 +119,6 @@ def export_labor_profile_pdf(labor_row, payments_df):
     elements.append(det_table)
     elements.append(Spacer(1, 20))
     
-    # Payments History Table Section
     elements.append(Paragraph("<font color='#1e1e1e' size=12><b>💵 STATEMENT OF PAID PAYMENTS HISTORY</b></font>", styles['Heading2']))
     elements.append(Spacer(1, 5))
     
@@ -166,36 +163,30 @@ def export_labor_profile_pdf(labor_row, payments_df):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
-# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
 st.markdown("""
     <style>
-    /* 1. Background image ko poori screen par fit karna */
     [data-testid="stAppViewContainer"] {
         background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
-
-    /* 2. Main interface (cards) ko glass-like transparent banana */
     .block-container {
-        /* background mein 60% opacity di hai taake peeche se image nazar aaye */
         background: rgba(255, 255, 255, 0.6) !important;
-        /* Blur effect taake text readable rahe */
         backdrop-filter: blur(10px) !important;
         -webkit-backdrop-filter: blur(10px) !important;
         border-radius: 30px !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
         padding: 2rem !important;
     }
-
-    /* 3. Saare text ko white background par dark color dena taake parhne mein dikkat na ho */
     h1, h2, h3, p, div, span {
         color: #0f172a !important;
         font-weight: 500;
     }
+    .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; font-weight: bold; margin-bottom: 1rem; }
     </style>
 """, unsafe_allow_html=True)
+
 # --- 4. DATA FETCH LOGIC ---
 @st.cache_data(ttl=60)
 def fetch_all_raw_data():
@@ -212,6 +203,7 @@ def fetch_all_labor_profiles():
     except: return pd.DataFrame()
 
 def fetch_project_status(project_name):
+    tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Work", "polishing/grinding", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
     try:
         res = supabase.table('project_status').select("*").execute()
         df_status = pd.DataFrame(res.data)
@@ -219,11 +211,8 @@ def fetch_project_status(project_name):
             df_filtered = df_status[df_status['project_context'] == project_name]
             if not df_filtered.empty:
                 return df_filtered
-        
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
     except: 
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
 
 def check_password():
@@ -238,13 +227,8 @@ def check_password():
     return False
 
 def generate_whatsapp_link(type_tx, name, amount, detail, project):
-    base_msg = f"🏗️ *Deewaryn.com ERP Notification*\n"
-    base_msg += f"• *Project:* {project}\n"
-    base_msg += f"• *Type:* {type_tx}\n"
-    base_msg += f"• *Name/Item:* {name}\n"
-    base_msg += f"• *Amount:* PKR {amount:,.0f}\n"
-    if detail:
-        base_msg += f"• *Details:* {detail}\n"
+    base_msg = f"🏗️ *Deewaryn.com ERP Notification*\n• *Project:* {project}\n• *Type:* {type_tx}\n• *Name/Item:* {name}\n• *Amount:* PKR {amount:,.0f}\n"
+    if detail: base_msg += f"• *Details:* {detail}\n"
     base_msg += f"\n_System generated tracking logs summary entry._"
     encoded_text = urllib.parse.quote(base_msg)
     return f"https://api.whatsapp.com/send?text={encoded_text}"
@@ -271,37 +255,17 @@ if "selected_project" not in st.session_state:
 @st.dialog("📁 Create New Project Site Context", dismissible=False)
 def popup_create_project():
     new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
-    st.write("ℹ️ *Note: Naya project aap ki session state aur dashboard par active ho jayega.*")
-    
-    st.write("##")
     btn_col1, btn_col2 = st.columns(2)
-    with btn_col1:
-        submit_btn = st.button("🚀 Launch Project", type="primary", use_container_width=True)
-    with btn_col2:
-        cancel_btn = st.button("❌ Cancel", use_container_width=True)
+    with btn_col1: submit_btn = st.button("🚀 Launch Project", type="primary", use_container_width=True)
+    with btn_col2: cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
-    if submit_btn:
-        if new_proj_name:
-            if new_proj_name not in st.session_state["custom_projects"]:
-                st.session_state["custom_projects"].append(new_proj_name)
-            st.session_state["selected_project"] = new_proj_name
-            
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-            for t in tasks:
-                try:
-                    supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
-                except:
-                    try:
-                        supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
-                    except:
-                        pass
-            
-            st.success(f"Project '{new_proj_name}' successfully created!")
-            st.rerun()
-        else: st.error("Project identity descriptor required.")
-        
-    if cancel_btn:
+    if submit_btn and new_proj_name:
+        if new_proj_name not in st.session_state["custom_projects"]:
+            st.session_state["custom_projects"].append(new_proj_name)
+        st.session_state["selected_project"] = new_proj_name
+        st.success(f"Project '{new_proj_name}' successfully created!")
         st.rerun()
+    if cancel_btn: st.rerun()
 
 @st.dialog("📝 Register New Labor Profile", dismissible=False)
 def popup_register_labor(current_project):
@@ -315,169 +279,99 @@ def popup_register_labor(current_project):
     l_photo = st.file_uploader("Upload Labor Profile Picture", type=['jpg', 'jpeg', 'png'])
     l_details = st.text_area("A to Z Personal Data Notes")
     
-    st.write("##")
     btn_col1, btn_col2 = st.columns(2)
-    with btn_col1:
-        submit_btn = st.button("💾 Save Profile", type="primary", use_container_width=True)
-    with btn_col2:
-        cancel_btn = st.button("❌ Cancel", use_container_width=True)
+    with btn_col1: submit_btn = st.button("💾 Save Profile", type="primary", use_container_width=True)
+    with btn_col2: cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
-    if submit_btn:
-        if l_name:
-            img_url = ""
-            if l_photo:
-                try:
-                    f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
-                    supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
-                    img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                except: pass
-            
-            payload = {
-                "name": str(l_name), 
-                "phone": str(l_phone), 
-                "cnic": str(l_cnic), 
-                "occupation": str(l_occ),
-                "total_contract_amount": float(l_contract), 
-                "rating": int(l_rating),
-                "photo_url": str(img_url), 
-                "details": str(l_details)
-            }
-            
-            if 'project_context' in raw_labor_df.columns or not raw_labor_df.empty:
-                payload["project_context"] = str(current_project)
-            
+    if submit_btn and l_name:
+        img_url = ""
+        if l_photo:
             try:
-                supabase.table('labor_profiles').insert(payload).execute()
-                st.cache_data.clear()
-                st.success("Labor profile registered successfully!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Execution Error: {str(e)}")
-        else: st.error("Labor Full Name is required.")
-        
-    if cancel_btn:
-        st.rerun()
+                f_name = f"labor_{int(datetime.now().timestamp())}_{l_photo.name}"
+                supabase.storage.from_('material_pics').upload(f_name, l_photo.getvalue())
+                img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+            except: pass
+            
+        payload = {
+            "name": str(l_name), "phone": str(l_phone), "cnic": str(l_cnic), 
+            "occupation": str(l_occ), "total_contract_amount": float(l_contract), 
+            "rating": int(l_rating), "photo_url": str(img_url), "details": str(l_details),
+            "project_context": str(current_project)
+        }
+        try:
+            supabase.table('labor_profiles').insert(payload).execute()
+            st.cache_data.clear()
+            st.success("Labor profile registered successfully!")
+            st.rerun()
+        except Exception as e: st.error(f"Error: {e}")
+    if cancel_btn: st.rerun()
 
 @st.dialog("📝 Log Dynamic Transaction Entry", dismissible=False)
 def popup_transaction_entry(ftype, current_project):
-    st.write(f"Logging **{ftype}** entry for active project site: **{current_project}**")
     d_date = st.date_input("Date", datetime.now())
     d_name = st.text_input("Title / Name / Particular *")
     d_amt = st.number_input("Amount (PKR) *", min_value=0)
-    
     col1, col2 = st.columns(2)
     d_occ = col1.text_input("Occupation / Job Type (If Labor)")
     d_rec = col2.text_input("Received By / Authorized Person")
     d_meth = st.selectbox("Payment Method", ["Cash", "Online", "Cheque"])
     
-    uploaded_photo = None
-    if ftype == "Material": 
-        uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png'])
-        
+    uploaded_photo = st.file_uploader("Upload Bill Image", type=['jpg', 'jpeg', 'png']) if ftype == "Material" else None
     d_det = st.text_area("Notes / Particular Specs")
     
-    st.write("##")
     btn_col1, btn_col2 = st.columns(2)
-    with btn_col1:
-        submit_btn = st.button("➕ Submit Entry", type="primary", use_container_width=True)
-    with btn_col2:
-        cancel_btn = st.button("❌ Cancel", use_container_width=True)
+    with btn_col1: submit_btn = st.button("➕ Submit Entry", type="primary", use_container_width=True)
+    with btn_col2: cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
-    if submit_btn:
-        if d_name and d_amt > 0:
-            img_url = ""
-            if uploaded_photo:
-                try:
-                    f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
-                    supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
-                    img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
-                except: pass
-            
-            payload = {
-                "date": str(d_date), 
-                "type": str(ftype), 
-                "name": str(d_name), 
-                "amount": float(d_amt), 
-                "detail": str(d_det), 
-                "image_url": str(img_url)
-            }
-            
-            if not raw_df.empty:
-                if 'occupation' in raw_df.columns: payload["occupation"] = str(d_occ)
-                if 'received_by' in raw_df.columns: payload["received_by"] = str(d_rec)
-                if 'pay_method' in raw_df.columns: payload["pay_method"] = str(d_meth)
-                if 'project_context' in raw_df.columns: payload["project_context"] = str(current_project)
-            else:
-                payload["project_context"] = str(current_project)
-                payload["pay_method"] = str(d_meth)
-            
+    if submit_btn and d_name and d_amt > 0:
+        img_url = ""
+        if uploaded_photo:
             try:
-                supabase.table('transactions').insert(payload).execute()
-                st.cache_data.clear()
-                st.success("Transaction Log Entry Saved!")
-                
-                wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det, current_project)
-                st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:10px; border-radius:5px; text-align:center; font-weight:bold; margin-top:5px;">📲 Share Via WhatsApp Broadcast</div></a>""", unsafe_allow_html=True)
-                st.rerun()
-            except Exception as e:
-                st.error("Database Core Blocked execution.")
-        else: st.error("Valid Title Name and Amount required.")
-        
-    if cancel_btn:
-        st.rerun()
+                f_name = f"{int(datetime.now().timestamp())}_{uploaded_photo.name}"
+                supabase.storage.from_('material_pics').upload(f_name, uploaded_photo.getvalue())
+                img_url = supabase.storage.from_('material_pics').get_public_url(f_name)
+            except: pass
+            
+        payload = {
+            "date": str(d_date), "type": str(ftype), "name": str(d_name), 
+            "amount": float(d_amt), "detail": str(d_det), "image_url": str(img_url),
+            "occupation": str(d_occ), "received_by": str(d_rec), "pay_method": str(d_meth),
+            "project_context": str(current_project)
+        }
+        try:
+            supabase.table('transactions').insert(payload).execute()
+            st.cache_data.clear()
+            st.success("Transaction Log Entry Saved!")
+            wa_url = generate_whatsapp_link(ftype, d_name, d_amt, d_det, current_project)
+            st.markdown(f"""<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background-color:#25D366; color:white; padding:10px; border-radius:5px; text-align:center; font-weight:bold; margin-top:5px;">📲 Share Via WhatsApp Broadcast</div></a>""", unsafe_allow_html=True)
+            st.rerun()
+        except: st.error("Database Core Blocked execution.")
+    if cancel_btn: st.rerun()
 
 @st.dialog("🛠️ Update Site Checklist Status", dismissible=False)
 def popup_update_status(current_project, status_df):
     task = st.selectbox("Select Task Line Target", status_df['task_name'].tolist())
     stat = st.radio("Status Milestone Alignment", ["Pending", "Done"], horizontal=True)
-    
-    st.write("##")
     btn_col1, btn_col2 = st.columns(2)
-    with btn_col1:
-        submit_btn = st.button("⚡ Update Status", type="primary", use_container_width=True)
-    with btn_col2:
-        cancel_btn = st.button("❌ Cancel", use_container_width=True)
+    with btn_col1: submit_btn = st.button("⚡ Update Status", type="primary", use_container_width=True)
+    with btn_col2: cancel_btn = st.button("❌ Cancel", use_container_width=True)
         
     if submit_btn:
         try:
             supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name").execute()
             st.cache_data.clear()
-            st.success("Task updated successfully!")
             st.rerun()
-        except:
-            try:
-                supabase.table('project_status').insert({"task_name": task, "status": stat, "project_context": current_project}).execute()
-                st.cache_data.clear()
-                st.success("Task aligned successfully!")
-                st.rerun()
-            except Exception as e:
-                st.error("Schema constraint failed to align state.")
-                
-    if cancel_btn:
-        st.rerun()
+        except: pass
+    if cancel_btn: st.rerun()
 
 
 # --- 7. DYNAMIC PROJECT FILTERS ---
 current_project = st.session_state["selected_project"]
-
-if not raw_df.empty:
-    if 'project_context' in raw_df.columns:
-        df = raw_df[raw_df['project_context'] == current_project]
-    else:
-        df = raw_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
-else:
-    df = pd.DataFrame()
-
-if not raw_labor_df.empty:
-    if 'project_context' in raw_labor_df.columns:
-        labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project]
-    else:
-        labor_df = raw_labor_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
-else:
-    labor_df = pd.DataFrame()
+df = raw_df[raw_df['project_context'] == current_project] if not raw_df.empty and 'project_context' in raw_df.columns else raw_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
+labor_df = raw_labor_df[raw_labor_df['project_context'] == current_project] if not raw_labor_df.empty and 'project_context' in raw_labor_df.columns else raw_labor_df.copy() if current_project == "Yousaf Colony" else pd.DataFrame()
 
 
-# --- 8. SIDEBAR DESIGN (Custom Branded Luxury Styling) ---
+# --- 8. SIDEBAR DESIGN ---
 with st.sidebar:
     st.markdown("<h2 style='color:#FF4B4B; font-weight:800; margin-bottom:0; font-size:24px; letter-spacing:-0.5px;'>DEEWARYN</h2>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:11px; color:#64748b; font-weight:500; margin-top:2px; text-transform:uppercase; letter-spacing:1px;'>Site Infrastructure ERP</p>", unsafe_allow_html=True)
@@ -494,11 +388,8 @@ with st.sidebar:
     st.divider()
     
     st.markdown("<p style='font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:8px;'>Navigation Menu</p>", unsafe_allow_html=True)
-    menu = st.radio(
-        "Navigation Portal", 
-        ["📊 Dashboard View", "📑 Receipt Voucher System", "💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Material Log Vault", "📋 Pending Bills History", "👷 Labor Force Folder", "🔍 Search & Audit Reports"],
-        label_visibility="collapsed"
-    )
+    menu_options = ["📊 Dashboard View", "📑 Receipt Voucher System", "💰 Income Ledger", "👷 Labor Ledger History", "🏗️ Material Log Vault", "📋 Pending Bills History", "👷 Labor Force Folder", "🔍 Search & Audit Reports"]
+    menu = st.radio("Navigation Portal", menu_options, label_visibility="collapsed")
     st.divider()
     is_auth = check_password()
     
@@ -517,36 +408,37 @@ with st.sidebar:
         if st.button("Terminate Session", use_container_width=True):
             st.session_state["authenticated"] = False
             st.rerun()
-    st.divider()
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg")
-
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-# 4. Project Specs & Details
+
+if "Dashboard" in menu:
+    inc = df.loc[df['type'] == 'Income', 'amount'].sum() if not df.empty else 0
+    lab_exp = df.loc[df['type'] == 'Labor', 'amount'].sum() if not df.empty else 0
+    mat_exp = df.loc[df['type'] == 'Material', 'amount'].sum() if not df.empty else 0
+    total_exp = lab_exp + mat_exp
+    net_bal = inc - total_exp
+    
+    t1, t2, t3, t4 = st.columns(4)
+    t1.markdown(f"<div class='tile' style='background-color:#f1c40f; color:black;'><b>Project Name</b><br>{current_project}</div>", unsafe_allow_html=True)
+    t2.markdown(f"<div class='tile' style='background-color:#3498db;'><b>Total Income</b><br>Rs. {inc:,.0f}</div>", unsafe_allow_html=True)
+    t3.markdown(f"<div class='tile' style='background-color:#e67e22;'><b>Total Expenses</b><br>Rs. {total_exp:,.0f}</div>", unsafe_allow_html=True)
+    t4.markdown(f"<div class='tile' style='background-color:#27ae60;'><b>Net Balance</b><br>Rs. {net_bal:,.0f}</div>", unsafe_allow_html=True)
+
+    st.write("---")
     c1, c2 = st.columns([1, 2])
     
-    # ---------------------------------------------------------
     # NEW: Dynamic Project Database (Dictionary)
-    # ---------------------------------------------------------
     project_db = {
         "Japan Valley": {
-            "size": "25 Marla",
-            "structure": "Farmhouse VIP Build",
-            "location": "Japan Valley, Islamabad",
-            "capacity": "Custom Design"
+            "size": "25 Marla", "structure": "Farmhouse VIP Build",
+            "location": "Japan Valley, Islamabad", "capacity": "Custom Design"
         },
-        # Aap mazeed projects yahan add kar sakte hain
         "Deewary Default": {
-            "size": "5 Marla",
-            "structure": "Standard House",
-            "location": "Rawalpindi",
-            "capacity": "3 Bedrooms"
+            "size": "5 Marla", "structure": "Standard House",
+            "location": "Rawalpindi", "capacity": "3 Bedrooms"
         }
     }
-
-    # Agar current_project dictionary mein nahi hai, toh 'Deewary Default' ki details utha lay
     specs = project_db.get(current_project, project_db["Deewary Default"])
-    # ---------------------------------------------------------
 
     with c1:
         st.markdown(f"""
@@ -565,14 +457,16 @@ with st.sidebar:
         
     with c2:
         st.subheader("Financial Breakdown")
-        # Yeh wahi chart data hai jo humne pehle fix kiya tha
         chart_data = pd.DataFrame(
             [inc, lab_exp, mat_exp, net_bal], 
             index=["Total Income", "Labor", "Materials", "Net Balance"],
             columns=["Amount"]
         )
         st.bar_chart(chart_data)
-# --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
+
+    st.subheader("Latest Records")
+    st.dataframe(df.tail(10), use_container_width=True)
+
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
     st.write("Dynamic cryptographic clearance invoice framework tailored for professional architectural firms.")
@@ -605,8 +499,6 @@ elif menu == "📑 Receipt Voucher System":
     else: 
         st.info(f"Is project site ({current_project}) ke under filhal koi transaction record mojud nahi hai.")
 
-
-# --- LABOR PROFILES APPLICATION PAGE ---
 elif "Labor Force" in menu:
     st.title(f"👷 Dynamic Human Resource Roster")
     
@@ -634,79 +526,30 @@ elif "Labor Force" in menu:
                     st.markdown(f"**📊 Performance Rating Score:** {stars}")
                     st.info(row['details'] if row['details'] else "No metadata profile details added.")
                     
-                    st.markdown("##### 💵 Correlated Ledger Clearance Pipeline Sync")
+                    # --- COMPLETED LABOR HISTORY AND PDF BLOCK ---
+                    st.markdown("##### 💵 Correlated Ledger Clearance History")
                     if not df.empty:
-                        prof_name = str(row['name']).lower().strip()
-                        def is_name_match(tx_name):
-                            tx_name_clean = str(tx_name).lower().strip()
-                            return (prof_name in tx_name_clean) or (tx_name_clean in prof_name)
-                        
-                        labor_tx = df[df['type'] == 'Labor']
-                        if not labor_tx.empty:
-                            match_mask = labor_tx['name'].apply(is_name_match)
-                            labor_payments = labor_tx[match_mask]
-                        else: labor_payments = pd.DataFrame()
-                        
-                        if not labor_payments.empty:
-                            st.dataframe(labor_payments[['id', 'date', 'pay_method', 'amount', 'detail']], use_container_width=True)
-                            total_paid = labor_payments['amount'].sum()
-                            st.metric(label="Sum Cleared Remittances", value=f"PKR {total_paid:,.0f}/-")
-                        else:
-                            st.warning("No payment logs linked under this exact structural profile context designation name.")
-                            labor_payments = pd.DataFrame()
-                    else: labor_payments = pd.DataFrame()
-
-                    pdf_data = export_labor_profile_pdf(row, labor_payments)
-                    st.write("##")
-                    st.download_button(label="📄 Print Profile Evaluation Dossier", data=pdf_data, file_name=f"Labor_{str(row['name'])}.pdf", mime="application/pdf", key=f"dl_pdf_{row['id']}", type="primary")
+                        l_history = df[(df['type'] == 'Labor') & (df['name'].str.lower() == str(row['name']).lower())]
+                        if not l_history.empty:
+                            st.dataframe(l_history[['date', 'amount', 'pay_method', 'detail']], use_container_width=True)
+                            pdf_buf = export_labor_profile_pdf(row, l_history)
+                            st.download_button(
+                                label=f"📄 Download Profile & Ledger PDF",
+                                data=pdf_buf,
+                                file_name=f"Labor_Profile_{row['name'].replace(' ', '_')}.pdf",
+                                mime="application/pdf",
+                                key=f"dl_{row['id']}"
+                            )
+                        else: st.info("No payment history found for this worker in the current project.")
+                    else: st.info("No transaction data available.")
                 st.markdown("</div>", unsafe_allow_html=True)
-                st.divider()
-        if is_auth:
-            l_tid = st.text_input("Enter Worker Core Database Row ID to Delete")
-            if st.button("🗑️ Delete Worker Record Permanently"):
-                if l_tid:
-                    supabase.table('labor_profiles').delete().eq('id', l_tid).execute()
-                    st.cache_data.clear(); st.rerun()
-    else: st.info(f"No active worker logs inside configuration directory: {current_project}")
+    else: st.info("Is project mein abhi tak koi labor profile add nahi ki gayi.")
 
-
-# --- ORIGINAL HISTORY PAGES LOGIC (Project Restricted) ---
 else:
-    st.title(f"{menu} Terminal Portal")
+    # Baki menus (Income Ledger, Material Log etc) ke liye default view taake app crash na ho
+    st.title(menu)
+    st.write(f"Viewing data for **{current_project}**")
     if not df.empty:
-        if "Income" in menu: f_df = df[df['type'] == 'Income']
-        elif "Labor" in menu: f_df = df[df['type'] == 'Labor']
-        elif "Material" in menu: f_df = df[df['type'] == 'Material']
-        elif "Pending Bills" in menu: f_df = df[df['type'] == 'Pending Bill']
-        else: f_df = df.copy()
-        
-        search = st.text_input("🔎 Search targeted row indexing...")
-        if search:
-            mask = f_df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
-            f_df = f_df[mask]
-        
-        st.dataframe(f_df, use_container_width=True)
-
-        if "Pending Bills" in menu and not f_df.empty:
-            st.subheader("✅ Mark Pending Bill as Paid")
-            for _, row in f_df.iterrows():
-                c1, c2 = st.columns([4,1])
-                with c1:
-                    st.write(f"ID #{row['id']} - {row['name']} - PKR {row['amount']:,.0f}")
-                with c2:
-                    if st.button("Mark Paid", key=f"paid_{row['id']}"):
-                        update_transaction_status(row['id'], 'Material')
-
-        st.metric("Total Operational Volume Aggregated", f"PKR {f_df['amount'].sum():,.0f}")
-        
-        if is_auth:
-            tid = st.text_input("Enter Target Ledger ID to Remove")
-            if st.button("🗑️ Remove Ledger Record Entry"):
-                supabase.table('transactions').delete().eq('id', tid).execute()
-                st.cache_data.clear(); st.rerun()
-
-        st.divider()
-        c1, c2 = st.columns(2)
-        with c1: st.download_button("📥 Export CSV Spreadsheet File", f_df.to_csv().encode('utf-8'), f"{menu}_{current_project}.csv", use_container_width=True)
-        with c2: st.download_button("📄 Print Signature PDF Audit Ledger", export_to_pdf(f_df, menu), f"{menu}_{current_project}.pdf", use_container_width=True, type="primary")
-    else: st.info(f"No active record data blocks synced under active site environment context: {current_project}")
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("No data available.")
