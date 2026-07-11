@@ -557,7 +557,7 @@ with st.sidebar:
         # Visual Summary Chart
         st.bar_chart({'Income': [inc], 'Labor Cost': [lab_exp], 'Material': [mat_exp], 'Net Balance': [net_bal]})
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
-          elif menu == "📑 Receipt Voucher System":
+  elif menu == "📑 Receipt Voucher System":
             st.title(f"📑 Corporate Allocation Voucher Module")
         st.write("Dynamic cryptographic clearance invoice framework tailored for professional architectural firms.")
             st.divider()
