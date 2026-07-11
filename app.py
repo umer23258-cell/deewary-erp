@@ -522,82 +522,40 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-if "Dashboard" in menu:
-    st.markdown(f"""
-        <div class="header-box">
-            <h1 style="color: #0f172a; margin: 0; font-weight:800; letter-spacing: -0.5px; font-size:36px;">DEEWARYN<span style="color:#FF4B4B;">.COM</span></h1>
-            <p style="color: #64748b; letter-spacing: 0.5px; font-size: 14px; margin: 6px 0 18px 0; font-weight:500;">PREMIUM SYSTEM INTERFACE • DESIGNATED CONTEXT: {current_project.upper()}</p>
-            <div style="background: rgba(255, 75, 75, 0.06); color: #FF4B4B; display: inline-block; padding: 6px 20px; border-radius: 30px; font-weight: 700; font-size: 13px; border: 1px solid rgba(255, 75, 75, 0.15);">
-                C.E.O: SARDAR SAMI ULLAH
+# 4. Project Specs & Company Profile Section
+    c1, c2 = st.columns([1, 2])
+    
+    with c1:
+        # PROJECT SPECIFICATIONS BOX (Japan Valley)
+        st.markdown(f"""
+            <div style="background-color: #f1f5f9; padding: 15px; border-radius: 10px; border-left: 5px solid #0f172a; margin-bottom: 15px;">
+                <h4 style="margin:0 0 10px 0; color:#0f172a;">🏗️ {current_project}</h4>
+                <div style="font-size: 13px; line-height: 1.6; color:#334155;">
+                    • <b>Total Area:</b> 25 Marla<br>
+                    • <b>Built-up Area:</b> 5 Marla (House)<br>
+                    • <b>Location:</b> Japan Valley, Islamabad<br>
+                    • <b>Client:</b> Sardar Yasir
+                </div>
             </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    inc, lab_exp, mat_exp, exp, net_bal = 0, 0, 0, 0, 0
-    if not df.empty:
-        inc = df[df['type'] == 'Income']['amount'].sum()
-        lab_exp = df[df['type'] == 'Labor']['amount'].sum()
-        mat_exp = df[df['type'] == 'Material']['amount'].sum()
-        pending_bill = df[df['type'] == 'Pending Bill']['amount'].sum()
-        exp = lab_exp + mat_exp
-        net_bal = inc - exp
+        """, unsafe_allow_html=True)
         
-        try:
-            df['date_parsed'] = pd.to_datetime(df['date'])
-            seven_days_ago = datetime.now() - timedelta(days=7)
-            recent_exp_df = df[(df['type'].isin(['Labor', 'Material'])) & (df['date_parsed'] >= seven_days_ago)]
-            total_7_day_exp = recent_exp_df['amount'].sum()
-            daily_burn_rate = total_7_day_exp / 7
-        except: daily_burn_rate = 0
-
-        if net_bal < 50000:
-            st.markdown(f"""<div class="alert-box">🚨 RUNNING BALANCE WARNING: Capital pool reserve is critical (PKR {net_bal:,.0f}) inside {current_project}.</div>""", unsafe_allow_html=True)
-        elif daily_burn_rate > 0:
-            days_left = net_bal / daily_burn_rate
-            if days_left <= 5:
-                st.markdown(f"""<div class="alert-box" style="background-color: #fffbeb; border-left-color: #f59e0b; color: #78350f; border: 1px solid #fef3c7;">⚠️ RESERVES DEFICIT: Capital status for {current_project} estimated to expire in ~{days_left:.1f} days.</div>""", unsafe_allow_html=True)
-            else:
-                st.markdown(f"""<div class="forecast-box">📈 RUNWAY STABILITY PROJECTION: Safe operational buffer mapped for active site context: ~{days_left:.1f} Days.</div>""", unsafe_allow_html=True)
-
-    col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-    with col_kpi1: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>💰 TOTAL CAPITAL ARRIVAL</p><h2 style='color:#15803d; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {inc:,.0f}</h2></div>", unsafe_allow_html=True)
-    with col_kpi2: st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>📉 DISBURSED OUTFLOWS</p><h2 style='color:#b91c1c; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {exp:,.0f}</h2></div>", unsafe_allow_html=True)
-    with col_kpi3: 
-        bal_color = "#15803d" if net_bal >= 0 else "#b91c1c"
-        st.markdown(f"<div class='kpi-card'><p style='color:#64748b; margin:0; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;'>⚖️ NET RUNNING BALANCES</p><h2 style='color:{bal_color}; margin:8px 0 0 0; font-weight:800; font-size:26px; letter-spacing:-0.5px;'>PKR {net_bal:,.0f}</h2></div>", unsafe_allow_html=True)
-
-    st.metric('📋 Pending Bills', f'PKR {pending_bill:,.0f}')
-
-    st.write("##")
-    status_df = fetch_project_status(current_project)
-    total_tasks = len(status_df)
-    done_tasks = len(status_df[status_df['status'] == 'Done']) if total_tasks > 0 else 0
-    prog_val = int((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
-
-    col_left, col_right = st.columns([1, 1])
-    with col_left:
-        st.markdown(f"### 📈 Structural Framework Progress")
-        st.progress(prog_val / 100)
-        st.markdown(f"**{prog_val}% Tasks Mapped & Complete**")
-        chart_code = f"graph LR\nA[Start] --> B{{Progress: {prog_val}%}}\nstyle B fill:#FF4B4B,color:#fff,stroke:none"
-        components.html(f"<div style='background:#ffffff; border-radius:20px; padding:15px; border:1px solid #e2e8f0;'><pre class='mermaid'>{chart_code}</pre></div><script type='module'>import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';mermaid.initialize({{startOnLoad:true, theme:'neutral'}});</script>", height=120)
-
-    with col_right:
-        st.markdown("### 📝 Architectural Nodes Checklist")
-        st.write(f"✅ Cleared Status Tasks: **{done_tasks}** | ⏳ Pending Core Nodes: **{total_tasks - done_tasks}**")
-        if st.button("Re-Sync Ledger Memory Cache", use_container_width=True): st.cache_data.clear(); st.rerun()
-
-    st.divider()
-    st.markdown("### 🏗️ Complete Site Blueprint Matrix Mapping")
-    t_cols = st.columns(3)
-    if not status_df.empty:
-        for i, row in status_df.reset_index().iterrows():
-            with t_cols[i % 3]:
-                icon = "🟢 Clear" if row['status'] == "Done" else "⏳ Pending"
-                bg = "#f8fafc" if row['status'] == "Done" else "#fff9f5"
-                border_c = "#e2e8f0" if row['status'] == "Done" else "#ffedd5"
-                text_c = "#334155" if row['status'] == "Done" else "#ea580c"
-                st.markdown(f'<div style="background:{bg}; padding:16px; border-radius:16px; margin-bottom:10px; border:1px solid {border_c}; color:{text_c}; font-weight:600; font-size:13.5px; display:flex; justify-content:space-between; align-items:center;"><span>{row["task_name"]}</span><span style="font-size:11px; font-weight:700; opacity:0.9; text-transform:uppercase;">{icon}</span></div>', unsafe_allow_html=True)
+        # COMPANY PROFILE BOX (Side Message)
+        st.markdown("""
+            <div style="background-color: #000000; padding: 15px; border-radius: 10px; color: #ffffff;">
+                <h4 style="margin:0; color:#ffffff;">🏢 DEEWARYN.COM</h4>
+                <p style="font-size: 12px; margin: 5px 0; color: #cbd5e1;">Real Estate Property Management & Development</p>
+                <div style="font-size: 11px; margin-top: 10px;">
+                    <b>CEO:</b> Sardar Sami Ullah<br>
+                    <b>Phone:</b> 0333-200266<br>
+                    <b>Email:</b> info@deewaryn.com
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with c2:
+        st.subheader("Financial Breakdown")
+        # Visual Summary Chart
+        st.bar_chart({'Income': [inc], 'Labor Cost': [lab_exp], 'Material': [mat_exp], 'Net Balance': [net_bal]})
 
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
