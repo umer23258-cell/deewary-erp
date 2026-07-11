@@ -522,51 +522,62 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-# --- 9. RENDER ACTIVE MAIN PAGE ---
+# --- 9. RENDER ACTIVE MAIN PAGE (PROFESSIONAL UPGRADE) ---
 if "Dashboard" in menu:
     
-    # 1. Project Headline
+    # 1. Premium Header (Dark Theme)
     st.markdown(f"""
-        <div style="background-color: #1e1e1e; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px;">
-            <h1 style="color: #FF4B4B; margin: 0; font-size: 32px;">PROJECT: {current_project.upper()}</h1>
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);">
+            <h1 style="color: #ffffff; margin: 0; font-size: 36px; letter-spacing: -1px;">{current_project.upper()}</h1>
+            <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Strategic Site Infrastructure</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. Company Detail Section
+    # 2. Corporate Info Card
     st.markdown("""
-        <div style="background: rgba(255, 255, 255, 0.8); padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 20px;">
-            <h3 style="margin:0; color:#0f172a;">DEEWARYN.COM</h3>
-            <p style="margin:5px 0;"><b>CEO:</b> SARDAR SAMI ULLAH | <b>Phone:</b> 0333200266 | <b>Email:</b> info@dewwaryn.com</p>
+        <div style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; border-left: 6px solid #FF4B4B; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <div>
+                <h3 style="margin:0; color:#0f172a; font-size: 20px;">DEEWARYN.COM</h3>
+                <p style="margin:5px 0; color:#475569;"><b>CEO:</b> Sardar Sami Ullah</p>
+            </div>
+            <div style="text-align: right; font-size: 13px; color:#475569;">
+                <b>Phone:</b> 0333-200266<br>
+                <b>Email:</b> info@deewaryn.com
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # 3. Financial Amounts Detail
+    # 3. Financial Metrics (Professional Row)
     inc = df[df['type'] == 'Income']['amount'].sum() if not df.empty else 0
     lab_exp = df[df['type'] == 'Labor']['amount'].sum() if not df.empty else 0
     mat_exp = df[df['type'] == 'Material']['amount'].sum() if not df.empty else 0
     net_bal = inc - (lab_exp + mat_exp)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Income", f"PKR {inc:,.0f}")
-    c2.metric("Labor Exp", f"PKR {lab_exp:,.0f}")
-    c3.metric("Material Exp", f"PKR {mat_exp:,.0f}")
-    c4.metric("Net Balance", f"PKR {net_bal:,.0f}")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Income", f"PKR {inc:,.0f}")
+    col2.metric("Labor Costs", f"PKR {lab_exp:,.0f}")
+    col3.metric("Material Cost", f"PKR {mat_exp:,.0f}")
+    col4.metric("Net Balance", f"PKR {net_bal:,.0f}")
 
-    st.write("---")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # 4. Project Detail & Multiple Popup Style Details
-    st.subheader("📊 Project Operational Details")
+    # 4. Operational Details (Grid View)
+    st.subheader("📋 Project Operational Nodes")
     status_df = fetch_project_status(current_project)
     
-    # Grid of Cards
+    # Modern CSS Grid for status cards
     cols = st.columns(3)
     for idx, row in status_df.reset_index().iterrows():
         with cols[idx % 3]:
-            bg_color = "#dcfce7" if row['status'] == "Done" else "#fee2e2"
+            # Professional status indicators
+            status_color = "#16a34a" if row['status'] == "Done" else "#ea580c"
+            status_bg = "#f0fdf4" if row['status'] == "Done" else "#fff7ed"
+            
             st.markdown(f"""
-                <div style="background: {bg_color}; padding: 15px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 10px; box-shadow: 2px 2px 5px #eee;">
-                    <b style="color: #0f172a;">{row['task_name']}</b><br>
-                    <span style="font-size: 14px;">Status: {row['status']}</span>
+                <div style="background: {status_bg}; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; transition: 0.3s;">
+                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Task Component</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #0f172a; margin: 5px 0;">{row['task_name']}</div>
+                    <div style="color: {status_color}; font-weight: 700; font-size: 13px;">● {row['status'].upper()}</div>
                 </div>
             """, unsafe_allow_html=True)
 
