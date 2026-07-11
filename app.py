@@ -522,47 +522,39 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-if "Dashboard" in menu:
-    # 1. Top Metric Tiles (Colored)
-    st.markdown("""
-        <style>
-        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    t1, t2, t3, t4, t5, t6 = st.columns(6)
-    t1.markdown("<div class='tile' style='background-color:#f1c40f; color:black;'><b>Total Projects</b><br>5</div>", unsafe_allow_html=True)
-    t2.markdown("<div class='tile' style='background-color:#3498db;'><b>Committed</b><br>4.0m</div>", unsafe_allow_html=True)
-    t3.markdown("<div class='tile' style='background-color:#1abc9c;'><b>Budget</b><br>7.1m</div>", unsafe_allow_html=True)
-    t4.markdown("<div class='tile' style='background-color:#e67e22;'><b>Forecast</b><br>7.6m</div>", unsafe_allow_html=True)
-    t5.markdown("<div class='tile' style='background-color:#e74c3c;'><b>Variance</b><br>-0.4m</div>", unsafe_allow_html=True)
-    t6.markdown("<div class='tile' style='background-color:#27ae60;'><b>Paid To Date</b><br>1.1m</div>", unsafe_allow_html=True)
-
-    st.write("---")
-
-    # 2. Charts Section (Mid Row)
+# 4. Project Specs & Details
     c1, c2 = st.columns([1, 2])
+    
     with c1:
-        st.subheader("Project Phases")
-        # Placeholder for Pie Chart: 
-        st.write("• Initiation: 15%")
-        st.write("• Procurement: 25%")
-        st.write("• Delivery: 60%")
+        # PROJECT SPECS BOX
+        st.markdown(f"""
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px;">
+                <h4 style="margin:0; color:#333;">🏗️ {current_project}</h4>
+                <ul style="padding-left: 20px;">
+                    <li>6 Marla Plot</li>
+                    <li>3 Story VIP Build</li>
+                    <li>Yousaf Colony, Rawalpindi</li>
+                    <li>6 Bedrooms Total</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # COMPANY PROFILE BOX (Side Message)
+        st.markdown("""
+            <div style="background-color: #000; padding: 15px; border-radius: 10px; color: #fff;">
+                <h4 style="margin:0; color:#fff;">🏢 DEEWARYN.COM</h4>
+                <p style="font-size: 13px; margin: 5px 0;">Leading Real Estate Property Management & Development Firm.</p>
+                <hr style="border-top: 1px solid #444;">
+                <b>CEO:</b> Sardar Sami Ullah<br>
+                <b>Phone:</b> 0333-200266<br>
+                <b>Email:</b> info@deewaryn.com
+            </div>
+        """, unsafe_allow_html=True)
+        
     with c2:
-        st.subheader("Finance Bar Chart")
-        # Placeholder for Bar Chart
-        st.bar_chart(df.groupby('type')['amount'].sum())
-
-    # 3. Projects Table
-    st.subheader("Projects Table")
-    # Ye aapke dataframe ko show karega
-    st.dataframe(df[['type', 'amount', 'date']], use_container_width=True)
-
-    # 4. Project Phases Timeline
-    st.subheader("Project Phases Timeline")
-    st.info("Visual Timeline: Construction Stages (Site Prep -> Foundation -> Structure -> Finishing)")
-
-
+        st.subheader("Financial Breakdown")
+        # Bar chart aapke amount ke hisaab se
+        st.bar_chart({'Expenses': [lab_exp, mat_exp], 'Total Income': [inc, net_bal]})
 
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
