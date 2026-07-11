@@ -522,54 +522,58 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-# --- 1. MINIMALIST BLACK & WHITE HEADER ---
-st.markdown("""
-    <style>
-    .bw-header { 
-        background: #000000; 
-        padding: 30px; 
-        border-radius: 0px; 
-        color: #ffffff; 
-        border: 2px solid #ffffff;
-        text-align: center;
-        margin-bottom: 30px;
-    }
-    .bw-tag { 
-        border: 1px solid #ffffff; 
-        padding: 5px 15px; 
-        margin: 5px; 
-        display: inline-block; 
-        font-weight: bold;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# --- MAIN MENU LOGIC ---
+if menu == "Dashboard":
+    # 1. MINIMALIST BLACK & WHITE HEADER
+    st.markdown("""
+        <style>
+        .bw-header { background: #000000; padding: 40px; color: #ffffff; border: 2px solid #ffffff; text-align: center; margin-bottom: 30px; }
+        .bw-tag { border: 1px solid #ffffff; padding: 5px 15px; margin: 5px; display: inline-block; text-transform: uppercase; font-size: 12px; }
+        </style>
+    """, unsafe_allow_html=True)
 
-st.markdown(f"""
-    <div class="bw-header">
-        <h1 style="color: #ffffff; font-size: 40px; text-transform: uppercase;">{current_project.upper()}</h1>
-        <div style="margin-top: 20px;">
-            <span class="bw-tag">6 MARLA</span>
-            <span class="bw-tag">3 STORY</span>
-            <span class="bw-tag">VIP LOCATION</span>
-            <span class="bw-tag">2-BED PER FLOOR</span>
+    st.markdown(f"""
+        <div class="bw-header">
+            <h1 style="color: #ffffff; font-size: 45px; text-transform: uppercase; margin: 0;">{current_project.upper()}</h1>
+            <div style="margin-top: 20px;">
+                <span class="bw-tag">6 MARLA</span> <span class="bw-tag">3 STORY</span>
+                <span class="bw-tag">VIP LOCATION</span> <span class="bw-tag">2-BED PER FLOOR</span>
+            </div>
+            <p style="margin-top: 25px; font-size: 14px; letter-spacing: 3px; opacity: 0.7;">DEEWARYN.COM | OPERATIONAL ANALYTICS</p>
         </div>
-        <p style="margin-top: 20px; font-size: 14px; letter-spacing: 2px;">DEEWARYN.COM | OPERATIONAL STATUS</p>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# 2. BLACK & WHITE METRIC CARDS
-col1, col2, col3 = st.columns(3)
-# Inflow, Expense, Balance ko white/black theme mein
-col1.metric("CAPITAL", f"PKR {total_inc:,.0f}")
-col2.metric("EXPENDITURE", f"PKR {total_exp:,.0f}")
-col3.metric("BALANCE", f"PKR {remaining:,.0f}")
+    # 2. ACCOUNTING DATA
+    total_inc = df[df['type'] == 'Income']['amount'].sum()
+    total_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])]['amount'].sum()
+    remaining = total_inc - total_exp
 
-st.write("---")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("CAPITAL ARRIVAL", f"PKR {total_inc:,.0f}")
+    col2.metric("TOTAL EXPENDITURE", f"PKR {total_exp:,.0f}")
+    col3.metric("NET BALANCE", f"PKR {remaining:,.0f}")
 
-# 3. BLACK & WHITE CHART
-st.markdown("### 📊 MONTHLY EXPENDITURE")
-# Chart ko bhi grayscale ya simple style mein set karein
-st.bar_chart(monthly_exp, color="#ffffff") # White color bars on black background
+    st.write("---")
+
+    # 3. MONTHLY TREND & PROGRESS
+    df['date'] = pd.to_datetime(df['date'])
+    monthly_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])].groupby(df['date'].dt.strftime('%b'))['amount'].sum()
+    st.markdown("### 📊 MONTHLY EXPENDITURE TREND")
+    st.bar_chart(monthly_exp)
+
+    # 4. ACTIVITIES
+    st.markdown("### 📝 RECENT SITE ACTIVITIES")
+    st.dataframe(df[['date', 'name', 'type', 'amount']].tail(5), use_container_width=True)
+
+elif menu == "📑 Receipt Voucher System":
+    # Yahan aapka Receipt Voucher ka code aayega
+    st.title("📑 Receipt Voucher System")
+    st.write("Voucher entry system yahan load hoga...")
+    # ... aapka baki ka code yahan aayega ...
+
+# --- Baki options ---
+elif menu == "Other Option":
+    st.write("Coming soon...")
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
