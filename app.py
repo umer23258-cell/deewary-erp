@@ -522,41 +522,40 @@ with st.sidebar:
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
-if "Dashboard" in menu:
-    # 1. Calculations for your project
-    # Using .loc is generally faster and safer in pandas than chained indexing
-    inc = df.loc[df['type'] == 'Income', 'amount'].sum() if not df.empty else 0
-    lab_exp = df.loc[df['type'] == 'Labor', 'amount'].sum() if not df.empty else 0
-    mat_exp = df.loc[df['type'] == 'Material', 'amount'].sum() if not df.empty else 0
-    total_exp = lab_exp + mat_exp
-    net_bal = inc - total_exp
-    
-    # 2. Styling
-    st.markdown("""
-        <style>
-        .tile { padding: 15px; border-radius: 5px; color: white; text-align: center; font-weight: bold; margin-bottom: 1rem; }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # 3. Metric Tiles
-    t1, t2, t3, t4 = st.columns(4)
-    t1.markdown(f"<div class='tile' style='background-color:#f1c40f; color:black;'><b>Project Name</b><br>{current_project}</div>", unsafe_allow_html=True)
-    t2.markdown(f"<div class='tile' style='background-color:#3498db;'><b>Total Income</b><br>Rs. {inc:,.0f}</div>", unsafe_allow_html=True)
-    t3.markdown(f"<div class='tile' style='background-color:#e67e22;'><b>Total Expenses</b><br>Rs. {total_exp:,.0f}</div>", unsafe_allow_html=True)
-    t4.markdown(f"<div class='tile' style='background-color:#27ae60;'><b>Net Balance</b><br>Rs. {net_bal:,.0f}</div>", unsafe_allow_html=True)
-
-    st.write("---")
-
-    # 4. Project Specs & Details
+# 4. Project Specs & Details
     c1, c2 = st.columns([1, 2])
+    
+    # ---------------------------------------------------------
+    # NEW: Dynamic Project Database (Dictionary)
+    # ---------------------------------------------------------
+    project_db = {
+        "Japan Valley": {
+            "size": "25 Marla",
+            "structure": "Farmhouse VIP Build",
+            "location": "Japan Valley, Islamabad",
+            "capacity": "Custom Design"
+        },
+        # Aap mazeed projects yahan add kar sakte hain
+        "Deewary Default": {
+            "size": "5 Marla",
+            "structure": "Standard House",
+            "location": "Rawalpindi",
+            "capacity": "3 Bedrooms"
+        }
+    }
+
+    # Agar current_project dictionary mein nahi hai, toh 'Deewary Default' ki details utha lay
+    specs = project_db.get(current_project, project_db["Deewary Default"])
+    # ---------------------------------------------------------
+
     with c1:
         st.markdown(f"""
             ### Project Specs
             **{current_project}**
-            - **Plot Size:** 6 Marla
-            - **Structure:** 3 Story VIP Build
-            - **Location:** Yousaf Colony, Rawalpindi
-            - **Capacity:** 6 Bedrooms (2 per floor)
+            - **Plot Size:** {specs['size']}
+            - **Structure:** {specs['structure']}
+            - **Location:** {specs['location']}
+            - **Capacity:** {specs['capacity']}
 
             ### Company Info
             - **CEO:** Sardar Sami Ullah
@@ -566,18 +565,13 @@ if "Dashboard" in menu:
         
     with c2:
         st.subheader("Financial Breakdown")
-        
-        # FIX: Structure the data so Streamlit plots the 4 categories clearly
+        # Yeh wahi chart data hai jo humne pehle fix kiya tha
         chart_data = pd.DataFrame(
             [inc, lab_exp, mat_exp, net_bal], 
             index=["Total Income", "Labor", "Materials", "Net Balance"],
             columns=["Amount"]
         )
         st.bar_chart(chart_data)
-
-    # 5. Project Table
-    st.subheader("Latest Records")
-    st.dataframe(df.tail(10), use_container_width=True)
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
