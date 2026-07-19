@@ -166,7 +166,6 @@ def export_labor_profile_pdf(labor_row, payments_df):
 
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
-st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
 # --- APPLICATION SHELL ---
 st.markdown("""
@@ -200,16 +199,8 @@ def fetch_all_labor_profiles():
     except: return pd.DataFrame()
 
 def fetch_project_status(project_name):
-def fetch_project_status(project_name):
     try:
         res = supabase.table('project_status').select("*").execute()
-        df_status = pd.DataFrame(res.data)
-        if not df_status.empty and 'project_context' in df_status.columns:
-            df_filtered = df_status[df_status['project_context'] == project_name]
-            if not df_filtered.empty:
-                return df_filtered
-        
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         df_status = pd.DataFrame(res.data)
         if not df_status.empty and 'project_context' in df_status.columns:
             df_filtered = df_status[df_status['project_context'] == project_name]
@@ -220,9 +211,6 @@ def fetch_project_status(project_name):
         if not df_status.empty and 'project_context' not in df_status.columns:
             return df_status
         
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-        return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
-    except: 
         tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
     except: 
@@ -321,14 +309,6 @@ def popup_create_project():
             st.session_state["selected_project"] = new_proj_name
             
             tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-            for t in tasks:
-                try:
-                    supabase.table('project_status').insert({"task_name": t, "status": "Pending", "project_context": new_proj_name}).execute()
-                except:
-                    try:
-                        supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
-                    except:
-                        pass
             for t in tasks:
                 try:
                     save_project_status(new_proj_name, t, "Pending")
@@ -479,20 +459,6 @@ def popup_update_status(current_project, status_df):
         
     if submit_btn:
         try:
-            supabase.table('project_status').upsert({"task_name": task, "status": stat, "project_context": current_project}, on_conflict="task_name").execute()
-            st.cache_data.clear()
-            st.success("Task updated successfully!")
-            st.rerun()
-        except:
-            try:
-                supabase.table('project_status').insert({"task_name": task, "status": stat, "project_context": current_project}).execute()
-                st.cache_data.clear()
-                st.success("Task aligned successfully!")
-                st.rerun()
-            except Exception as e:
-                st.error("Schema constraint failed to align state.")
-    if submit_btn:
-        try:
             save_project_status(current_project, task, stat)
             st.cache_data.clear()
             st.success("Task updated successfully!")
@@ -525,8 +491,6 @@ else:
 
 
 # --- 8. SIDEBAR DESIGN (Custom Branded Luxury Styling) ---
-with st.sidebar:
-    st.markdown("<h2 style='color:#FF4B4B; font-weight:800; margin-bottom:0; font-size:24px; letter-spacing:-0.5px;'>DEEWARYN</h2>", unsafe_allow_html=True)
 with st.sidebar:
     st.image("assets/deewaryn-logo.jpg", use_container_width=True)
     st.write("")
@@ -614,7 +578,6 @@ if "Dashboard" in menu:
     balance = total_inc - total_exp
     balance_note = 'Positive cash position' if balance >= 0 else 'Review expense coverage'
 
-    st.markdown(f'''<div class="dash"><div class="dash-top"><div><p class="dash-eyebrow">Workspace / Project overview</p><h1 class="dash-title">Good day, Project Team</h1></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
     st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
         <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
 
@@ -626,7 +589,13 @@ if "Dashboard" in menu:
     ]
     metric_columns = st.columns(4)
     for column, (label, value, icon, bg, accent, note) in zip(metric_columns, metrics):
-        column.markdown(f'''<div class="dash-card"><span class="dash-icon" style="background:{bg};color:{accent}">{icon}</span><div class="dash-card-label">{label}</div><div class="dash-card-value">PKR {value:,.0f}</div><div class="dash-card-foot">{note}</div></div>''', unsafe_allow_html=True)
+        formatted_value = format(value, ",.0f")
+        card_html = (
+            '<div class="dash-card"><span class="dash-icon" style="background:{bg};color:{accent}">{icon}</span>'
+            '<div class="dash-card-label">{label}</div><div class="dash-card-value">PKR {amount}</div>'
+            '<div class="dash-card-foot">{note}</div></div>'
+        ).format(bg=bg, accent=accent, icon=icon, label=label, amount=formatted_value, note=note)
+        column.markdown(card_html, unsafe_allow_html=True)
 
     st.write('')
     main_col, side_col = st.columns([1.48, 1])
