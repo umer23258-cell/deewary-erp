@@ -492,6 +492,10 @@ else:
 
 # --- 8. SIDEBAR DESIGN (Custom Branded Luxury Styling) ---
 with st.sidebar:
+    # Brand logo stays at the top of the sidebar, above all navigation and action buttons.
+    logo_left, logo_center, logo_right = st.columns([1, 2, 1])
+    with logo_center:
+        st.image("assets/deewaryn-logo.jpg", use_container_width=True)
     st.markdown("<h2 style='color:#FF4B4B; font-weight:800; margin-bottom:0; font-size:24px; letter-spacing:-0.5px;'>DEEWARYN</h2>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:11px; color:#64748b; font-weight:500; margin-top:2px; text-transform:uppercase; letter-spacing:1px;'>Site Infrastructure ERP</p>", unsafe_allow_html=True)
     st.divider()
@@ -531,7 +535,6 @@ with st.sidebar:
             st.session_state["authenticated"] = False
             st.rerun()
     st.divider()
-    st.image("https://i.ibb.co/9HTJrtKK/Whats-App-Image-2026-04-30-at-12-24-56-PM.jpg")
 
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
