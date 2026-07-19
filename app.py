@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import io
 import urllib.parse
 import html
+import base64
+import os
 import streamlit.components.v1 as components
 import requests  # Image fetch karne ke liye
 # PDF ke liye libraries
@@ -166,6 +168,16 @@ def export_labor_profile_pdf(labor_row, payments_df):
 
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
+
+def get_logo_data_uri():
+    """Embed the company logo so it travels with the deployed application."""
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "deewaryn-logo.jpg")
+    try:
+        with open(logo_path, "rb") as logo_file:
+            encoded = base64.b64encode(logo_file.read()).decode("utf-8")
+        return f"data:image/jpeg;base64,{encoded}"
+    except OSError:
+        return ""
 
 # --- APPLICATION SHELL ---
 st.markdown("""
@@ -541,7 +553,7 @@ if "Dashboard" in menu:
         <style>
         .dash {color:#172033; font-family:Inter,ui-sans-serif,system-ui,sans-serif}
         .dash * {box-sizing:border-box}.dash-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 24px}
-        .dash-brand{display:flex;align-items:center;gap:12px}.dash-logo{width:43px;height:43px;border-radius:13px;display:grid;place-items:center;color:#fff;font-size:22px;font-weight:850;background:linear-gradient(135deg,#175cd3,#0b4a9b);box-shadow:0 9px 18px rgba(23,92,211,.22)}.dash-brand-name{font-size:15px;font-weight:850;color:#101828;letter-spacing:-.3px}.dash-brand-tag{font-size:10px;color:#667085;text-transform:uppercase;letter-spacing:.09em;font-weight:750;margin-top:2px}
+        .dash-brand{display:flex;align-items:center;gap:12px}.dash-logo{width:48px;height:48px;border-radius:13px;overflow:hidden;background:#050505;box-shadow:0 9px 18px rgba(16,24,40,.18)}.dash-logo img{width:100%;height:100%;object-fit:cover;display:block}.dash-brand-name{font-size:15px;font-weight:850;color:#101828;letter-spacing:-.3px}.dash-brand-tag{font-size:10px;color:#667085;text-transform:uppercase;letter-spacing:.09em;font-weight:750;margin-top:2px}
         .dash-eyebrow{margin:0 0 5px;color:#6b7280;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
         .dash-title{margin:0;color:#101828;font-size:31px;font-weight:800;letter-spacing:-1.2px}.dash-date{color:#667085;font-size:13px}
         .dash-live{display:inline-flex;align-items:center;gap:7px;color:#157f3b;background:#eaf8ef;border-radius:99px;padding:8px 12px;font-size:12px;font-weight:700}
@@ -559,6 +571,7 @@ if "Dashboard" in menu:
     total_tasks = len(status_df)
     progress = round(completed_tasks * 100 / total_tasks) if total_tasks else 0
     safe_project = html.escape(str(current_project))
+    logo_data_uri = get_logo_data_uri()
 
     if df.empty:
         total_inc = total_exp = pending_total = 0.0
@@ -576,7 +589,8 @@ if "Dashboard" in menu:
     balance = total_inc - total_exp
     balance_note = 'Positive cash position' if balance >= 0 else 'Review expense coverage'
 
-    st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div class="dash-logo">D</div><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
+    logo_html = f'<img src="{logo_data_uri}" alt="DEEWARYN.COM logo">' if logo_data_uri else 'D'
+    st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div class="dash-logo">{logo_html}</div><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
         <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
 
     metrics = [
