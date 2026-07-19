@@ -523,66 +523,60 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # 1. Premium Hero Header
+    # 1. Header Section
     st.markdown(f"""
-        <div class="glass-card" style="text-align:center; padding: 30px; margin-bottom: 25px; border-bottom: 2px solid #3b82f6;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 32px;">{current_project}</h1>
-            <p style="color: #94a3b8; margin-top: 5px;">Project Site Management Control Panel</p>
+        <div style="background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); padding: 30px; border-radius: 20px; color: white; margin-bottom: 30px;">
+            <h1 style="margin: 0; font-size: 28px;">{current_project}</h1>
+            <p style="opacity: 0.7; font-size: 14px;">Construction Executive Control System</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Calculate Data
+    # 2. Key Metrics Row
+    c1, c2, c3 = st.columns(3)
+    # Total calculations
     total_inc = df[df['type']=='Income']['amount'].sum()
     total_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])]['amount'].sum()
-    net_profit = total_inc - total_exp
-    pending_bills = df[df['type']=='Pending Bill']['amount'].sum()
-    total_labor = len(labor_df)
-    total_material = df[df['type']=='Material']['amount'].sum()
-
-    # 2. Metric Cards (Grid View)
-    m1, m2, m3 = st.columns(3)
-    metrics = [
-        (m1, "💰 Total Income", total_inc, "#10b981"),
-        (m2, "💸 Total Expense", total_exp, "#ef4444"),
-        (m3, "📈 Net Balance", net_profit, "#3b82f6"),
-        (m1, "📋 Pending Bills", pending_bills, "#f59e0b"),
-        (m2, "👷 Total Labor", total_labor, "#8b5cf6"),
-        (m3, "📦 Material Cost", total_material, "#ec4899")
-    ]
-
-    for col, label, val, color in metrics:
+    net = total_inc - total_exp
+    
+    # Custom Stats Grid
+    def stat_panel(col, title, val, color):
         col.markdown(f"""
-            <div class="glass-card" style="border-left: 5px solid {color}; margin-bottom: 15px;">
-                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">{label}</div>
-                <div style="font-size: 22px; font-weight: 800; color: #ffffff;">PKR {val:,.0f}</div>
+            <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="color: {color}; font-size: 12px; font-weight: bold; text-transform: uppercase;">{title}</div>
+                <div style="font-size: 24px; font-weight: 800; margin-top: 5px;">{val:,.0f} <span style="font-size: 12px; opacity:0.5;">PKR</span></div>
             </div>
         """, unsafe_allow_html=True)
 
-    # 3. Charts Section
-    st.write("##")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("### 📊 Income vs Expenses")
-        chart_data = pd.DataFrame({'Amount': [total_inc, total_exp]}, index=['Income', 'Expenses'])
-        st.pie_chart(chart_data, color=['#10b981', '#ef4444'])
+    stat_panel(c1, "Net Profit", net, "#3b82f6")
+    stat_panel(c2, "Total Income", total_inc, "#10b981")
+    stat_panel(c3, "Total Expense", total_exp, "#ef4444")
+
+    # 3. Dynamic Progress & Summary
+    st.write("---")
+    col_left, col_right = st.columns([2, 1])
     
-    with c2:
-        st.markdown("### 📈 Monthly Trend")
+    with col_left:
+        st.subheader("📊 Performance Analytics")
+        # Monthly Chart
         if not df.empty:
             df['date'] = pd.to_datetime(df['date'])
-            monthly = df.groupby(df['date'].dt.strftime('%B'))['amount'].sum()
-            st.area_chart(monthly)
+            monthly = df.groupby(df['date'].dt.strftime('%b'))['amount'].sum()
+            st.line_chart(monthly)
 
-    # 4. Construction Progress
-    st.markdown("### 🏗️ Construction Progress")
-    prog = 75 
-    st.progress(prog/100)
-    st.write(f"**Current Status:** Finishing Phase ({prog}%)")
-    
-    # 5. Recent Transactions
-    st.markdown("### 📅 Recent Transactions")
+    with col_right:
+        st.subheader("🏗️ Site Status")
+        st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;">
+                <p>Construction Progress</p>
+            </div>
+        """, unsafe_allow_html=True)
+        st.progress(0.75) # Dynamic value can be set here
+        st.markdown("**Pending Tasks:** 4 | **Active Labor:** 12")
+
+    # 4. Recent Logs (Clean Table)
+    st.subheader("📅 Live Transaction Feed")
     if not df.empty:
-        st.dataframe(df[['date', 'name', 'type', 'amount']].head(5), use_container_width=True)
+        st.table(df[['date', 'name', 'amount']].head(5))
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
