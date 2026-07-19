@@ -4,6 +4,7 @@ from supabase import create_client, Client
 from datetime import datetime, timedelta
 import io
 import urllib.parse
+import html
 import streamlit.components.v1 as components
 import requests  # Image fetch karne ke liye
 # PDF ke liye libraries
@@ -166,34 +167,20 @@ def export_labor_profile_pdf(labor_row, payments_df):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
 
-# --- ULTRA PREMIUM BRANDED LUXURY CSS INJECTION ---
+# --- APPLICATION SHELL ---
 st.markdown("""
     <style>
-    /* 1. Background image ko poori screen par fit karna */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://i.postimg.cc/Vs46KqYW/ej-yao-D46m-XLs-QRJw-unsplash.jpg");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background: #f5f7fb;
     }
-
-    /* 2. Main interface (cards) ko glass-like transparent banana */
     .block-container {
-        /* background mein 60% opacity di hai taake peeche se image nazar aaye */
-        background: rgba(255, 255, 255, 0.6) !important;
-        /* Blur effect taake text readable rahe */
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border-radius: 30px !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        padding: 2rem !important;
+        max-width: 1440px;
+        padding-top: 2.25rem;
+        padding-bottom: 3rem;
     }
-
-    /* 3. Saare text ko white background par dark color dena taake parhne mein dikkat na ho */
-    h1, h2, h3, p, div, span {
-        color: #0f172a !important;
-        font-weight: 500;
-    }
+    [data-testid="stSidebar"] {background: #ffffff; border-right: 1px solid #e8edf5;}
+    [data-testid="stSidebar"] * {font-family: Inter, ui-sans-serif, system-ui, sans-serif;}
+    h1, h2, h3 {letter-spacing: -.03em;}
     </style>
 """, unsafe_allow_html=True)
 # --- 4. DATA FETCH LOGIC ---
@@ -523,89 +510,98 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # Dashboard is driven by the currently selected project, not by fixed demo values.
+    # A data-driven command centre: every value belongs to the active project.
     st.markdown("""
         <style>
-        .dashboard-hero {background:linear-gradient(120deg,#0f172a,#1e3a5f); padding:30px;
-            border-radius:24px; margin-bottom:22px; box-shadow:0 18px 35px rgba(15,23,42,.18)}
-        .dashboard-hero h1,.dashboard-hero p,.dashboard-hero span {color:#fff !important}
-        .dashboard-kicker {color:#93c5fd !important; text-transform:uppercase; letter-spacing:1.5px;
-            font-size:11px; font-weight:800 !important; margin:0 0 8px !important}
-        .dashboard-subtitle {color:#cbd5e1 !important; margin:7px 0 0 !important}
-        .dashboard-card {background:rgba(255,255,255,.93); border:1px solid #e2e8f0;
-            border-radius:18px; padding:18px 20px; min-height:115px; box-shadow:0 8px 20px rgba(15,23,42,.07)}
-        .dashboard-card div,.dashboard-card span {color:#0f172a !important}
-        .dashboard-label {font-size:11px; text-transform:uppercase; letter-spacing:.8px; font-weight:800 !important; color:#64748b !important}
-        .dashboard-value {font-size:25px; font-weight:800 !important; margin-top:9px}
-        .dashboard-note {font-size:12px; color:#64748b !important; margin-top:5px}
+        .dash {color:#172033; font-family:Inter,ui-sans-serif,system-ui,sans-serif}
+        .dash * {box-sizing:border-box}.dash-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 24px}
+        .dash-eyebrow{margin:0 0 5px;color:#6b7280;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+        .dash-title{margin:0;color:#101828;font-size:31px;font-weight:800;letter-spacing:-1.2px}.dash-date{color:#667085;font-size:13px}
+        .dash-live{display:inline-flex;align-items:center;gap:7px;color:#157f3b;background:#eaf8ef;border-radius:99px;padding:8px 12px;font-size:12px;font-weight:700}
+        .dash-dot{width:7px;height:7px;background:#22c55e;border-radius:50%}.dash-hero{position:relative;overflow:hidden;border-radius:24px;padding:30px 34px;margin-bottom:18px;background:linear-gradient(110deg,#101b35 0%,#17315d 56%,#235c98 130%);box-shadow:0 16px 38px rgba(20,42,80,.2)}
+        .dash-hero:after{content:'';position:absolute;width:280px;height:280px;border:45px solid rgba(126,197,255,.13);border-radius:50%;right:-70px;top:-105px}.dash-hero *{position:relative;z-index:1}.dash-hero-label{color:#a9d6ff;font-size:12px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}.dash-hero h2{color:#fff;font-size:28px;letter-spacing:-.8px;margin:12px 0 8px}.dash-hero p{max-width:540px;color:#c8daf2;font-size:14px;line-height:1.55;margin:0}.dash-kpi{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);border-radius:13px;padding:11px 15px;min-width:145px}.dash-kpi-label{color:#aec8e6;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}.dash-kpi-value{color:#fff;font-size:17px;font-weight:780;margin-top:4px}
+        .dash-card{height:100%;background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:19px;box-shadow:0 3px 12px rgba(16,24,40,.035)}.dash-card-label{font-size:11px;letter-spacing:.07em;color:#667085;font-weight:750;text-transform:uppercase}.dash-card-value{font-size:25px;color:#101828;font-weight:800;letter-spacing:-.7px;margin:8px 0 5px}.dash-card-foot{font-size:12px;color:#667085}.dash-icon{float:right;width:34px;height:34px;padding-top:7px;text-align:center;background:#f1f5f9;border-radius:10px;font-size:16px}
+        .dash-panel{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:22px;box-shadow:0 3px 12px rgba(16,24,40,.035)}.dash-panel-title{font-size:15px;color:#101828;font-weight:780;margin:0}.dash-panel-sub{font-size:12px;color:#667085;margin:5px 0 18px}.dash-progress{height:8px;background:#eaf0f6;border-radius:10px;overflow:hidden}.dash-progress-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#2e90fa,#7f56d9)}
+        .dash-ring{width:132px;height:132px;border-radius:50%;display:grid;place-items:center}.dash-ring-inner{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;text-align:center;background:#fff}.dash-ring-value{display:block;color:#101828;font-size:24px;font-weight:800}.dash-ring-note{display:block;color:#667085;font-size:10px;font-weight:700;text-transform:uppercase}.dash-task{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #edf0f4}.dash-task:last-child{border-bottom:0}.dash-task-bullet{width:19px;height:19px;border-radius:50%;flex:0 0 19px;text-align:center;font-size:11px;line-height:19px}.dash-task-name{font-size:13px;color:#344054;font-weight:650}.dash-task-status{font-size:11px;color:#98a2b3;margin-top:2px}.dash-feed{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #edf0f4}.dash-feed:last-child{border-bottom:0}.dash-feed-icon{width:34px;height:34px;flex:0 0 34px;border-radius:10px;display:grid;place-items:center;background:#eff6ff}.dash-feed-name{font-size:13px;color:#344054;font-weight:700}.dash-feed-meta{font-size:11px;color:#98a2b3;margin-top:3px}.dash-feed-amount{margin-left:auto;white-space:nowrap;color:#101828;font-size:13px;font-weight:780}
         </style>
     """, unsafe_allow_html=True)
 
     status_df = fetch_project_status(current_project)
     completed_tasks = int((status_df['status'].astype(str).str.lower() == 'done').sum()) if not status_df.empty else 0
     total_tasks = len(status_df)
-    progress = round((completed_tasks / total_tasks) * 100) if total_tasks else 0
-
-    st.markdown(f"""
-        <div class="dashboard-hero">
-            <p class="dashboard-kicker">Project command centre</p>
-            <h1 style="margin:0; font-size:36px; font-weight:800;">{current_project}</h1>
-            <p class="dashboard-subtitle">Live financial position, site activity and construction progress at a glance.</p>
-        </div>
-    """, unsafe_allow_html=True)
+    progress = round(completed_tasks * 100 / total_tasks) if total_tasks else 0
+    safe_project = html.escape(str(current_project))
 
     if df.empty:
         total_inc = total_exp = pending_total = 0.0
         transaction_count = 0
         expense_df = pd.DataFrame(columns=['type', 'amount'])
+        recent_df = pd.DataFrame()
     else:
-        amounts = pd.to_numeric(df['amount'], errors='coerce').fillna(0)
-        total_inc = amounts[df['type'].eq('Income')].sum()
-        total_exp = amounts[df['type'].isin(['Labor', 'Material'])].sum()
-        pending_total = amounts[df['type'].eq('Pending Bill')].sum()
-        transaction_count = len(df)
-        expense_df = df[df['type'].isin(['Labor', 'Material'])].copy()
-        expense_df['amount'] = pd.to_numeric(expense_df['amount'], errors='coerce').fillna(0)
-    balance = total_inc - total_exp
-
-    cards = st.columns(4)
-    card_data = [
-        ('Capital received', total_inc, '#059669', 'Income logged'),
-        ('Paid expenses', total_exp, '#dc2626', 'Labor + material'),
-        ('Available balance', balance, '#2563eb', 'Income less paid expenses'),
-        ('Pending bills', pending_total, '#d97706', 'Awaiting clearance'),
-    ]
-    for column, (label, value, color, note) in zip(cards, card_data):
-        column.markdown(f'''<div class="dashboard-card"><div class="dashboard-label">{label}</div>
-            <div class="dashboard-value" style="color:{color} !important;">PKR {value:,.0f}</div>
-            <div class="dashboard-note">{note}</div></div>''', unsafe_allow_html=True)
-
-    st.write('')
-    left, right = st.columns([1.35, 1])
-    with left:
-        st.subheader('Expense breakdown')
-        if expense_df.empty:
-            st.info('No paid labor or material expense has been recorded for this project yet.')
-        else:
-            expense_summary = expense_df.groupby('type', as_index=True)['amount'].sum()
-            st.bar_chart(expense_summary, color='#2563eb')
-    with right:
-        st.subheader('Construction progress')
-        st.progress(progress / 100)
-        st.markdown(f'**{progress}% complete** · {completed_tasks} of {total_tasks} checklist items done')
-        if not status_df.empty:
-            open_tasks = status_df[status_df['status'].astype(str).str.lower() != 'done']['task_name'].tolist()
-            st.caption('Next tasks: ' + (', '.join(open_tasks[:3]) if open_tasks else 'All checklist items are complete.'))
-
-    st.subheader('Recent site activity')
-    if df.empty:
-        st.info(f'No transaction has been recorded under {current_project} yet.')
-    else:
-        recent_columns = [c for c in ['date', 'type', 'name', 'amount', 'pay_method'] if c in df.columns]
         recent_df = df.copy()
         recent_df['amount'] = pd.to_numeric(recent_df['amount'], errors='coerce').fillna(0)
-        st.dataframe(recent_df[recent_columns].head(6), use_container_width=True, hide_index=True)
-        st.caption(f'{transaction_count} transaction(s) recorded for this project.')
+        total_inc = recent_df.loc[recent_df['type'].eq('Income'), 'amount'].sum()
+        total_exp = recent_df.loc[recent_df['type'].isin(['Labor', 'Material']), 'amount'].sum()
+        pending_total = recent_df.loc[recent_df['type'].eq('Pending Bill'), 'amount'].sum()
+        transaction_count = len(recent_df)
+        expense_df = recent_df[recent_df['type'].isin(['Labor', 'Material'])].copy()
+    balance = total_inc - total_exp
+    balance_note = 'Positive cash position' if balance >= 0 else 'Review expense coverage'
+
+    st.markdown(f'''<div class="dash"><div class="dash-top"><div><p class="dash-eyebrow">Workspace / Project overview</p><h1 class="dash-title">Good day, Project Team</h1></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
+        <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
+
+    metrics = [
+        ('Capital received', total_inc, '↗', '#eaf8ef', '#157f3b', 'All recorded inflows'),
+        ('Paid expenses', total_exp, '◫', '#fff1f3', '#d92d20', 'Labor and materials'),
+        ('Available balance', balance, '◈', '#eff6ff', '#1570ef', balance_note),
+        ('Pending bills', pending_total, '◷', '#fffaeb', '#b54708', 'Awaiting settlement'),
+    ]
+    metric_columns = st.columns(4)
+    for column, (label, value, icon, bg, accent, note) in zip(metric_columns, metrics):
+        column.markdown(f'''<div class="dash-card"><span class="dash-icon" style="background:{bg};color:{accent}">{icon}</span><div class="dash-card-label">{label}</div><div class="dash-card-value">PKR {value:,.0f}</div><div class="dash-card-foot">{note}</div></div>''', unsafe_allow_html=True)
+
+    st.write('')
+    main_col, side_col = st.columns([1.48, 1])
+    with main_col:
+        with st.container(border=True):
+            st.markdown('<p class="dash-panel-title">Expense allocation</p><p class="dash-panel-sub">Paid costs broken down by ledger category.</p>', unsafe_allow_html=True)
+            if expense_df.empty:
+                st.info('Paid expense records will appear here once they are added.')
+            else:
+                st.bar_chart(expense_df.groupby('type')['amount'].sum(), color='#2e90fa')
+    with side_col:
+        ring_style = f'background:conic-gradient(#2e90fa 0 {progress}%, #edf2f7 {progress}% 100%)'
+        open_count = total_tasks - completed_tasks
+        st.markdown(f'''<div class="dash-panel"><p class="dash-panel-title">Project health</p><p class="dash-panel-sub">Site checklist delivery status.</p><div style="display:flex;align-items:center;gap:20px"><div class="dash-ring" style="{ring_style}"><div class="dash-ring-inner"><span class="dash-ring-value">{progress}%</span><span class="dash-ring-note">Complete</span></div></div><div><div style="font-size:13px;color:#344054;font-weight:750">{completed_tasks} milestones done</div><div style="font-size:12px;color:#667085;margin-top:6px">{open_count} item(s) remain in the site plan.</div></div></div><div class="dash-progress" style="margin-top:20px"><div class="dash-progress-fill" style="width:{progress}%"></div></div></div>''', unsafe_allow_html=True)
+
+    st.write('')
+    activity_col, tasks_col = st.columns([1.48, 1])
+    with activity_col:
+        activity_html = '<div class="dash-panel"><p class="dash-panel-title">Recent activity</p><p class="dash-panel-sub">Latest transactions recorded for this project.</p>'
+        if recent_df.empty:
+            activity_html += '<p class="dash-panel-sub">No activity has been recorded yet.</p>'
+        else:
+            icons = {'Income': '↙', 'Labor': '👷', 'Material': '▣', 'Pending Bill': '◷'}
+            for _, row in recent_df.head(5).iterrows():
+                tx_type = str(row.get('type', 'Transaction'))
+                name = html.escape(str(row.get('name', 'Untitled entry')))
+                date = html.escape(str(row.get('date', '')))
+                icon = icons.get(tx_type, '•')
+                activity_html += f'''<div class="dash-feed"><span class="dash-feed-icon">{icon}</span><div><div class="dash-feed-name">{name}</div><div class="dash-feed-meta">{html.escape(tx_type)} · {date}</div></div><span class="dash-feed-amount">PKR {float(row.get('amount', 0)):,.0f}</span></div>'''
+        st.markdown(activity_html + '</div>', unsafe_allow_html=True)
+    with tasks_col:
+        task_html = '<div class="dash-panel"><p class="dash-panel-title">Construction checklist</p><p class="dash-panel-sub">Focus items for the active site.</p>'
+        if status_df.empty:
+            task_html += '<p class="dash-panel-sub">Checklist is not available yet.</p>'
+        else:
+            for _, task_row in status_df.head(5).iterrows():
+                done = str(task_row.get('status', '')).lower() == 'done'
+                task_name = html.escape(str(task_row.get('task_name', 'Site task')))
+                marker = '✓' if done else '•'
+                color, bg, label = ('#067647', '#ecfdf3', 'Completed') if done else ('#b54708', '#fffaeb', 'Pending')
+                task_html += f'''<div class="dash-task"><span class="dash-task-bullet" style="background:{bg};color:{color}">{marker}</span><div><div class="dash-task-name">{task_name}</div><div class="dash-task-status">{label}</div></div></div>'''
+        st.markdown(task_html + '</div>', unsafe_allow_html=True)
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
