@@ -728,6 +728,10 @@ if "Dashboard" in menu:
     metric_columns = st.columns(4)
     for column, (label, value, icon, bg, accent, note) in zip(metric_columns, metrics):
         column.markdown(f'''<div class="dash-card"><span class="dash-icon" style="background:{bg};color:{accent}">{icon}</span><div class="dash-card-label">{label}</div><div class="dash-card-value">PKR {value:,.0f}</div><div class="dash-card-foot">{note}</div></div>''', unsafe_allow_html=True)
+    metric_columns = st.columns(4)
+    for column, (label, value, icon, bg, accent, note) in zip(metric_columns, metrics):
+        formatted_value = f"{value:,.0f}"
+        column.markdown(f'''<div class="dash-card"><span class="dash-icon" style="background:{bg};color:{accent}">{icon}</span><div class="dash-card-label">{label}</div><div class="dash-card-value">PKR {formatted_value}</div><div class="dash-card-foot">{note}</div></div>''', unsafe_allow_html=True)
 
     st.write('')
     main_col, side_col = st.columns([1.48, 1])
