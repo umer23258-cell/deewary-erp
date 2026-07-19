@@ -199,6 +199,7 @@ def fetch_all_labor_profiles():
     except: return pd.DataFrame()
 
 def fetch_project_status(project_name):
+def fetch_project_status(project_name):
     try:
         res = supabase.table('project_status').select("*").execute()
         df_status = pd.DataFrame(res.data)
@@ -212,6 +213,40 @@ def fetch_project_status(project_name):
     except: 
         tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
+    except: 
+        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+        return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
+
+def save_project_status(project_name, task_name, new_status):
+    """Save a checklist item without relying on an unavailable UPSERT constraint."""
+    table = supabase.table('project_status')
+    # `task_name` is supported by both the old and new versions of this table.
+    existing = table.select('*').eq('task_name', task_name).execute().data or []
+
+    # On the newer schema, one task can exist for more than one project.
+    matching = [row for row in existing if row.get('project_context') == project_name]
+    if matching:
+        row = matching[0]
+        if row.get('id') is not None:
+            table.update({'status': new_status}).eq('id', row['id']).execute()
+        else:
+            table.update({'status': new_status}).eq('task_name', task_name).eq('project_context', project_name).execute()
+        return
+
+    # Old installations have no `project_context` column and store one shared checklist.
+    if existing and 'project_context' not in existing[0]:
+        row = existing[0]
+        if row.get('id') is not None:
+            table.update({'status': new_status}).eq('id', row['id']).execute()
+        else:
+            table.update({'status': new_status}).eq('task_name', task_name).execute()
+        return
+
+    # No matching row: create one. Fall back cleanly for the legacy schema.
+    try:
+        table.insert({'task_name': task_name, 'status': new_status, 'project_context': project_name}).execute()
+    except Exception:
+        table.insert({'task_name': task_name, 'status': new_status}).execute()
 
 def check_password():
     if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
@@ -282,6 +317,11 @@ def popup_create_project():
                         supabase.table('project_status').upsert({"task_name": t, "status": "Pending", "project_context": new_proj_name}, on_conflict="task_name").execute()
                     except:
                         pass
+            for t in tasks:
+                try:
+                    save_project_status(new_proj_name, t, "Pending")
+                except Exception:
+                    pass
             
             st.success(f"Project '{new_proj_name}' successfully created!")
             st.rerun()
@@ -439,6 +479,14 @@ def popup_update_status(current_project, status_df):
                 st.rerun()
             except Exception as e:
                 st.error("Schema constraint failed to align state.")
+    if submit_btn:
+        try:
+            save_project_status(current_project, task, stat)
+            st.cache_data.clear()
+            st.success("Task updated successfully!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Task could not be updated: {str(e)}")
                 
     if cancel_btn:
         st.rerun()
