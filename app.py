@@ -523,60 +523,89 @@ with st.sidebar:
 
 # --- 9. RENDER ACTIVE MAIN PAGE ---
 if "Dashboard" in menu:
-    # 1. Header Section
+    # Dashboard is driven by the currently selected project, not by fixed demo values.
+    st.markdown("""
+        <style>
+        .dashboard-hero {background:linear-gradient(120deg,#0f172a,#1e3a5f); padding:30px;
+            border-radius:24px; margin-bottom:22px; box-shadow:0 18px 35px rgba(15,23,42,.18)}
+        .dashboard-hero h1,.dashboard-hero p,.dashboard-hero span {color:#fff !important}
+        .dashboard-kicker {color:#93c5fd !important; text-transform:uppercase; letter-spacing:1.5px;
+            font-size:11px; font-weight:800 !important; margin:0 0 8px !important}
+        .dashboard-subtitle {color:#cbd5e1 !important; margin:7px 0 0 !important}
+        .dashboard-card {background:rgba(255,255,255,.93); border:1px solid #e2e8f0;
+            border-radius:18px; padding:18px 20px; min-height:115px; box-shadow:0 8px 20px rgba(15,23,42,.07)}
+        .dashboard-card div,.dashboard-card span {color:#0f172a !important}
+        .dashboard-label {font-size:11px; text-transform:uppercase; letter-spacing:.8px; font-weight:800 !important; color:#64748b !important}
+        .dashboard-value {font-size:25px; font-weight:800 !important; margin-top:9px}
+        .dashboard-note {font-size:12px; color:#64748b !important; margin-top:5px}
+        </style>
+    """, unsafe_allow_html=True)
+
+    status_df = fetch_project_status(current_project)
+    completed_tasks = int((status_df['status'].astype(str).str.lower() == 'done').sum()) if not status_df.empty else 0
+    total_tasks = len(status_df)
+    progress = round((completed_tasks / total_tasks) * 100) if total_tasks else 0
+
     st.markdown(f"""
-        <div style="background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); padding: 30px; border-radius: 20px; color: white; margin-bottom: 30px;">
-            <h1 style="margin: 0; font-size: 28px;">{current_project}</h1>
-            <p style="opacity: 0.7; font-size: 14px;">Construction Executive Control System</p>
+        <div class="dashboard-hero">
+            <p class="dashboard-kicker">Project command centre</p>
+            <h1 style="margin:0; font-size:36px; font-weight:800;">{current_project}</h1>
+            <p class="dashboard-subtitle">Live financial position, site activity and construction progress at a glance.</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. Key Metrics Row
-    c1, c2, c3 = st.columns(3)
-    # Total calculations
-    total_inc = df[df['type']=='Income']['amount'].sum()
-    total_exp = df[df['type'].isin(['Labor', 'Material', 'Pending Bill'])]['amount'].sum()
-    net = total_inc - total_exp
-    
-    # Custom Stats Grid
-    def stat_panel(col, title, val, color):
-        col.markdown(f"""
-            <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="color: {color}; font-size: 12px; font-weight: bold; text-transform: uppercase;">{title}</div>
-                <div style="font-size: 24px; font-weight: 800; margin-top: 5px;">{val:,.0f} <span style="font-size: 12px; opacity:0.5;">PKR</span></div>
-            </div>
-        """, unsafe_allow_html=True)
+    if df.empty:
+        total_inc = total_exp = pending_total = 0.0
+        transaction_count = 0
+        expense_df = pd.DataFrame(columns=['type', 'amount'])
+    else:
+        amounts = pd.to_numeric(df['amount'], errors='coerce').fillna(0)
+        total_inc = amounts[df['type'].eq('Income')].sum()
+        total_exp = amounts[df['type'].isin(['Labor', 'Material'])].sum()
+        pending_total = amounts[df['type'].eq('Pending Bill')].sum()
+        transaction_count = len(df)
+        expense_df = df[df['type'].isin(['Labor', 'Material'])].copy()
+        expense_df['amount'] = pd.to_numeric(expense_df['amount'], errors='coerce').fillna(0)
+    balance = total_inc - total_exp
 
-    stat_panel(c1, "Net Profit", net, "#3b82f6")
-    stat_panel(c2, "Total Income", total_inc, "#10b981")
-    stat_panel(c3, "Total Expense", total_exp, "#ef4444")
+    cards = st.columns(4)
+    card_data = [
+        ('Capital received', total_inc, '#059669', 'Income logged'),
+        ('Paid expenses', total_exp, '#dc2626', 'Labor + material'),
+        ('Available balance', balance, '#2563eb', 'Income less paid expenses'),
+        ('Pending bills', pending_total, '#d97706', 'Awaiting clearance'),
+    ]
+    for column, (label, value, color, note) in zip(cards, card_data):
+        column.markdown(f'''<div class="dashboard-card"><div class="dashboard-label">{label}</div>
+            <div class="dashboard-value" style="color:{color} !important;">PKR {value:,.0f}</div>
+            <div class="dashboard-note">{note}</div></div>''', unsafe_allow_html=True)
 
-    # 3. Dynamic Progress & Summary
-    st.write("---")
-    col_left, col_right = st.columns([2, 1])
-    
-    with col_left:
-        st.subheader("📊 Performance Analytics")
-        # Monthly Chart
-        if not df.empty:
-            df['date'] = pd.to_datetime(df['date'])
-            monthly = df.groupby(df['date'].dt.strftime('%b'))['amount'].sum()
-            st.line_chart(monthly)
+    st.write('')
+    left, right = st.columns([1.35, 1])
+    with left:
+        st.subheader('Expense breakdown')
+        if expense_df.empty:
+            st.info('No paid labor or material expense has been recorded for this project yet.')
+        else:
+            expense_summary = expense_df.groupby('type', as_index=True)['amount'].sum()
+            st.bar_chart(expense_summary, color='#2563eb')
+    with right:
+        st.subheader('Construction progress')
+        st.progress(progress / 100)
+        st.markdown(f'**{progress}% complete** · {completed_tasks} of {total_tasks} checklist items done')
+        if not status_df.empty:
+            open_tasks = status_df[status_df['status'].astype(str).str.lower() != 'done']['task_name'].tolist()
+            st.caption('Next tasks: ' + (', '.join(open_tasks[:3]) if open_tasks else 'All checklist items are complete.'))
 
-    with col_right:
-        st.subheader("🏗️ Site Status")
-        st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;">
-                <p>Construction Progress</p>
-            </div>
-        """, unsafe_allow_html=True)
-        st.progress(0.75) # Dynamic value can be set here
-        st.markdown("**Pending Tasks:** 4 | **Active Labor:** 12")
-
-    # 4. Recent Logs (Clean Table)
-    st.subheader("📅 Live Transaction Feed")
-    if not df.empty:
-        st.table(df[['date', 'name', 'amount']].head(5))
+    st.subheader('Recent site activity')
+    if df.empty:
+        st.info(f'No transaction has been recorded under {current_project} yet.')
+    else:
+        recent_columns = [c for c in ['date', 'type', 'name', 'amount', 'pay_method'] if c in df.columns]
+        recent_df = df.copy()
+        recent_df['amount'] = pd.to_numeric(recent_df['amount'], errors='coerce').fillna(0)
+        st.dataframe(recent_df[recent_columns].head(6), use_container_width=True, hide_index=True)
+        st.caption(f'{transaction_count} transaction(s) recorded for this project.')
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
