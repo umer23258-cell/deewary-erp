@@ -691,9 +691,6 @@ if "Dashboard" in menu:
     st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div class="dash-logo">D</div><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
         <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
 
-    st.markdown('<p class="dash-panel-title" style="margin:22px 0 5px">Project updates</p><p class="dash-panel-sub">Latest site photos and videos. The gallery changes automatically every 6 seconds.</p>', unsafe_allow_html=True)
-    render_project_updates_slider(fetch_project_updates(current_project))
-
     metrics = [
         ('Capital received', total_inc, '↗', '#eaf8ef', '#157f3b', 'All recorded inflows'),
         ('Paid expenses', total_exp, '◫', '#fff1f3', '#d92d20', 'Labor and materials'),
@@ -745,6 +742,9 @@ if "Dashboard" in menu:
                 color, bg, label = ('#067647', '#ecfdf3', 'Completed') if done else ('#b54708', '#fffaeb', 'Pending')
                 task_html += f'''<div class="dash-task"><span class="dash-task-bullet" style="background:{bg};color:{color}">{marker}</span><div><div class="dash-task-name">{task_name}</div><div class="dash-task-status">{label}</div></div></div>'''
         st.markdown(task_html + '</div>', unsafe_allow_html=True)
+
+    st.markdown('<p class="dash-panel-title" style="margin:28px 0 5px">Project updates</p><p class="dash-panel-sub">Latest site photos and videos. The gallery changes automatically every 6 seconds.</p>', unsafe_allow_html=True)
+    render_project_updates_slider(fetch_project_updates(current_project))
 
     st.markdown('''<div class="dash-company"><div><p class="dash-company-title">DEEWARYN.COM</p><div class="dash-company-text">Professional construction, development and project-management solutions.</div></div><div class="dash-company-info"><div class="dash-company-item"><strong>Chief Executive Officer</strong>Samii Ullah</div><div class="dash-company-item"><strong>Project Management</strong>Umer Sherin</div><div class="dash-company-item"><strong>Contact</strong>0332 0026666 · deewaryn@gmail.com</div><div class="dash-company-item"><strong>Office</strong>Bostan Khan Road, Shaheen Plaza,<br>Chaklala Scheme 3, Rawalpindi</div></div></div>''', unsafe_allow_html=True)
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
