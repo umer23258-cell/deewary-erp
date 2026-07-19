@@ -288,7 +288,7 @@ def render_project_updates_slider(updates_df):
         <style>
         * {{ box-sizing:border-box }} body {{ margin:0; font-family:Inter,system-ui,sans-serif; background:#101b35 }}
         #project-slider {{ position:relative; height:360px; overflow:hidden; border-radius:18px; background:#101b35 }}
-        #project-slider img,#project-slider video {{ width:100%; height:100%; display:block; object-fit:cover }}
+        #project-slider img,#project-slider video {{ width:100%; height:100%; display:block; object-fit:contain; background:#0b1220 }}
         #caption {{ position:absolute; left:18px; right:18px; bottom:16px; padding:12px 15px; color:#fff; background:rgba(6,18,38,.76); border-radius:12px; font-size:14px; font-weight:650; backdrop-filter:blur(8px) }}
         #caption small {{ display:block; color:#b7c7df; font-size:11px; font-weight:500; margin-top:3px }}
         .nav {{ position:absolute; top:50%; transform:translateY(-50%); border:0; width:36px; height:36px; border-radius:50%; color:#fff; background:rgba(6,18,38,.65); cursor:pointer; font-size:24px }}
