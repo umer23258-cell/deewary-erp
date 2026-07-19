@@ -7,7 +7,6 @@ import base64
 import json
 import urllib.parse
 import html
-import html
 import uuid
 import streamlit.components.v1 as components
 import requests  # Image fetch karne ke liye
@@ -222,7 +221,6 @@ def fetch_project_status(project_name):
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
 
 def save_project_status(project_name, task_name, new_status):
-def save_project_status(project_name, task_name, new_status):
     """Save a checklist item without relying on an unavailable UPSERT constraint."""
     table = supabase.table('project_status')
     # `task_name` is supported by both the old and new versions of this table.
@@ -250,8 +248,6 @@ def save_project_status(project_name, task_name, new_status):
     # No matching row: create one. Fall back cleanly for the legacy schema.
     try:
         table.insert({'task_name': task_name, 'status': new_status, 'project_context': project_name}).execute()
-    except Exception:
-        table.insert({'task_name': task_name, 'status': new_status}).execute()
     except Exception:
         table.insert({'task_name': task_name, 'status': new_status}).execute()
 
@@ -360,7 +356,6 @@ if "selected_project" not in st.session_state:
 # --- 6. POPUP DIALOG FORMS ---
 @st.dialog("📁 Create New Project Site Context", dismissible=False)
 def popup_create_project():
-def popup_create_project():
     new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
     st.write("ℹ️ *Note: Naya project aap ki session state aur dashboard par active ho jayega.*")
     
@@ -388,11 +383,6 @@ def popup_create_project():
             st.rerun()
         else: st.error("Project identity descriptor required.")
         
-    if cancel_btn:
-        st.rerun()
-
-@st.dialog("📝 Register New Labor Profile", dismissible=False)
-def popup_register_labor(current_project):
     if cancel_btn:
         st.rerun()
 
@@ -644,9 +634,6 @@ with st.sidebar:
         if st.button("🏗️ Log Material Invoice", use_container_width=True): popup_transaction_entry("Material", st.session_state["selected_project"])
         if st.button("📋 Add Pending Bill", use_container_width=True): popup_transaction_entry("Pending Bill", st.session_state["selected_project"])
         if st.button("👤 Register New Worker", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
-        if st.button("📁 Deploy New Site Project", use_container_width=True): popup_create_project()
-        if st.button("📋 Add Pending Bill", use_container_width=True): popup_transaction_entry("Pending Bill", st.session_state["selected_project"])
-        if st.button("👤 Register New Worker", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
         if st.button("📸 Add Project Photo / Video", use_container_width=True): popup_project_update(st.session_state["selected_project"])
         if st.button("📁 Deploy New Site Project", use_container_width=True): popup_create_project()
         st.divider()
@@ -701,10 +688,6 @@ if "Dashboard" in menu:
     balance = total_inc - total_exp
     balance_note = 'Positive cash position' if balance >= 0 else 'Review expense coverage'
 
-    st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div class="dash-logo">D</div><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
-        <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
-
-    metrics = [
     st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div class="dash-logo">D</div><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
         <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
 
