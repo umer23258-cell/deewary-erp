@@ -263,6 +263,12 @@ def fetch_project_updates(project_name):
         return pd.DataFrame()
 
 def render_project_updates_slider(updates_df):
+def delete_project_update(update_id):
+    """Remove an update from the project gallery."""
+    supabase.table('project_updates').delete().eq('id', update_id).execute()
+    st.cache_data.clear()
+
+def render_project_updates_slider(updates_df, height=430):
     """Render an automatic slideshow without forcing a Streamlit rerun."""
     if updates_df.empty:
         st.info('No site photos or videos have been added yet.')
@@ -288,6 +294,7 @@ def render_project_updates_slider(updates_df):
         <style>
         * {{ box-sizing:border-box }} body {{ margin:0; font-family:Inter,system-ui,sans-serif; background:#101b35 }}
         #project-slider {{ position:relative; height:360px; overflow:hidden; border-radius:18px; background:#101b35 }}
+        #project-slider {{ position:relative; height:{height}px; overflow:hidden; border-radius:18px; background:#101b35 }}
         #project-slider img,#project-slider video {{ width:100%; height:100%; display:block; object-fit:contain; background:#0b1220 }}
         #caption {{ position:absolute; left:18px; right:18px; bottom:16px; padding:12px 15px; color:#fff; background:rgba(6,18,38,.76); border-radius:12px; font-size:14px; font-weight:650; backdrop-filter:blur(8px) }}
         #caption small {{ display:block; color:#b7c7df; font-size:11px; font-weight:500; margin-top:3px }}
@@ -311,6 +318,7 @@ def render_project_updates_slider(updates_df):
         document.getElementById('next').onclick = () => {{ showSlide(index + 1); restart(); }};
         showSlide(0); restart();
         </script>''', height=360)
+        </script>''', height=height, scrolling=False)
 
 def check_password():
     if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
@@ -429,6 +437,25 @@ def popup_project_update(current_project):
             st.info("Run the Project Updates SQL setup once in Supabase, then try again.")
     if cancel_update:
         st.rerun()
+
+@st.dialog("🗑️ Manage Project Updates")
+def popup_manage_project_updates(current_project):
+    updates_df = fetch_project_updates(current_project)
+    if updates_df.empty:
+        st.info("No photos or videos have been uploaded for this project.")
+        return
+    update_choices = {
+        f"Update #{row.get('id')} · {str(row.get('caption', 'Project update'))[:55]}": row.get('id')
+        for _, row in updates_df.iterrows()
+    }
+    selected_update = st.selectbox("Select photo/video to delete", list(update_choices), key="project_update_delete_dialog")
+    if st.button("🗑️ Delete selected update", type="primary", use_container_width=True):
+        try:
+            delete_project_update(update_choices[selected_update])
+            st.success("Photo/video removed from this project gallery.")
+            st.rerun()
+        except Exception as error:
+            st.error(f"Could not delete this update: {error}")
 
 @st.dialog("📝 Register New Labor Profile", dismissible=False)
 def popup_register_labor(current_project):
@@ -635,6 +662,7 @@ with st.sidebar:
         if st.button("📋 Add Pending Bill", use_container_width=True): popup_transaction_entry("Pending Bill", st.session_state["selected_project"])
         if st.button("👤 Register New Worker", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
         if st.button("📸 Add Project Photo / Video", use_container_width=True): popup_project_update(st.session_state["selected_project"])
+        if st.button("🗑️ Manage / Delete Project Updates", use_container_width=True): popup_manage_project_updates(st.session_state["selected_project"])
         if st.button("📁 Deploy New Site Project", use_container_width=True): popup_create_project()
         st.divider()
         if st.button("⚙️ Calibrate Checklist Nodes", use_container_width=True): 
@@ -747,6 +775,12 @@ if "Dashboard" in menu:
     render_project_updates_slider(fetch_project_updates(current_project))
 
     st.markdown('''<div class="dash-company"><div><p class="dash-company-title">DEEWARYN.COM</p><div class="dash-company-text">Professional construction, development and project-management solutions.</div></div><div class="dash-company-info"><div class="dash-company-item"><strong>Chief Executive Officer</strong>Samii Ullah</div><div class="dash-company-item"><strong>Project Management</strong>Umer Sherin</div><div class="dash-company-item"><strong>Contact</strong>0332 0026666 · deewaryn@gmail.com</div><div class="dash-company-item"><strong>Office</strong>Bostan Khan Road, Shaheen Plaza,<br>Chaklala Scheme 3, Rawalpindi</div></div></div>''', unsafe_allow_html=True)
+    company_col, updates_col = st.columns([1.25, 0.75])
+    with company_col:
+        st.markdown('''<div class="dash-company" style="margin-top:28px"><div><p class="dash-company-title">DEEWARYN.COM</p><div class="dash-company-text">Professional construction, development and project-management solutions.</div></div><div class="dash-company-info"><div class="dash-company-item"><strong>Chief Executive Officer</strong>Samii Ullah</div><div class="dash-company-item"><strong>Project Management</strong>Umer Sherin</div><div class="dash-company-item"><strong>Contact</strong>0332 0026666 · deewaryn@gmail.com</div><div class="dash-company-item"><strong>Office</strong>Bostan Khan Road, Shaheen Plaza,<br>Chaklala Scheme 3, Rawalpindi</div></div></div>''', unsafe_allow_html=True)
+    with updates_col:
+        st.markdown('<p class="dash-panel-title" style="margin:28px 0 5px">Project updates</p><p class="dash-panel-sub">Latest site photos and videos.</p>', unsafe_allow_html=True)
+        render_project_updates_slider(fetch_project_updates(current_project), height=260)
 # --- ISOLATED INDEPENDENT PAGE: 📑 RECEIPT VOUCHER SYSTEM ---
 elif menu == "📑 Receipt Voucher System":
     st.title(f"📑 Corporate Allocation Voucher Module")
