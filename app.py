@@ -4,8 +4,11 @@ from supabase import create_client, Client
 from datetime import datetime, timedelta
 import io
 import base64
+import json
 import urllib.parse
 import html
+import html
+import uuid
 import streamlit.components.v1 as components
 import requests  # Image fetch karne ke liye
 # PDF ke liye libraries
@@ -219,6 +222,7 @@ def fetch_project_status(project_name):
         return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
 
 def save_project_status(project_name, task_name, new_status):
+def save_project_status(project_name, task_name, new_status):
     """Save a checklist item without relying on an unavailable UPSERT constraint."""
     table = supabase.table('project_status')
     # `task_name` is supported by both the old and new versions of this table.
@@ -248,6 +252,69 @@ def save_project_status(project_name, task_name, new_status):
         table.insert({'task_name': task_name, 'status': new_status, 'project_context': project_name}).execute()
     except Exception:
         table.insert({'task_name': task_name, 'status': new_status}).execute()
+    except Exception:
+        table.insert({'task_name': task_name, 'status': new_status}).execute()
+
+@st.cache_data(ttl=60)
+def fetch_project_updates(project_name):
+    """Return the photo/video timeline belonging to one project."""
+    try:
+        response = (supabase.table('project_updates').select('*')
+                    .eq('project_context', project_name)
+                    .order('created_at', desc=True).execute())
+        return pd.DataFrame(response.data)
+    except Exception:
+        return pd.DataFrame()
+
+def render_project_updates_slider(updates_df):
+    """Render an automatic slideshow without forcing a Streamlit rerun."""
+    if updates_df.empty:
+        st.info('No site photos or videos have been added yet.')
+        return
+
+    slides = []
+    for _, item in updates_df.iterrows():
+        media_url = str(item.get('media_url', ''))
+        if not media_url:
+            continue
+        slides.append({
+            'url': media_url,
+            'kind': str(item.get('media_type', 'image')),
+            'caption': str(item.get('caption', 'Project update')),
+            'date': str(item.get('created_at', ''))[:10],
+        })
+    if not slides:
+        st.info('No site photos or videos have been added yet.')
+        return
+
+    slider_data = json.dumps(slides).replace('</', '<\\/')
+    components.html(f'''\
+        <style>
+        * {{ box-sizing:border-box }} body {{ margin:0; font-family:Inter,system-ui,sans-serif; background:#101b35 }}
+        #project-slider {{ position:relative; height:360px; overflow:hidden; border-radius:18px; background:#101b35 }}
+        #project-slider img,#project-slider video {{ width:100%; height:100%; display:block; object-fit:cover }}
+        #caption {{ position:absolute; left:18px; right:18px; bottom:16px; padding:12px 15px; color:#fff; background:rgba(6,18,38,.76); border-radius:12px; font-size:14px; font-weight:650; backdrop-filter:blur(8px) }}
+        #caption small {{ display:block; color:#b7c7df; font-size:11px; font-weight:500; margin-top:3px }}
+        .nav {{ position:absolute; top:50%; transform:translateY(-50%); border:0; width:36px; height:36px; border-radius:50%; color:#fff; background:rgba(6,18,38,.65); cursor:pointer; font-size:24px }}
+        #prev {{ left:12px }} #next {{ right:12px }} #counter {{ position:absolute; top:14px; right:14px; color:#fff; background:rgba(6,18,38,.65); border-radius:20px; padding:5px 10px; font-size:11px }}
+        </style>
+        <div id="project-slider"><div id="media"></div><div id="caption"></div><div id="counter"></div><button class="nav" id="prev">‹</button><button class="nav" id="next">›</button></div>
+        <script>
+        const slides = {slider_data}; let index = 0; let timer;
+        const media = document.getElementById('media'); const caption = document.getElementById('caption');
+        function showSlide(nextIndex) {{
+            index = (nextIndex + slides.length) % slides.length; const slide = slides[index]; media.innerHTML = '';
+            const element = document.createElement(slide.kind === 'video' ? 'video' : 'img'); element.src = slide.url;
+            if (slide.kind === 'video') {{ element.controls = true; element.autoplay = true; element.muted = true; element.loop = true; element.playsInline = true; }}
+            element.alt = slide.caption; media.appendChild(element);
+            caption.innerHTML = ''; caption.append(document.createTextNode(slide.caption)); const date = document.createElement('small'); date.textContent = slide.date; caption.appendChild(date);
+            document.getElementById('counter').textContent = `${{index + 1}} / ${{slides.length}}`;
+        }}
+        function restart() {{ clearInterval(timer); timer = setInterval(() => showSlide(index + 1), 6000); }}
+        document.getElementById('prev').onclick = () => {{ showSlide(index - 1); restart(); }};
+        document.getElementById('next').onclick = () => {{ showSlide(index + 1); restart(); }};
+        showSlide(0); restart();
+        </script>''', height=360)
 
 def check_password():
     if "authenticated" not in st.session_state: st.session_state["authenticated"] = False
@@ -293,6 +360,7 @@ if "selected_project" not in st.session_state:
 # --- 6. POPUP DIALOG FORMS ---
 @st.dialog("📁 Create New Project Site Context", dismissible=False)
 def popup_create_project():
+def popup_create_project():
     new_proj_name = st.text_input("Project / Plot Site Name (e.g., G-13 Plot, CBR Town)*").strip()
     st.write("ℹ️ *Note: Naya project aap ki session state aur dashboard par active ho jayega.*")
     
@@ -321,6 +389,55 @@ def popup_create_project():
         else: st.error("Project identity descriptor required.")
         
     if cancel_btn:
+        st.rerun()
+
+@st.dialog("📝 Register New Labor Profile", dismissible=False)
+def popup_register_labor(current_project):
+    if cancel_btn:
+        st.rerun()
+
+@st.dialog("📸 Add Project Progress Update", dismissible=False)
+def popup_project_update(current_project):
+    st.write(f"Add a photo or video update for **{current_project}**.")
+    uploaded_media = st.file_uploader(
+        "Project photo or video *",
+        type=['jpg', 'jpeg', 'png', 'webp', 'mp4', 'mov', 'webm'],
+        help='For quick loading, keep videos short and under 50 MB.'
+    )
+    caption = st.text_area("Update caption", placeholder="e.g. Ground floor brickwork completed")
+    save_col, cancel_col = st.columns(2)
+    with save_col:
+        save_update = st.button("💾 Publish Update", type="primary", use_container_width=True)
+    with cancel_col:
+        cancel_update = st.button("❌ Cancel", use_container_width=True)
+
+    if save_update:
+        if not uploaded_media:
+            st.error("Please select a photo or video first.")
+            return
+        extension = uploaded_media.name.rsplit('.', 1)[-1].lower() if '.' in uploaded_media.name else ''
+        media_type = 'video' if extension in {'mp4', 'mov', 'webm'} else 'image'
+        safe_name = ''.join(char if char.isalnum() or char in '._-' else '_' for char in uploaded_media.name)
+        file_path = f"project_updates/{uuid.uuid4().hex}_{safe_name}"
+        try:
+            supabase.storage.from_('material_pics').upload(
+                file_path, uploaded_media.getvalue(),
+                file_options={"content-type": uploaded_media.type or "application/octet-stream"}
+            )
+            media_url = supabase.storage.from_('material_pics').get_public_url(file_path)
+            supabase.table('project_updates').insert({
+                'project_context': current_project,
+                'media_url': media_url,
+                'media_type': media_type,
+                'caption': caption.strip() or 'Project progress update',
+            }).execute()
+            st.cache_data.clear()
+            st.success("Project update published successfully.")
+            st.rerun()
+        except Exception as error:
+            st.error(f"Could not save the update: {error}")
+            st.info("Run the Project Updates SQL setup once in Supabase, then try again.")
+    if cancel_update:
         st.rerun()
 
 @st.dialog("📝 Register New Labor Profile", dismissible=False)
@@ -528,6 +645,10 @@ with st.sidebar:
         if st.button("📋 Add Pending Bill", use_container_width=True): popup_transaction_entry("Pending Bill", st.session_state["selected_project"])
         if st.button("👤 Register New Worker", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
         if st.button("📁 Deploy New Site Project", use_container_width=True): popup_create_project()
+        if st.button("📋 Add Pending Bill", use_container_width=True): popup_transaction_entry("Pending Bill", st.session_state["selected_project"])
+        if st.button("👤 Register New Worker", use_container_width=True): popup_register_labor(st.session_state["selected_project"])
+        if st.button("📸 Add Project Photo / Video", use_container_width=True): popup_project_update(st.session_state["selected_project"])
+        if st.button("📁 Deploy New Site Project", use_container_width=True): popup_create_project()
         st.divider()
         if st.button("⚙️ Calibrate Checklist Nodes", use_container_width=True): 
             _status_df = fetch_project_status(st.session_state["selected_project"])
@@ -582,6 +703,13 @@ if "Dashboard" in menu:
 
     st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div class="dash-logo">D</div><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
         <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
+
+    metrics = [
+    st.markdown(f'''<div class="dash"><div class="dash-top"><div class="dash-brand"><div class="dash-logo">D</div><div><div class="dash-brand-name">DEEWARYN.COM</div><div class="dash-brand-tag">Construction & Project Management</div></div></div><div><span class="dash-live"><i class="dash-dot"></i> Live project data</span><span class="dash-date">&nbsp;&nbsp;{datetime.now().strftime('%d %b %Y')}</span></div></div>
+        <section class="dash-hero"><span class="dash-hero-label">Active construction site</span><h2>{safe_project}</h2><p>Monitor financial health, construction delivery and every site transaction from one executive workspace.</p><div style="display:flex;gap:10px;margin-top:23px"><div class="dash-kpi"><div class="dash-kpi-label">Site completion</div><div class="dash-kpi-value">{progress}%</div></div><div class="dash-kpi"><div class="dash-kpi-label">Checklist items</div><div class="dash-kpi-value">{completed_tasks} / {total_tasks}</div></div><div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">{transaction_count}</div></div></div></section></div>''', unsafe_allow_html=True)
+
+    st.markdown('<p class="dash-panel-title" style="margin:22px 0 5px">Project updates</p><p class="dash-panel-sub">Latest site photos and videos. The gallery changes automatically every 6 seconds.</p>', unsafe_allow_html=True)
+    render_project_updates_slider(fetch_project_updates(current_project))
 
     metrics = [
         ('Capital received', total_inc, '↗', '#eaf8ef', '#157f3b', 'All recorded inflows'),
