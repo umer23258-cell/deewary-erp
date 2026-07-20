@@ -262,7 +262,6 @@ def fetch_project_updates(project_name):
     except Exception:
         return pd.DataFrame()
 
-def render_project_updates_slider(updates_df):
 def delete_project_update(update_id):
     """Remove an update from the project gallery."""
     supabase.table('project_updates').delete().eq('id', update_id).execute()
@@ -293,7 +292,6 @@ def render_project_updates_slider(updates_df, height=430):
     components.html(f'''\
         <style>
         * {{ box-sizing:border-box }} body {{ margin:0; font-family:Inter,system-ui,sans-serif; background:#101b35 }}
-        #project-slider {{ position:relative; height:360px; overflow:hidden; border-radius:18px; background:#101b35 }}
         #project-slider {{ position:relative; height:{height}px; overflow:hidden; border-radius:18px; background:#101b35 }}
         #project-slider img,#project-slider video {{ width:100%; height:100%; display:block; object-fit:contain; background:#0b1220 }}
         #caption {{ position:absolute; left:18px; right:18px; bottom:16px; padding:12px 15px; color:#fff; background:rgba(6,18,38,.76); border-radius:12px; font-size:14px; font-weight:650; backdrop-filter:blur(8px) }}
@@ -317,7 +315,6 @@ def render_project_updates_slider(updates_df, height=430):
         document.getElementById('prev').onclick = () => {{ showSlide(index - 1); restart(); }};
         document.getElementById('next').onclick = () => {{ showSlide(index + 1); restart(); }};
         showSlide(0); restart();
-        </script>''', height=360)
         </script>''', height=height, scrolling=False)
 
 def check_password():
@@ -727,9 +724,6 @@ if "Dashboard" in menu:
     ]
     metric_columns = st.columns(4)
     for column, (label, value, icon, bg, accent, note) in zip(metric_columns, metrics):
-        column.markdown(f'''<div class="dash-card"><span class="dash-icon" style="background:{bg};color:{accent}">{icon}</span><div class="dash-card-label">{label}</div><div class="dash-card-value">PKR {value:,.0f}</div><div class="dash-card-foot">{note}</div></div>''', unsafe_allow_html=True)
-    metric_columns = st.columns(4)
-    for column, (label, value, icon, bg, accent, note) in zip(metric_columns, metrics):
         formatted_value = f"{value:,.0f}"
         column.markdown(f'''<div class="dash-card"><span class="dash-icon" style="background:{bg};color:{accent}">{icon}</span><div class="dash-card-label">{label}</div><div class="dash-card-value">PKR {formatted_value}</div><div class="dash-card-foot">{note}</div></div>''', unsafe_allow_html=True)
 
@@ -775,10 +769,6 @@ if "Dashboard" in menu:
                 task_html += f'''<div class="dash-task"><span class="dash-task-bullet" style="background:{bg};color:{color}">{marker}</span><div><div class="dash-task-name">{task_name}</div><div class="dash-task-status">{label}</div></div></div>'''
         st.markdown(task_html + '</div>', unsafe_allow_html=True)
 
-    st.markdown('<p class="dash-panel-title" style="margin:28px 0 5px">Project updates</p><p class="dash-panel-sub">Latest site photos and videos. The gallery changes automatically every 6 seconds.</p>', unsafe_allow_html=True)
-    render_project_updates_slider(fetch_project_updates(current_project))
-
-    st.markdown('''<div class="dash-company"><div><p class="dash-company-title">DEEWARYN.COM</p><div class="dash-company-text">Professional construction, development and project-management solutions.</div></div><div class="dash-company-info"><div class="dash-company-item"><strong>Chief Executive Officer</strong>Samii Ullah</div><div class="dash-company-item"><strong>Project Management</strong>Umer Sherin</div><div class="dash-company-item"><strong>Contact</strong>0332 0026666 · deewaryn@gmail.com</div><div class="dash-company-item"><strong>Office</strong>Bostan Khan Road, Shaheen Plaza,<br>Chaklala Scheme 3, Rawalpindi</div></div></div>''', unsafe_allow_html=True)
     company_col, updates_col = st.columns([1.25, 0.75])
     with company_col:
         st.markdown('''<div class="dash-company" style="margin-top:28px"><div><p class="dash-company-title">DEEWARYN.COM</p><div class="dash-company-text">Professional construction, development and project-management solutions.</div></div><div class="dash-company-info"><div class="dash-company-item"><strong>Chief Executive Officer</strong>Samii Ullah</div><div class="dash-company-item"><strong>Project Management</strong>Umer Sherin</div><div class="dash-company-item"><strong>Contact</strong>0332 0026666 · deewaryn@gmail.com</div><div class="dash-company-item"><strong>Office</strong>Bostan Khan Road, Shaheen Plaza,<br>Chaklala Scheme 3, Rawalpindi</div></div></div>''', unsafe_allow_html=True)
