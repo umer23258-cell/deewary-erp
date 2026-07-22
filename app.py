@@ -168,12 +168,7 @@ def export_labor_profile_pdf(labor_row, payments_df):
 
 
 # --- 3. PAGE CONFIG ---
-st.set_page_config(
-    page_title="Deewaryn.com ERP",
-    layout="wide",
-    page_icon="🏗️",
-    initial_sidebar_state="collapsed",
-)
+st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️", initial_sidebar_state="collapsed")
 
 # --- APPLICATION SHELL ---
 st.markdown("""
@@ -189,8 +184,6 @@ st.markdown("""
     [data-testid="stSidebar"] {background: #ffffff; border-right: 1px solid #e8edf5;}
     [data-testid="stSidebar"] * {font-family: Inter, ui-sans-serif, system-ui, sans-serif;}
     h1, h2, h3 {letter-spacing: -.03em;}
-    /* Phone-first layout: the sidebar remains available from Streamlit's menu,
-       while content, dashboard cards, forms and tables fit narrow screens. */
     @media (max-width: 768px) {
         .block-container {padding: .85rem .75rem 2rem; max-width: 100%;}
         [data-testid="stSidebar"] {min-width: min(86vw, 320px);}
@@ -198,7 +191,6 @@ st.markdown("""
         [data-testid="stHorizontalBlock"] > [data-testid="column"] {width: 100% !important; flex: 1 1 auto !important;}
         [data-testid="stDataFrame"] {max-width: 100%; overflow-x: auto;}
         .dash-top {align-items:flex-start; gap:12px; flex-direction:column; margin-bottom:16px;}
-        .dash-title {font-size:24px;}
         .dash-hero {padding:22px 18px; border-radius:18px;}
         .dash-hero h2 {font-size:23px;}
         .dash-hero > div {flex-wrap:wrap; margin-top:16px !important;}
@@ -223,77 +215,44 @@ def fetch_all_labor_profiles():
     except: return pd.DataFrame()
 
 CHECKLIST_TASKS = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-LEGACY_CHECKLIST_PROJECT = "Yousaf Colony"
 
 def default_project_status(project_name):
     return pd.DataFrame([{"task_name": task, "status": "Pending", "project_context": project_name}
                          for task in CHECKLIST_TASKS])
-
-def legacy_checklist_key(project_name):
-    # Short deterministic key: works even when a project name contains spaces/Urdu.
-    return f"project_checklist_{uuid.uuid5(uuid.NAMESPACE_URL, str(project_name)).hex}"
-
-def load_legacy_project_checklist(project_name):
-    """Read isolated checklist data for databases without project_context."""
-    try:
-        rows = (supabase.table('company_settings').select('setting_value')
-                .eq('setting_key', legacy_checklist_key(project_name)).limit(1).execute().data or [])
-        if rows:
-            saved = json.loads(rows[0].get('setting_value', '[]'))
-            if saved:
-                return pd.DataFrame(saved)
-    except Exception:
-        pass
-    return pd.DataFrame()
-
-def save_legacy_project_checklist(project_name, status_df):
-    supabase.table('company_settings').upsert({
-        'setting_key': legacy_checklist_key(project_name),
-        'setting_value': json.dumps(status_df[['task_name', 'status']].to_dict('records')),
-    }, on_conflict='setting_key').execute()
 
 def fetch_project_status(project_name):
     try:
         res = supabase.table('project_status').select("*").execute()
         df_status = pd.DataFrame(res.data)
         if not df_status.empty and 'project_context' in df_status.columns:
-            df_filtered = df_status[df_status['project_context'] == project_name]
-            return df_filtered if not df_filtered.empty else default_project_status(project_name)
-
-        # Legacy table has one shared checklist.  Keep its historical values only
-        # for Yousaf Colony; every other project uses its own company_settings row.
-        isolated = load_legacy_project_checklist(project_name)
-        if not isolated.empty:
-            isolated['project_context'] = project_name
-            return isolated
-        if project_name == LEGACY_CHECKLIST_PROJECT and not df_status.empty:
-            return df_status
-        return default_project_status(project_name)
+            filtered = df_status[df_status['project_context'] == project_name]
+            return filtered if not filtered.empty else default_project_status(project_name)
+        # Old schema is shared. Do not show its completion for other projects.
+        return df_status if project_name == "Yousaf Colony" and not df_status.empty else default_project_status(project_name)
     except Exception:
         return default_project_status(project_name)
 
 def save_project_status(project_name, task_name, new_status):
-    """Save checklist data only inside the selected project's own context."""
+    """Save only inside the selected project's database context."""
     table = supabase.table('project_status')
+    try:
+        # Fails on the old shared schema, instead of accidentally updating another project.
+        table.select('project_context').limit(1).execute()
+    except Exception as error:
+        raise RuntimeError(
+            "Run project_status_migration.sql once in Supabase SQL Editor, then update the checklist again."
+        ) from error
+
     existing = table.select('*').eq('task_name', task_name).execute().data or []
-
-    # New schema: project_context is present, so update only that project's row.
-    if existing and 'project_context' in existing[0]:
-        matching = [row for row in existing if row.get('project_context') == project_name]
-        if matching:
-            row = matching[0]
-            if row.get('id') is not None:
-                table.update({'status': new_status}).eq('id', row['id']).execute()
-            else:
-                table.update({'status': new_status}).eq('task_name', task_name).eq('project_context', project_name).execute()
+    matching = [row for row in existing if row.get('project_context') == project_name]
+    if matching:
+        row = matching[0]
+        if row.get('id') is not None:
+            table.update({'status': new_status}).eq('id', row['id']).execute()
         else:
-            table.insert({'task_name': task_name, 'status': new_status, 'project_context': project_name}).execute()
-        return
-
-    # Old schema: never update its shared row. Store a separate checklist per project.
-    status_df = fetch_project_status(project_name).copy()
-    status_df.loc[status_df['task_name'] == task_name, 'status'] = new_status
-    save_legacy_project_checklist(project_name, status_df)
+            table.update({'status': new_status}).eq('task_name', task_name).eq('project_context', project_name).execute()
+    else:
+        table.insert({'task_name': task_name, 'status': new_status, 'project_context': project_name}).execute()
 
 @st.cache_data(ttl=60)
 def fetch_project_updates(project_name):
@@ -329,46 +288,20 @@ def fetch_company_logo_url():
     except Exception:
         return ''
 
-@st.cache_data(ttl=300)
-def fetch_project_registry():
-    """Keep empty projects available after the browser session ends."""
-    try:
-        rows = (supabase.table('company_settings').select('setting_value')
-                .eq('setting_key', 'project_registry').limit(1).execute().data or [])
-        saved = json.loads(rows[0].get('setting_value', '[]')) if rows else []
-        return [str(name).strip() for name in saved if str(name).strip()]
-    except Exception:
-        return []
-
-def save_project_registry(projects):
-    try:
-        cleaned = list(dict.fromkeys(str(project).strip() for project in projects if str(project).strip()))
-        supabase.table('company_settings').upsert({
-            'setting_key': 'project_registry',
-            'setting_value': json.dumps(cleaned),
-        }, on_conflict='setting_key').execute()
-        st.cache_data.clear()
-    except Exception:
-        # The application still works with session data on older installations.
-        pass
-
 def rename_project_context(old_name, new_name):
-    """Rename every project-scoped record, then refresh the active UI."""
-    if old_name == new_name:
-        return
+    """Move every project-scoped record to the newly chosen project name."""
     for table_name in ('transactions', 'labor_profiles', 'project_status', 'project_updates'):
         try:
             supabase.table(table_name).update({'project_context': new_name}).eq(
                 'project_context', old_name
             ).execute()
         except Exception:
-            # Some legacy tables do not yet have a project_context column.
             continue
-    projects = [new_name if project == old_name else project
-                for project in st.session_state['custom_projects']]
-    st.session_state['custom_projects'] = list(dict.fromkeys(projects))
+    st.session_state['custom_projects'] = list(dict.fromkeys(
+        new_name if project == old_name else project
+        for project in st.session_state['custom_projects']
+    ))
     st.session_state['selected_project'] = new_name
-    save_project_registry(st.session_state['custom_projects'])
     st.cache_data.clear()
 
 def add_update_comment(update_id, author, body):
@@ -463,7 +396,7 @@ raw_df = fetch_all_raw_data()
 raw_labor_df = fetch_all_labor_profiles()
 
 if "custom_projects" not in st.session_state:
-    st.session_state["custom_projects"] = fetch_project_registry() or ["Yousaf Colony"]
+    st.session_state["custom_projects"] = ["Yousaf Colony"]
 
 if not raw_df.empty and 'project_context' in raw_df.columns:
     proj_list = raw_df['project_context'].dropna().unique().tolist()
@@ -493,9 +426,9 @@ def popup_create_project():
             if new_proj_name not in st.session_state["custom_projects"]:
                 st.session_state["custom_projects"].append(new_proj_name)
             st.session_state["selected_project"] = new_proj_name
-            save_project_registry(st.session_state["custom_projects"])
             
-            for t in CHECKLIST_TASKS:
+            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+            for t in tasks:
                 try:
                     save_project_status(new_proj_name, t, "Pending")
                 except Exception:
@@ -511,27 +444,21 @@ def popup_create_project():
 @st.dialog("✏️ Rename Active Project", dismissible=False)
 def popup_rename_project():
     old_name = st.session_state["selected_project"]
-    st.write(f"Current project: **{old_name}**")
     new_name = st.text_input("New project name *", value=old_name).strip()
-    st.caption("All transactions, labor, checklist items, and project updates will move to the new name.")
+    st.caption("Transactions, labor, checklist records, and project updates will use this new name.")
     save_col, cancel_col = st.columns(2)
     with save_col:
         save_rename = st.button("💾 Save New Name", type="primary", use_container_width=True)
     with cancel_col:
         cancel_rename = st.button("❌ Cancel", use_container_width=True)
-
     if save_rename:
         if not new_name:
             st.error("Project name is required.")
         elif new_name != old_name and new_name in st.session_state["custom_projects"]:
             st.error("A project with this name already exists.")
         else:
-            try:
-                rename_project_context(old_name, new_name)
-                st.success("Project name and linked data updated successfully.")
-                st.rerun()
-            except Exception as error:
-                st.error(f"Could not rename the project: {error}")
+            rename_project_context(old_name, new_name)
+            st.rerun()
     if cancel_rename:
         st.rerun()
 
@@ -805,10 +732,9 @@ with st.sidebar:
         index=st.session_state["custom_projects"].index(st.session_state["selected_project"]) if st.session_state["selected_project"] in st.session_state["custom_projects"] else 0,
         label_visibility="collapsed"
     )
-    # Filters are calculated above the sidebar.  Rerunning here ensures every
-    # dashboard metric and table is rebuilt with the newly selected project.
     if selected_proj != st.session_state["selected_project"]:
         st.session_state["selected_project"] = selected_proj
+        # Project filters were prepared before the sidebar; refresh them now.
         st.rerun()
     st.divider()
     
