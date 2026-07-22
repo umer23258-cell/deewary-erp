@@ -168,7 +168,12 @@ def export_labor_profile_pdf(labor_row, payments_df):
 
 
 # --- 3. PAGE CONFIG ---
-st.set_page_config(page_title="Deewaryn.com ERP", layout="wide", page_icon="🏗️")
+st.set_page_config(
+    page_title="Deewaryn.com ERP",
+    layout="wide",
+    page_icon="🏗️",
+    initial_sidebar_state="collapsed",
+)
 
 # --- APPLICATION SHELL ---
 st.markdown("""
@@ -184,6 +189,22 @@ st.markdown("""
     [data-testid="stSidebar"] {background: #ffffff; border-right: 1px solid #e8edf5;}
     [data-testid="stSidebar"] * {font-family: Inter, ui-sans-serif, system-ui, sans-serif;}
     h1, h2, h3 {letter-spacing: -.03em;}
+    /* Phone-first layout: the sidebar remains available from Streamlit's menu,
+       while content, dashboard cards, forms and tables fit narrow screens. */
+    @media (max-width: 768px) {
+        .block-container {padding: .85rem .75rem 2rem; max-width: 100%;}
+        [data-testid="stSidebar"] {min-width: min(86vw, 320px);}
+        [data-testid="stHorizontalBlock"] {flex-direction: column; gap: .75rem;}
+        [data-testid="stHorizontalBlock"] > [data-testid="column"] {width: 100% !important; flex: 1 1 auto !important;}
+        [data-testid="stDataFrame"] {max-width: 100%; overflow-x: auto;}
+        .dash-top {align-items:flex-start; gap:12px; flex-direction:column; margin-bottom:16px;}
+        .dash-title {font-size:24px;}
+        .dash-hero {padding:22px 18px; border-radius:18px;}
+        .dash-hero h2 {font-size:23px;}
+        .dash-hero > div {flex-wrap:wrap; margin-top:16px !important;}
+        .dash-kpi {min-width:calc(50% - 6px); flex:1;}
+        .dash-card, .dash-panel {padding:16px;}
+    }
     </style>
 """, unsafe_allow_html=True)
 # --- 4. DATA FETCH LOGIC ---
@@ -285,6 +306,48 @@ def fetch_company_logo_url():
     except Exception:
         return ''
 
+@st.cache_data(ttl=300)
+def fetch_project_registry():
+    """Keep empty projects available after the browser session ends."""
+    try:
+        rows = (supabase.table('company_settings').select('setting_value')
+                .eq('setting_key', 'project_registry').limit(1).execute().data or [])
+        saved = json.loads(rows[0].get('setting_value', '[]')) if rows else []
+        return [str(name).strip() for name in saved if str(name).strip()]
+    except Exception:
+        return []
+
+def save_project_registry(projects):
+    try:
+        cleaned = list(dict.fromkeys(str(project).strip() for project in projects if str(project).strip()))
+        supabase.table('company_settings').upsert({
+            'setting_key': 'project_registry',
+            'setting_value': json.dumps(cleaned),
+        }, on_conflict='setting_key').execute()
+        st.cache_data.clear()
+    except Exception:
+        # The application still works with session data on older installations.
+        pass
+
+def rename_project_context(old_name, new_name):
+    """Rename every project-scoped record, then refresh the active UI."""
+    if old_name == new_name:
+        return
+    for table_name in ('transactions', 'labor_profiles', 'project_status', 'project_updates'):
+        try:
+            supabase.table(table_name).update({'project_context': new_name}).eq(
+                'project_context', old_name
+            ).execute()
+        except Exception:
+            # Some legacy tables do not yet have a project_context column.
+            continue
+    projects = [new_name if project == old_name else project
+                for project in st.session_state['custom_projects']]
+    st.session_state['custom_projects'] = list(dict.fromkeys(projects))
+    st.session_state['selected_project'] = new_name
+    save_project_registry(st.session_state['custom_projects'])
+    st.cache_data.clear()
+
 def add_update_comment(update_id, author, body):
     supabase.table('project_update_comments').insert({
         'update_id': update_id,
@@ -377,7 +440,7 @@ raw_df = fetch_all_raw_data()
 raw_labor_df = fetch_all_labor_profiles()
 
 if "custom_projects" not in st.session_state:
-    st.session_state["custom_projects"] = ["Yousaf Colony"]
+    st.session_state["custom_projects"] = fetch_project_registry() or ["Yousaf Colony"]
 
 if not raw_df.empty and 'project_context' in raw_df.columns:
     proj_list = raw_df['project_context'].dropna().unique().tolist()
@@ -407,6 +470,7 @@ def popup_create_project():
             if new_proj_name not in st.session_state["custom_projects"]:
                 st.session_state["custom_projects"].append(new_proj_name)
             st.session_state["selected_project"] = new_proj_name
+            save_project_registry(st.session_state["custom_projects"])
             
             tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
             for t in tasks:
@@ -420,6 +484,33 @@ def popup_create_project():
         else: st.error("Project identity descriptor required.")
         
     if cancel_btn:
+        st.rerun()
+
+@st.dialog("✏️ Rename Active Project", dismissible=False)
+def popup_rename_project():
+    old_name = st.session_state["selected_project"]
+    st.write(f"Current project: **{old_name}**")
+    new_name = st.text_input("New project name *", value=old_name).strip()
+    st.caption("All transactions, labor, checklist items, and project updates will move to the new name.")
+    save_col, cancel_col = st.columns(2)
+    with save_col:
+        save_rename = st.button("💾 Save New Name", type="primary", use_container_width=True)
+    with cancel_col:
+        cancel_rename = st.button("❌ Cancel", use_container_width=True)
+
+    if save_rename:
+        if not new_name:
+            st.error("Project name is required.")
+        elif new_name != old_name and new_name in st.session_state["custom_projects"]:
+            st.error("A project with this name already exists.")
+        else:
+            try:
+                rename_project_context(old_name, new_name)
+                st.success("Project name and linked data updated successfully.")
+                st.rerun()
+            except Exception as error:
+                st.error(f"Could not rename the project: {error}")
+    if cancel_rename:
         st.rerun()
 
 @st.dialog("📸 Add Project Progress Update", dismissible=False)
@@ -692,7 +783,11 @@ with st.sidebar:
         index=st.session_state["custom_projects"].index(st.session_state["selected_project"]) if st.session_state["selected_project"] in st.session_state["custom_projects"] else 0,
         label_visibility="collapsed"
     )
-    st.session_state["selected_project"] = selected_proj
+    # Filters are calculated above the sidebar.  Rerunning here ensures every
+    # dashboard metric and table is rebuilt with the newly selected project.
+    if selected_proj != st.session_state["selected_project"]:
+        st.session_state["selected_project"] = selected_proj
+        st.rerun()
     st.divider()
     
     st.markdown("<p style='font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:8px;'>Navigation Menu</p>", unsafe_allow_html=True)
@@ -715,6 +810,7 @@ with st.sidebar:
         if st.button("🗑️ Manage / Delete Project Updates", use_container_width=True): popup_manage_project_updates(st.session_state["selected_project"])
         if st.button("🖼️ Change Company Logo", use_container_width=True): popup_update_company_logo()
         if st.button("📁 Deploy New Site Project", use_container_width=True): popup_create_project()
+        if st.button("✏️ Rename Active Project", use_container_width=True): popup_rename_project()
         st.divider()
         if st.button("⚙️ Calibrate Checklist Nodes", use_container_width=True): 
             _status_df = fetch_project_status(st.session_state["selected_project"])
