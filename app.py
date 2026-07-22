@@ -222,55 +222,78 @@ def fetch_all_labor_profiles():
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
+CHECKLIST_TASKS = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
+LEGACY_CHECKLIST_PROJECT = "Yousaf Colony"
+
+def default_project_status(project_name):
+    return pd.DataFrame([{"task_name": task, "status": "Pending", "project_context": project_name}
+                         for task in CHECKLIST_TASKS])
+
+def legacy_checklist_key(project_name):
+    # Short deterministic key: works even when a project name contains spaces/Urdu.
+    return f"project_checklist_{uuid.uuid5(uuid.NAMESPACE_URL, str(project_name)).hex}"
+
+def load_legacy_project_checklist(project_name):
+    """Read isolated checklist data for databases without project_context."""
+    try:
+        rows = (supabase.table('company_settings').select('setting_value')
+                .eq('setting_key', legacy_checklist_key(project_name)).limit(1).execute().data or [])
+        if rows:
+            saved = json.loads(rows[0].get('setting_value', '[]'))
+            if saved:
+                return pd.DataFrame(saved)
+    except Exception:
+        pass
+    return pd.DataFrame()
+
+def save_legacy_project_checklist(project_name, status_df):
+    supabase.table('company_settings').upsert({
+        'setting_key': legacy_checklist_key(project_name),
+        'setting_value': json.dumps(status_df[['task_name', 'status']].to_dict('records')),
+    }, on_conflict='setting_key').execute()
+
 def fetch_project_status(project_name):
     try:
         res = supabase.table('project_status').select("*").execute()
         df_status = pd.DataFrame(res.data)
         if not df_status.empty and 'project_context' in df_status.columns:
             df_filtered = df_status[df_status['project_context'] == project_name]
-            if not df_filtered.empty:
-                return df_filtered
-        # Legacy databases keep one shared checklist and do not have project_context.
-        # Those rows are real saved statuses, so never replace them with demo defaults.
-        if not df_status.empty and 'project_context' not in df_status.columns:
+            return df_filtered if not df_filtered.empty else default_project_status(project_name)
+
+        # Legacy table has one shared checklist.  Keep its historical values only
+        # for Yousaf Colony; every other project uses its own company_settings row.
+        isolated = load_legacy_project_checklist(project_name)
+        if not isolated.empty:
+            isolated['project_context'] = project_name
+            return isolated
+        if project_name == LEGACY_CHECKLIST_PROJECT and not df_status.empty:
             return df_status
-        
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-        return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
-    except: 
-        tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-        return pd.DataFrame([{"task_name": t, "status": "Pending", "project_context": project_name} for t in tasks])
+        return default_project_status(project_name)
+    except Exception:
+        return default_project_status(project_name)
 
 def save_project_status(project_name, task_name, new_status):
-    """Save a checklist item without relying on an unavailable UPSERT constraint."""
+    """Save checklist data only inside the selected project's own context."""
     table = supabase.table('project_status')
-    # `task_name` is supported by both the old and new versions of this table.
     existing = table.select('*').eq('task_name', task_name).execute().data or []
 
-    # On the newer schema, one task can exist for more than one project.
-    matching = [row for row in existing if row.get('project_context') == project_name]
-    if matching:
-        row = matching[0]
-        if row.get('id') is not None:
-            table.update({'status': new_status}).eq('id', row['id']).execute()
+    # New schema: project_context is present, so update only that project's row.
+    if existing and 'project_context' in existing[0]:
+        matching = [row for row in existing if row.get('project_context') == project_name]
+        if matching:
+            row = matching[0]
+            if row.get('id') is not None:
+                table.update({'status': new_status}).eq('id', row['id']).execute()
+            else:
+                table.update({'status': new_status}).eq('task_name', task_name).eq('project_context', project_name).execute()
         else:
-            table.update({'status': new_status}).eq('task_name', task_name).eq('project_context', project_name).execute()
+            table.insert({'task_name': task_name, 'status': new_status, 'project_context': project_name}).execute()
         return
 
-    # Old installations have no `project_context` column and store one shared checklist.
-    if existing and 'project_context' not in existing[0]:
-        row = existing[0]
-        if row.get('id') is not None:
-            table.update({'status': new_status}).eq('id', row['id']).execute()
-        else:
-            table.update({'status': new_status}).eq('task_name', task_name).execute()
-        return
-
-    # No matching row: create one. Fall back cleanly for the legacy schema.
-    try:
-        table.insert({'task_name': task_name, 'status': new_status, 'project_context': project_name}).execute()
-    except Exception:
-        table.insert({'task_name': task_name, 'status': new_status}).execute()
+    # Old schema: never update its shared row. Store a separate checklist per project.
+    status_df = fetch_project_status(project_name).copy()
+    status_df.loc[status_df['task_name'] == task_name, 'status'] = new_status
+    save_legacy_project_checklist(project_name, status_df)
 
 @st.cache_data(ttl=60)
 def fetch_project_updates(project_name):
@@ -472,8 +495,7 @@ def popup_create_project():
             st.session_state["selected_project"] = new_proj_name
             save_project_registry(st.session_state["custom_projects"])
             
-            tasks = ["Mistry Ka Kam", "Plumber", "Electric Work", "Celling", "Paint", "Wood Wor", "polishing/grinding)", "Main Door", "Safety Grill", "Sanitary Fitting", "Finishing"]
-            for t in tasks:
+            for t in CHECKLIST_TASKS:
                 try:
                     save_project_status(new_proj_name, t, "Pending")
                 except Exception:
