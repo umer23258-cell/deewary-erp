@@ -751,6 +751,19 @@ with st.sidebar:
         st.session_state["selected_project"] = selected_proj
         # Project filters were prepared before the sidebar; refresh them now.
         st.rerun()
+    st.caption("Tap a project to open its dashboard")
+    for project_name in st.session_state["custom_projects"]:
+        is_current_project = project_name == st.session_state["selected_project"]
+        if st.button(
+            f"📍 {project_name}",
+            key=f"project_switch_{project_name}",
+            type="primary" if is_current_project else "secondary",
+            use_container_width=True,
+        ):
+            if not is_current_project:
+                st.session_state["selected_project"] = project_name
+                # Project filters were prepared before the sidebar; refresh them now.
+                st.rerun()
     st.divider()
     
     st.markdown("<p style='font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:8px;'>Navigation Menu</p>", unsafe_allow_html=True)
