@@ -339,13 +339,17 @@ def render_project_updates_slider(updates_df, height=430):
         <style>
         * {{ box-sizing:border-box }} body {{ margin:0; font-family:Inter,system-ui,sans-serif; background:#101b35 }}
         #project-slider {{ position:relative; height:{height}px; overflow:hidden; border-radius:18px; background:#101b35 }}
-        #project-slider img,#project-slider video {{ width:100%; height:100%; display:block; object-fit:contain; background:#0b1220 }}
+        #project-slider img,#project-slider video {{ width:100%; height:100%; display:block; object-fit:contain; background:#0b1220; cursor:zoom-in }}
         #caption {{ position:absolute; left:18px; right:18px; bottom:16px; padding:12px 15px; color:#fff; background:rgba(6,18,38,.76); border-radius:12px; font-size:14px; font-weight:650; backdrop-filter:blur(8px) }}
         #caption small {{ display:block; color:#b7c7df; font-size:11px; font-weight:500; margin-top:3px }}
         .nav {{ position:absolute; top:50%; transform:translateY(-50%); border:0; width:36px; height:36px; border-radius:50%; color:#fff; background:rgba(6,18,38,.65); cursor:pointer; font-size:24px }}
         #prev {{ left:12px }} #next {{ right:12px }} #counter {{ position:absolute; top:14px; right:14px; color:#fff; background:rgba(6,18,38,.65); border-radius:20px; padding:5px 10px; font-size:11px }}
+        #expand {{ position:absolute; top:14px; left:14px; border:0; color:#fff; background:rgba(6,18,38,.65); border-radius:20px; padding:5px 10px; cursor:pointer; font-size:15px }}
+        #fullscreen {{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.94);padding:18px;place-items:center}}
+        #fullscreen.open {{display:grid}} #fullscreen img,#fullscreen video {{max-width:100%;max-height:88vh;object-fit:contain}} #full-caption {{color:#fff;text-align:center;margin-top:10px;font-size:14px}} #close-full {{position:absolute;top:18px;right:18px;border:0;border-radius:50%;width:40px;height:40px;color:#fff;background:#24324a;font-size:24px;cursor:pointer}}
         </style>
-        <div id="project-slider"><div id="media"></div><div id="caption"></div><div id="counter"></div><button class="nav" id="prev">‹</button><button class="nav" id="next">›</button></div>
+        <div id="project-slider"><div id="media"></div><div id="caption"></div><div id="counter"></div><button id="expand" title="View full photo">⛶</button><button class="nav" id="prev">‹</button><button class="nav" id="next">›</button></div>
+        <div id="fullscreen"><button id="close-full">×</button><div><div id="full-media"></div><div id="full-caption"></div></div></div>
         <script>
         const slides = {slider_data}; let index = 0; let timer;
         const media = document.getElementById('media'); const caption = document.getElementById('caption');
@@ -357,13 +361,24 @@ def render_project_updates_slider(updates_df, height=430):
                 const source = document.createElement('source'); source.src = slide.url; source.type = slide.mime; element.appendChild(source);
                 element.onerror = () => {{ caption.firstChild.textContent = 'This video format is not supported. Please upload MP4 or WebM.'; }};
             }} else {{ element.src = slide.url; }}
-            element.alt = slide.caption; media.appendChild(element);
+            element.alt = slide.caption; element.onclick = () => openFullscreen(slide); media.appendChild(element);
             caption.innerHTML = ''; caption.append(document.createTextNode(slide.caption)); const date = document.createElement('small'); date.textContent = slide.date; caption.appendChild(date);
             document.getElementById('counter').textContent = `${{index + 1}} / ${{slides.length}}`;
         }}
         function restart() {{ clearInterval(timer); timer = setInterval(() => showSlide(index + 1), 6000); }}
+        function openFullscreen(slide) {{
+            const holder = document.getElementById('full-media'); holder.innerHTML = '';
+            const fullElement = document.createElement(slide.kind === 'video' ? 'video' : 'img');
+            if (slide.kind === 'video') {{ fullElement.controls = true; fullElement.autoplay = true; fullElement.playsInline = true; fullElement.src = slide.url; }} else {{ fullElement.src = slide.url; fullElement.alt = slide.caption; }}
+            holder.appendChild(fullElement); document.getElementById('full-caption').textContent = slide.caption;
+            document.getElementById('fullscreen').classList.add('open'); clearInterval(timer);
+        }}
+        function closeFullscreen() {{ document.getElementById('fullscreen').classList.remove('open'); document.getElementById('full-media').innerHTML = ''; restart(); }}
         document.getElementById('prev').onclick = () => {{ showSlide(index - 1); restart(); }};
         document.getElementById('next').onclick = () => {{ showSlide(index + 1); restart(); }};
+        document.getElementById('expand').onclick = () => openFullscreen(slides[index]);
+        document.getElementById('close-full').onclick = closeFullscreen;
+        document.getElementById('fullscreen').onclick = (event) => {{ if (event.target.id === 'fullscreen') closeFullscreen(); }};
         showSlide(0); restart();
         </script>''', height=height, scrolling=False)
 
